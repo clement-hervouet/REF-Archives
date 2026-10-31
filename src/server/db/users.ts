@@ -25,6 +25,12 @@ export type CreatedUser = {
   role: UserRole;
 };
 
+/** Données nécessaires à la vérification d'un mot de passe. Ne jamais logger. */
+export type UserCredentials = {
+  userId: string;
+  passwordHash: string;
+};
+
 /** L'email est déjà pris (unicité insensible à la casse, index `user_email_lower_key`). */
 export class EmailAlreadyUsedError extends Error {
   constructor() {
@@ -42,9 +48,19 @@ const userRowSchema = z.object({
   role: userRoleSchema,
 });
 
+const credentialsRowSchema = z.object({
+  id: z.uuid(),
+  password_hash: z.string(),
+});
+
 const INSERT_USER_SQL = `INSERT INTO "user" (email, password_hash, role)
 VALUES ($1, $2, $3)
 RETURNING id, email, role`;
+
+// `lower(...)` des deux côtés : correspond à l'index d'unicité `user_email_lower_key`.
+const FIND_CREDENTIALS_SQL = `SELECT id, password_hash
+FROM "user"
+WHERE lower(email) = lower($1)`;
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === PG_UNIQUE_VIOLATION;
@@ -65,4 +81,18 @@ export async function createUser(db: Queryable, input: CreateUserInput): Promise
     }
     throw error;
   }
+}
+
+/** Retrouve l'identifiant et le hash d'un utilisateur par son email, ou `null` s'il n'existe pas. */
+export async function findUserCredentialsByEmail(
+  db: Queryable,
+  email: string,
+): Promise<UserCredentials | null> {
+  const result = await db.query(FIND_CREDENTIALS_SQL, [email]);
+  const row = result.rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  const parsed = credentialsRowSchema.parse(row);
+  return { userId: parsed.id, passwordHash: parsed.password_hash };
 }
