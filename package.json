@@ -14,10 +14,14 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:up": "docker compose --env-file .env.local --profile dev up -d"
+    "db:up": "docker compose --env-file .env.local --profile dev up -d",
+    "db:migrate": "node --env-file=.env.local --experimental-strip-types scripts/db.mts migrate",
+    "db:seed": "node --env-file=.env.local --experimental-strip-types scripts/db.mts seed",
+    "db:reset": "node --env-file=.env.local --experimental-strip-types scripts/db.mts reset"
   },
   "dependencies": {
     "next": "16.4.3",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.7"
@@ -25,11 +29,13 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^22",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "eslint-config-prettier": "^10.1.8",
+    "node-pg-migrate": "^9.0.0",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "typescript": "^5",
