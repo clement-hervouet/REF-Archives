@@ -17,6 +17,7 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "next"

@@ -3,7 +3,8 @@
  * (`password.too_short`…) traduits à l'affichage via `src/i18n/fr.ts`.
  */
 import { z } from "zod";
-import { isTrivialPassword } from "./common-passwords";
+// Extension `.ts` explicite : ce fichier est aussi importé par des scripts Node (admin:create).
+import { isTrivialPassword } from "./common-passwords.ts";
 
 export const EMAIL_MAX_LENGTH = 255;
 export const PASSWORD_MIN_LENGTH = 12;
