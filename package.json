@@ -20,6 +20,7 @@
     "db:reset": "node --env-file=.env.local --experimental-strip-types scripts/db.mts reset"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
     "next": "16.4.3",
     "pg": "^8.23.1",
     "react": "19.3.0",
