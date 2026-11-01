@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { emailSchema } from "@/lib/schemas/auth";
+import { getClientIp } from "@/server/auth/client-ip";
 import { createInvitationDeps } from "@/server/auth/invitation-deps";
 import { createInvitationForEmail } from "@/server/auth/invitations";
+import { recordSecurityEvent } from "@/server/auth/record-security-event";
 import { requireAdmin } from "@/server/auth/session";
 import { revokeInvitation } from "@/server/db/invitations";
 import { getDb } from "@/server/db/pool";
@@ -44,6 +47,11 @@ export async function createInvitationAction(
     return { status: "email_taken" };
   }
 
+  await recordSecurityEvent({
+    type: "invitation_created",
+    userId: admin.id,
+    ip: getClientIp(await headers()),
+  });
   revalidatePath(INVITATIONS_PATH);
   return {
     status: "created",
@@ -61,6 +69,13 @@ export async function revokeInvitationAction(formData: FormData): Promise<void> 
   if (!invitationId.success) {
     return;
   }
-  await revokeInvitation(getDb(), invitationId.data, admin.id);
+  const revoked = await revokeInvitation(getDb(), invitationId.data, admin.id);
+  if (revoked) {
+    await recordSecurityEvent({
+      type: "invitation_revoked",
+      userId: admin.id,
+      ip: getClientIp(await headers()),
+    });
+  }
   revalidatePath(INVITATIONS_PATH);
 }

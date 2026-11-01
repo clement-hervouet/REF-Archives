@@ -11,6 +11,7 @@ import { SESSION_MAX_AGE_SECONDS, revokeSession } from "../db/sessions";
 import { getClientIp } from "./client-ip";
 import { authenticate } from "./login";
 import { createLoginDeps } from "./login-deps";
+import { recordSecurityEvent } from "./record-security-event";
 
 /** Trop de tentatives : transporte le délai restant jusqu'à la Server Action de connexion. */
 export class RateLimitedError extends CredentialsSignin {
@@ -35,17 +36,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) {
           return null;
         }
+        const ip = getClientIp(request.headers);
         const result = await authenticate(createLoginDeps(), {
           email: parsed.data.email,
           password: parsed.data.password,
-          ip: getClientIp(request.headers),
+          ip,
         });
         if (result.status === "rate_limited") {
+          // Pas de journal ici : chaque requête bloquée écrirait une ligne, ce qui
+          // permettrait de remplir la table. Les échecs qui ont mené au blocage, eux, sont journalisés.
           throw new RateLimitedError(result.retryAfterSeconds);
         }
         if (result.status === "invalid_credentials") {
+          await recordSecurityEvent({ type: "login_failed", ip });
           return null;
         }
+        await recordSecurityEvent({ type: "login_succeeded", userId: result.userId, ip });
         return { id: result.userId, sessionId: result.sessionId };
       },
     }),
