@@ -7,3 +7,8 @@ export class AppError extends Error {
 export class ConfigError extends AppError {
   override readonly name = "ConfigError";
 }
+
+/** Utilisateur non authentifié : session absente, expirée ou révoquée. */
+export class UnauthorizedError extends AppError {
+  override readonly name = "UnauthorizedError";
+}
