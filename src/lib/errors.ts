@@ -12,3 +12,8 @@ export class ConfigError extends AppError {
 export class UnauthorizedError extends AppError {
   override readonly name = "UnauthorizedError";
 }
+
+/** Utilisateur authentifié mais sans le droit d'effectuer l'action (ex. rôle insuffisant). */
+export class ForbiddenError extends AppError {
+  override readonly name = "ForbiddenError";
+}
