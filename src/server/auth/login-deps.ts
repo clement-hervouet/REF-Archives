@@ -9,7 +9,7 @@ import type { Queryable } from "../db/users";
 import { verifyAgainstDummyHash, verifyPassword } from "./password";
 import type { LoginDeps } from "./login";
 import { admitAttempt } from "./rate-limit";
-import type { RateLimitStore } from "./rate-limit";
+import type { AttemptDecision, RateLimitStore } from "./rate-limit";
 
 function storeFor(transaction: Queryable): RateLimitStore {
   return {
@@ -18,12 +18,18 @@ function storeFor(transaction: Queryable): RateLimitStore {
   };
 }
 
+/**
+ * Décide d'admettre une tentative : verrouillage et incrément dans une seule
+ * transaction (voir `rate-limit.ts`). Partagée par la connexion et les invitations.
+ */
+export function admitAttemptInTransaction(keys: string[], now: Date): Promise<AttemptDecision> {
+  return withTransaction((transaction) => admitAttempt(storeFor(transaction), keys, now));
+}
+
 export function createLoginDeps(): LoginDeps {
   const db = getDb();
   return {
-    // Verrouillage et incrément dans une seule transaction : voir `rate-limit.ts`.
-    admitAttempt: (keys, now) =>
-      withTransaction((transaction) => admitAttempt(storeFor(transaction), keys, now)),
+    admitAttempt: admitAttemptInTransaction,
     findCredentials: (email) => findUserCredentialsByEmail(db, email),
     verifyPassword,
     verifyAgainstDummyHash,
