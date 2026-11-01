@@ -3,21 +3,15 @@
  * Le pool est créé à la première utilisation, jamais à l'import (build, tests).
  */
 import pg from "pg";
-import { z } from "zod";
+import { getEnv } from "@/lib/env";
 import type { Queryable } from "./users";
-
-const databaseUrlSchema = z.url();
 
 // En développement, le rechargement à chaud peut recréer ce module : les anciens
 // pools se vident seuls (les connexions inactives sont fermées après 10 s par défaut).
 let pool: pg.Pool | undefined;
 
 function getPool(): pg.Pool {
-  // DATABASE_URL a déjà été validée au démarrage par `src/lib/env.ts` (fail fast).
-  pool ??= new pg.Pool({
-    connectionString: databaseUrlSchema.parse(process.env.DATABASE_URL),
-    max: 10,
-  });
+  pool ??= new pg.Pool({ connectionString: getEnv().DATABASE_URL, max: 10 });
   return pool;
 }
 
