@@ -5,6 +5,10 @@ import { requireUserOrRedirect } from "@/server/auth/session";
 import { logout } from "./actions";
 import { AdminNav } from "./admin-nav";
 
+// La CSP à nonce (src/proxy.ts) exige un rendu à chaque requête : une page prérendue
+// au build ne pourrait pas porter le nonce, et ses scripts seraient bloqués.
+export const dynamic = "force-dynamic";
+
 /**
  * Bloque l'affichage de la page tant que la session n'est pas vérifiée en base.
  * Doit rester sous <Suspense> : lire la session utilise les cookies de la requête.
