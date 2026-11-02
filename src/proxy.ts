@@ -1,32 +1,48 @@
 /**
- * Redirection légère des visiteurs sans cookie de session vers /login (confort uniquement).
+ * Proxy Next.js 16, exécuté avant chaque requête :
+ * 1. génère le nonce de la CSP et pose les en-têtes de sécurité ;
+ * 2. redirige vers /login les visiteurs sans cookie de session (confort uniquement).
+ *
  * Ce fichier ne protège PAS les données : la vérification qui fait foi se fait en base,
  * dans les pages et Server Actions (`src/server/auth/session.ts`, §6.2).
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-// Nom du cookie Auth.js : préfixé `__Secure-` en HTTPS.
-const SESSION_COOKIES = ["authjs.session-token", "__Secure-authjs.session-token"];
-
-// Routes accessibles sans session. Les entrées /invitation, /api/ical et /api/health
-// anticipent les prochaines étapes (invitations, flux iCal protégé par jeton, healthcheck).
-const PUBLIC_PATHS = ["/login", "/invitation", "/api/auth", "/api/ical", "/api/health"];
-
-function isPublic(pathname: string): boolean {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-}
+import {
+  buildContentSecurityPolicy,
+  generateNonce,
+  getSecurityHeaders,
+} from "@/lib/security-headers";
+import { SESSION_COOKIE_NAMES, isPublicPath } from "@/server/auth/public-paths";
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
-  const hasSessionCookie = SESSION_COOKIES.some((name) => request.cookies.has(name));
-  if (isPublic(pathname) || hasSessionCookie) {
-    return NextResponse.next();
+  const nonce = generateNonce();
+  const csp = buildContentSecurityPolicy({
+    nonce,
+    isDevelopment: process.env.NODE_ENV !== "production",
+  });
+
+  const hasSessionCookie = SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name));
+  let response: NextResponse;
+  if (isPublicPath(pathname) || hasSessionCookie) {
+    // Next.js lit le nonce dans l'en-tête CSP de la REQUÊTE pour l'appliquer à ses scripts.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-nonce", nonce);
+    requestHeaders.set("Content-Security-Policy", csp);
+    response = NextResponse.next({ request: { headers: requestHeaders } });
+  } else {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    response = NextResponse.redirect(loginUrl);
   }
-  const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/login";
-  loginUrl.search = "";
-  return NextResponse.redirect(loginUrl);
+
+  response.headers.set("Content-Security-Policy", csp);
+  for (const [name, value] of Object.entries(getSecurityHeaders(pathname))) {
+    response.headers.set(name, value);
+  }
+  return response;
 }
 
 export const config = {
