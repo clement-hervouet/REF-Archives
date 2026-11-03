@@ -39,26 +39,27 @@ INSERT INTO team (id, user_id, club_id, division_id) VALUES
   )
 ON CONFLICT DO NOTHING;
 
--- Montants FICTIFS (en centimes).
-INSERT INTO scale (id, user_id, division_id, effective_from, game_amount_cents) VALUES
-  (
-    '00000000-0000-4000-8000-0000000000e1',
-    '00000000-0000-4000-8000-000000000001',
-    (SELECT id FROM division WHERE division = 'Departemental' AND type = 'Masculin' AND level = '1'),
-    '2026-01-01',
-    3000
-  ),
-  (
-    '00000000-0000-4000-8000-0000000000e2',
-    '00000000-0000-4000-8000-000000000001',
-    (SELECT id FROM division WHERE division = 'Regional' AND type = 'Masculin' AND level = '1'),
-    '2026-01-01',
-    4500
-  )
+-- Barèmes : montants FICTIFS (en centimes). Le barème commun est créé par la migration 009.
+INSERT INTO scale_rate (id, scale_id, effective_from, game_amount_cents, cents_per_km) VALUES
+  ('00000000-0000-4000-8000-0000000000e1', (SELECT id FROM scale WHERE user_id IS NULL), '2026-01-01', 3000, 40.00)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO mileage_rate (id, user_id, effective_from, cents_per_km) VALUES
-  ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-000000000001', '2026-01-01', 40.00)
+INSERT INTO scale (id, user_id, name) VALUES
+  ('00000000-0000-4000-8000-0000000000e2', '00000000-0000-4000-8000-000000000001', 'Comité fictif')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO scale_rate (id, scale_id, effective_from, game_amount_cents, cents_per_km) VALUES
+  ('00000000-0000-4000-8000-0000000000e3', '00000000-0000-4000-8000-0000000000e2', '2026-01-01', 4500, 40.00),
+  ('00000000-0000-4000-8000-0000000000e4', '00000000-0000-4000-8000-0000000000e2', '2026-09-01', 4800, 42.50)
+ON CONFLICT DO NOTHING;
+
+-- Le Régional Masculin 1 utilise « Comité fictif » par défaut ; les autres niveaux, le barème commun.
+INSERT INTO level_default_scale (user_id, division_id, scale_id) VALUES
+  (
+    '00000000-0000-4000-8000-000000000001',
+    (SELECT id FROM division WHERE division = 'Regional' AND type = 'Masculin' AND level = '1'),
+    '00000000-0000-4000-8000-0000000000e2'
+  )
 ON CONFLICT DO NOTHING;
 
 INSERT INTO game (id, user_id, starts_at, division_id, address_id, team1_id, team2_id, referee1_id, referee2_id) VALUES
@@ -75,13 +76,13 @@ INSERT INTO game (id, user_id, starts_at, division_id, address_id, team1_id, tea
   )
 ON CONFLICT DO NOTHING;
 
-INSERT INTO compensation (id, user_id, game_id, scale_id, mileage_rate_id, distance_m) VALUES
+-- Match du 14/11/2026 : la ligne en vigueur de « Comité fictif » est celle du 01/09/2026.
+INSERT INTO compensation (id, user_id, game_id, scale_rate_id, distance_m) VALUES
   (
     '00000000-0000-4000-8000-000000000093',
     '00000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000091',
-    '00000000-0000-4000-8000-0000000000e2',
-    '00000000-0000-4000-8000-0000000000f1',
+    '00000000-0000-4000-8000-0000000000e4',
     46000
   )
 ON CONFLICT DO NOTHING;
