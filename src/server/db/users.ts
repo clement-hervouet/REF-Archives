@@ -57,6 +57,10 @@ const idRowSchema = z.object({
   id: z.uuid(),
 });
 
+const emailRowSchema = z.object({
+  email: z.string(),
+});
+
 const INSERT_USER_SQL = `INSERT INTO "user" (email, password_hash, role)
 VALUES ($1, $2, $3)
 RETURNING id, email, role`;
@@ -72,7 +76,7 @@ WHERE lower(email) = lower($1)`;
 const UPDATE_PASSWORD_HASH_SQL = `UPDATE "user"
 SET password_hash = $2
 WHERE id = $1
-RETURNING id`;
+RETURNING email`;
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === PG_UNIQUE_VIOLATION;
@@ -116,12 +120,16 @@ export async function findUserIdByEmail(db: Queryable, email: string): Promise<s
   return row === undefined ? null : idRowSchema.parse(row).id;
 }
 
-/** Remplace le hash du mot de passe. Renvoie `false` si l'utilisateur n'existe pas. */
+/**
+ * Remplace le hash du mot de passe. Renvoie l'email du compte (pour l'alerte de sécurité),
+ * ou `null` si l'utilisateur n'existe pas.
+ */
 export async function updateUserPasswordHash(
   db: Queryable,
   userId: string,
   passwordHash: string,
-): Promise<boolean> {
+): Promise<{ email: string } | null> {
   const result = await db.query(UPDATE_PASSWORD_HASH_SQL, [userId, passwordHash]);
-  return result.rows.length > 0;
+  const row = result.rows[0];
+  return row === undefined ? null : emailRowSchema.parse(row);
 }

@@ -112,6 +112,9 @@ export const fr = {
   email: {
     footer:
       "Vous recevez cet email car une action a été demandée sur REF-Archives. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
+    // Alertes de sécurité : sans lien, et jamais de demande de mot de passe (anti-hameçonnage).
+    securityFooter:
+      "Cet email est une alerte de sécurité de REF-Archives. Il ne contient aucun lien et ne vous demandera jamais votre mot de passe.",
     linkFallback: "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :",
     test: {
       subject: "Test d'envoi REF-Archives",
@@ -136,6 +139,20 @@ export const fr = {
       action: "Choisir un nouveau mot de passe",
       footer:
         "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne sera pas modifié.",
+    },
+    passwordChanged: {
+      subject: "Votre mot de passe REF-Archives a été modifié",
+      title: "Mot de passe modifié",
+      body: "Le mot de passe de votre compte REF-Archives vient d'être modifié et toutes vos sessions ont été fermées.",
+      advice:
+        "Si vous êtes à l'origine de ce changement, vous n'avez rien à faire. Sinon, utilisez « Mot de passe oublié ? » sur la page de connexion pour choisir un nouveau mot de passe, et prévenez l'administrateur.",
+    },
+    accountLocked: {
+      subject: "Connexions suspendues sur votre compte REF-Archives",
+      title: "Connexions temporairement suspendues",
+      body: "Plusieurs tentatives de connexion ont échoué sur votre compte REF-Archives. Par sécurité, les connexions sont suspendues pendant {minutes} minutes.",
+      advice:
+        "Si c'était vous, patientez avant de réessayer. Sinon, utilisez « Mot de passe oublié ? » sur la page de connexion pour choisir un nouveau mot de passe.",
     },
   },
 } as const;

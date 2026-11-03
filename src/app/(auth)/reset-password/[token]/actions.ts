@@ -2,10 +2,13 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getClientIp } from "@/server/auth/client-ip";
 import { resetPassword } from "@/server/auth/password-reset";
 import { createResetPasswordDeps } from "@/server/auth/password-reset-deps";
 import { recordSecurityEvent } from "@/server/auth/record-security-event";
+import { sendEmail } from "@/server/email/mailer";
+import { sendPasswordChangedAlert } from "@/server/email/security-alert-email";
 
 export type ResetPasswordFormState =
   | { status: "idle" }
@@ -52,7 +55,20 @@ export async function resetPasswordAction(
       break;
   }
 
-  await recordSecurityEvent({ type: "password_reset_completed", userId: result.userId, ip });
+  const { userId, email } = result;
+  // L'alerte part après la réponse : un échec SMTP ne doit ni retarder ni faire échouer le reset.
+  after(async () => {
+    await sendPasswordChangedAlert(
+      {
+        send: sendEmail,
+        onError: (errorName) => {
+          console.error(`[alerte] email non envoyé (${errorName})`);
+        },
+      },
+      { email },
+    );
+  });
+  await recordSecurityEvent({ type: "password_reset_completed", userId, ip });
   // Toutes les sessions sont révoquées : on repart de la page de connexion.
   redirect("/login?reset=1");
 }

@@ -6,8 +6,10 @@ import { deleteRateLimit, lockRateLimits, saveRateLimit } from "../db/rate-limit
 import { createSession } from "../db/sessions";
 import { findUserCredentialsByEmail } from "../db/users";
 import type { Queryable } from "../db/users";
+import { sendEmail } from "../email/mailer";
+import { sendAccountLockedAlert } from "../email/security-alert-email";
+import type { AccountBlockedEvent, LoginDeps } from "./login";
 import { verifyAgainstDummyHash, verifyPassword } from "./password";
-import type { LoginDeps } from "./login";
 import { admitAttempt } from "./rate-limit";
 import type { AttemptDecision, RateLimitStore } from "./rate-limit";
 
@@ -26,6 +28,22 @@ export function admitAttemptInTransaction(keys: string[], now: Date): Promise<At
   return withTransaction((transaction) => admitAttempt(storeFor(transaction), keys, now));
 }
 
+/**
+ * Envoie l'alerte « connexions suspendues » sans être attendue : `sendAccountLockedAlert`
+ * ne rejette jamais, et la réponse de connexion ne dépend donc pas de l'envoi.
+ */
+function alertAccountBlocked({ email, retryAfterSeconds }: AccountBlockedEvent): void {
+  void sendAccountLockedAlert(
+    {
+      send: sendEmail,
+      onError: (errorName) => {
+        console.error(`[alerte] email non envoyé (${errorName})`);
+      },
+    },
+    { email, minutes: Math.max(1, Math.ceil(retryAfterSeconds / 60)) },
+  );
+}
+
 export function createLoginDeps(): LoginDeps {
   const db = getDb();
   return {
@@ -36,5 +54,6 @@ export function createLoginDeps(): LoginDeps {
     clearAttempts: (key) => deleteRateLimit(db, key),
     createSession: (userId) => createSession(db, userId),
     now: () => new Date(),
+    onAccountBlocked: alertAccountBlocked,
   };
 }
