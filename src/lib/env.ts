@@ -1,11 +1,49 @@
 import { z } from "zod";
 import { ConfigError } from "@/lib/errors";
 
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]),
-  DATABASE_URL: z.url(),
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET doit faire au moins 32 caractères"),
-});
+/** Une variable optionnelle laissée vide (`SMTP_USER=`) est traitée comme absente. */
+const optionalString = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]),
+    DATABASE_URL: z.url(),
+    AUTH_SECRET: z.string().min(32, "AUTH_SECRET doit faire au moins 32 caractères"),
+
+    // URL publique de l'app : base des liens envoyés par email (jamais déduite de l'en-tête Host).
+    APP_URL: z.url({ protocol: /^https?$/ }).transform((url) => url.replace(/\/+$/, "")),
+
+    // SMTP (CLAUDE.md §3.1, §9) : relais configurable, aucun fournisseur imposé.
+    SMTP_HOST: z.string().min(1),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535),
+    // true = TLS implicite (port 465) ; false = STARTTLS ou relais local.
+    SMTP_SECURE: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    SMTP_USER: optionalString,
+    SMTP_PASSWORD: optionalString,
+    EMAIL_FROM: z
+      .string()
+      .min(3)
+      .max(254)
+      .regex(/^[^\r\n]+@[^\r\n]+$/, "doit contenir une adresse email et aucun saut de ligne"),
+  })
+  .refine((env) => env.SMTP_USER === undefined || env.SMTP_PASSWORD !== undefined, {
+    message: "obligatoire quand SMTP_USER est défini",
+    path: ["SMTP_PASSWORD"],
+  })
+  .refine((env) => env.SMTP_PASSWORD === undefined || env.SMTP_USER !== undefined, {
+    message: "obligatoire quand SMTP_PASSWORD est défini",
+    path: ["SMTP_USER"],
+  })
+  .refine((env) => env.NODE_ENV !== "production" || env.APP_URL.startsWith("https://"), {
+    message: "doit commencer par https:// en production",
+    path: ["APP_URL"],
+  });
 
 export type Env = z.infer<typeof EnvSchema>;
 

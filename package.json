@@ -18,12 +18,14 @@
     "db:migrate": "node --env-file=.env.local --experimental-strip-types scripts/db.mts migrate",
     "db:seed": "node --env-file=.env.local --experimental-strip-types scripts/db.mts seed",
     "db:reset": "node --env-file=.env.local --experimental-strip-types scripts/db.mts reset",
-    "admin:create": "node --env-file=.env.local scripts/admin-create.mts"
+    "admin:create": "node --env-file=.env.local scripts/admin-create.mts",
+    "email:test": "node --env-file=.env.local scripts/email-test.mts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
     "next": "16.4.3",
     "next-auth": "5.0.0-beta.32",
+    "nodemailer": "10.3.1",
     "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^22",
+    "@types/nodemailer": "8.0.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

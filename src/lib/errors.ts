@@ -17,3 +17,13 @@ export class UnauthorizedError extends AppError {
 export class ForbiddenError extends AppError {
   override readonly name = "ForbiddenError";
 }
+
+/** Données invalides passées à une fonction interne (erreur de programmation, pas de saisie utilisateur). */
+export class ValidationError extends AppError {
+  override readonly name = "ValidationError";
+}
+
+/** Échec d'envoi d'un email. L'erreur d'origine est conservée dans `cause`, jamais exposée au client. */
+export class EmailDeliveryError extends AppError {
+  override readonly name = "EmailDeliveryError";
+}
