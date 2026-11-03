@@ -53,6 +53,10 @@ const credentialsRowSchema = z.object({
   password_hash: z.string(),
 });
 
+const idRowSchema = z.object({
+  id: z.uuid(),
+});
+
 const INSERT_USER_SQL = `INSERT INTO "user" (email, password_hash, role)
 VALUES ($1, $2, $3)
 RETURNING id, email, role`;
@@ -61,6 +65,14 @@ RETURNING id, email, role`;
 const FIND_CREDENTIALS_SQL = `SELECT id, password_hash
 FROM "user"
 WHERE lower(email) = lower($1)`;
+
+const FIND_ID_BY_EMAIL_SQL = `SELECT id FROM "user"
+WHERE lower(email) = lower($1)`;
+
+const UPDATE_PASSWORD_HASH_SQL = `UPDATE "user"
+SET password_hash = $2
+WHERE id = $1
+RETURNING id`;
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === PG_UNIQUE_VIOLATION;
@@ -95,4 +107,21 @@ export async function findUserCredentialsByEmail(
   }
   const parsed = credentialsRowSchema.parse(row);
   return { userId: parsed.id, passwordHash: parsed.password_hash };
+}
+
+/** Retrouve l'identifiant d'un utilisateur par son email, ou `null` (sans lire le hash). */
+export async function findUserIdByEmail(db: Queryable, email: string): Promise<string | null> {
+  const result = await db.query(FIND_ID_BY_EMAIL_SQL, [email]);
+  const row = result.rows[0];
+  return row === undefined ? null : idRowSchema.parse(row).id;
+}
+
+/** Remplace le hash du mot de passe. Renvoie `false` si l'utilisateur n'existe pas. */
+export async function updateUserPasswordHash(
+  db: Queryable,
+  userId: string,
+  passwordHash: string,
+): Promise<boolean> {
+  const result = await db.query(UPDATE_PASSWORD_HASH_SQL, [userId, passwordHash]);
+  return result.rows.length > 0;
 }

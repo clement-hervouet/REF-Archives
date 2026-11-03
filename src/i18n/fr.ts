@@ -13,6 +13,8 @@ export const fr = {
       password: "Mot de passe",
       submit: "Se connecter",
       submitting: "Connexion en cours…",
+      forgotPassword: "Mot de passe oublié ?",
+      passwordResetDone: "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
     },
     logout: "Se déconnecter",
     signedInAs: "Connecté en tant que {email}",
@@ -41,6 +43,37 @@ export const fr = {
     invalid: "Ce lien d'invitation n'est pas valide ou a expiré. Demandez-en un nouveau.",
     errors: {
       mismatch: "Les deux mots de passe ne correspondent pas.",
+    },
+  },
+  forgotPassword: {
+    title: "Mot de passe oublié",
+    intro:
+      "Saisissez l'adresse email de votre compte. Si elle correspond à un compte, vous recevrez un lien pour choisir un nouveau mot de passe.",
+    email: "Adresse email",
+    submit: "Envoyer le lien",
+    submitting: "Envoi en cours…",
+    // Identique que le compte existe ou non (§6.1).
+    requested:
+      "Si un compte existe avec l'adresse {email}, un email contenant un lien de réinitialisation vient d'être envoyé. Le lien est valable {minutes} minutes.",
+    backToLogin: "Retour à la connexion",
+    errors: {
+      invalidEmail: "Cette adresse email n'est pas valide.",
+      rateLimited: "Trop de demandes. Réessayez dans {minutes} min.",
+    },
+  },
+  resetPassword: {
+    title: "Nouveau mot de passe",
+    intro: "Choisissez un nouveau mot de passe. Vous serez déconnecté de tous vos appareils.",
+    password: "Nouveau mot de passe",
+    confirmation: "Confirmer le mot de passe",
+    submit: "Changer mon mot de passe",
+    submitting: "Modification en cours…",
+    // Identique que le lien soit inconnu, expiré ou déjà utilisé (§6.1).
+    invalid: "Ce lien de réinitialisation n'est pas valide ou a expiré.",
+    requestNew: "Demander un nouveau lien",
+    errors: {
+      mismatch: "Les deux mots de passe ne correspondent pas.",
+      rateLimited: "Trop de tentatives. Réessayez dans {minutes} min.",
     },
   },
   admin: {
@@ -94,6 +127,15 @@ export const fr = {
       action: "Créer mon compte",
       footer:
         "Vous recevez cet email car un administrateur de REF-Archives a saisi votre adresse. Si vous ne souhaitez pas créer de compte, ignorez ce message : le lien expirera de lui-même.",
+    },
+    passwordReset: {
+      subject: "Réinitialisation de votre mot de passe REF-Archives",
+      title: "Réinitialiser votre mot de passe",
+      body: "Une réinitialisation du mot de passe de votre compte REF-Archives a été demandée.",
+      validity: "Ce lien est valable {minutes} minutes et ne peut être utilisé qu'une seule fois.",
+      action: "Choisir un nouveau mot de passe",
+      footer:
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne sera pas modifié.",
     },
   },
 } as const;
