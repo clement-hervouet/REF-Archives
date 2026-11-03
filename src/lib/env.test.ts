@@ -6,6 +6,10 @@ const valid = {
   NODE_ENV: "test",
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   AUTH_SECRET: "a".repeat(32),
+  APP_URL: "http://localhost:3000",
+  SMTP_HOST: "localhost",
+  SMTP_PORT: "25",
+  EMAIL_FROM: "REF-Archives <no-reply@example.com>",
 };
 
 /** Retourne le message de l'erreur levée par `fn`, ou "" si rien n'est levé. */

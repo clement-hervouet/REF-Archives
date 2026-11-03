@@ -72,4 +72,15 @@ export const fr = {
       },
     },
   },
+  email: {
+    footer:
+      "Vous recevez cet email car une action a été demandée sur REF-Archives. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
+    linkFallback: "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :",
+    test: {
+      subject: "Test d'envoi REF-Archives",
+      title: "Test d'envoi",
+      body: "Si vous lisez ce message, la configuration SMTP de REF-Archives fonctionne.",
+      action: "Ouvrir REF-Archives",
+    },
+  },
 } as const;
