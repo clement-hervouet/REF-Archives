@@ -3,14 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { getEnv } from "@/lib/env";
 import { emailSchema } from "@/lib/schemas/auth";
 import { getClientIp } from "@/server/auth/client-ip";
 import { createInvitationDeps } from "@/server/auth/invitation-deps";
 import { createInvitationForEmail } from "@/server/auth/invitations";
+import { admitAttemptInTransaction } from "@/server/auth/login-deps";
 import { recordSecurityEvent } from "@/server/auth/record-security-event";
 import { requireAdmin } from "@/server/auth/session";
 import { revokeInvitation } from "@/server/db/invitations";
 import { getDb } from "@/server/db/pool";
+import { invitationPath, sendInvitationEmail } from "@/server/email/invitation-email";
+import { sendEmail } from "@/server/email/mailer";
+import { emailSendKeys } from "@/server/email/send-limit";
 
 const INVITATIONS_PATH = "/admin/invitations";
 
@@ -18,6 +23,7 @@ export type CreateInvitationFormState =
   | { status: "idle" }
   | { status: "invalid_email" }
   | { status: "email_taken" }
+  | { status: "rate_limited"; retryAfterSeconds: number }
   | {
       status: "created";
       email: string;
@@ -25,9 +31,14 @@ export type CreateInvitationFormState =
       path: string;
       /** Date ISO (UTC) : mise en forme côté affichage. */
       expiresAt: string;
+      /** `false` si l'email n'a pas pu partir : l'admin transmet alors le lien lui-même. */
+      emailSent: boolean;
     };
 
-/** Crée une invitation. Réservé aux administrateurs. Le jeton n'est renvoyé qu'ici, une seule fois. */
+/**
+ * Crée une invitation et l'envoie par email. Réservé aux administrateurs.
+ * Le jeton n'est renvoyé qu'ici, une seule fois.
+ */
 export async function createInvitationAction(
   _previous: CreateInvitationFormState,
   formData: FormData,
@@ -39,6 +50,13 @@ export async function createInvitationAction(
     return { status: "invalid_email" };
   }
 
+  // Limite d'envois (§6.6), AVANT la création : un refus n'a aucun effet de bord.
+  const ip = getClientIp(await headers());
+  const admission = await admitAttemptInTransaction(emailSendKeys(admin.id, ip), new Date());
+  if (!admission.admitted) {
+    return { status: "rate_limited", retryAfterSeconds: admission.retryAfterSeconds };
+  }
+
   const result = await createInvitationForEmail(createInvitationDeps(), {
     email: email.data,
     invitedBy: admin.id,
@@ -47,17 +65,29 @@ export async function createInvitationAction(
     return { status: "email_taken" };
   }
 
+  const emailSent = await sendInvitationEmail(
+    {
+      send: sendEmail,
+      appUrl: getEnv().APP_URL,
+      onError: (errorName) => {
+        console.error(`[invitation] email non envoyé (${errorName})`);
+      },
+    },
+    { email: email.data, token: result.token },
+  );
+
   await recordSecurityEvent({
     type: "invitation_created",
     userId: admin.id,
-    ip: getClientIp(await headers()),
+    ip,
   });
   revalidatePath(INVITATIONS_PATH);
   return {
     status: "created",
     email: email.data,
-    path: `/invitation/${result.token}`,
+    path: invitationPath(result.token),
     expiresAt: result.expiresAt.toISOString(),
+    emailSent,
   };
 }
 

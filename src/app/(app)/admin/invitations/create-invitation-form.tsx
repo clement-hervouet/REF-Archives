@@ -15,6 +15,11 @@ function errorMessage(state: CreateInvitationFormState): string | null {
       return t.errors.invalidEmail;
     case "email_taken":
       return t.errors.emailTaken;
+    case "rate_limited":
+      return t.errors.rateLimited.replace(
+        "{minutes}",
+        String(Math.ceil(state.retryAfterSeconds / 60)),
+      );
     case "idle":
     case "created":
       return null;
@@ -100,7 +105,12 @@ export function CreateInvitationForm() {
 
       {state.status === "created" && (
         <div role="status" className="flex flex-col gap-3 rounded-md border border-neutral-400 p-4">
-          <p>{t.created.replace("{email}", state.email)}</p>
+          <p>
+            {(state.emailSent ? t.createdAndSent : t.createdNotSent).replace(
+              "{email}",
+              state.email,
+            )}
+          </p>
           {/* `window` n'est lu qu'ici : cet état n'existe qu'après une action, côté navigateur. */}
           <CopyableLink url={`${window.location.origin}${state.path}`} />
           <p className="text-sm text-neutral-700">
