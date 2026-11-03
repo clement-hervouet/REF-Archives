@@ -6,6 +6,13 @@ import { loginKeys } from "./rate-limit";
 import type { AttemptDecision } from "./rate-limit";
 import type { UserCredentials } from "../db/users";
 
+/** Un compte existant vient d'être bloqué par une tentative de connexion ratée. */
+export type AccountBlockedEvent = {
+  /** Email normalisé du compte (celui de la tentative, qui correspond à un compte existant). */
+  email: string;
+  retryAfterSeconds: number;
+};
+
 export type LoginDeps = {
   admitAttempt: (keys: string[], now: Date) => Promise<AttemptDecision>;
   findCredentials: (email: string) => Promise<UserCredentials | null>;
@@ -14,6 +21,11 @@ export type LoginDeps = {
   clearAttempts: (key: string) => Promise<void>;
   createSession: (userId: string) => Promise<{ id: string }>;
   now: () => Date;
+  /**
+   * Alerte de sécurité (§9). Appelée sans être attendue : l'implémentation ne doit ni
+   * lever d'erreur ni bloquer, pour que la réponse ne dépende pas de l'existence du compte.
+   */
+  onAccountBlocked?: (event: AccountBlockedEvent) => void;
 };
 
 export type LoginAttempt = {
@@ -42,6 +54,9 @@ export async function authenticate(deps: LoginDeps, attempt: LoginAttempt): Prom
     return { status: "rate_limited", retryAfterSeconds: decision.retryAfterSeconds };
   }
 
+  // Cette tentative vient-elle de faire basculer le compte en blocage ?
+  const accountBlock = decision.newlyBlocked?.find((entry) => entry.key === accountKey);
+
   const credentials = await deps.findCredentials(attempt.email);
   const passwordIsValid =
     credentials === null
@@ -49,6 +64,15 @@ export async function authenticate(deps: LoginDeps, attempt: LoginAttempt): Prom
       : await deps.verifyPassword(credentials.passwordHash, attempt.password);
 
   if (credentials === null || !passwordIsValid) {
+    // Alerte seulement si l'échec a déclenché le blocage ET si le compte existe : jamais
+    // d'email vers une adresse inconnue. Un succès, lui, efface le blocage (plus bas) :
+    // aucune alerte dans ce cas.
+    if (credentials !== null && accountBlock !== undefined) {
+      deps.onAccountBlocked?.({
+        email: attempt.email,
+        retryAfterSeconds: accountBlock.retryAfterSeconds,
+      });
+    }
     return { status: "invalid_credentials" };
   }
 

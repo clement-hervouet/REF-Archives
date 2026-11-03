@@ -15,8 +15,15 @@ export type RateLimitStore = {
   save: (key: string, state: RateLimitState) => Promise<void>;
 };
 
+/** Clé dont le blocage vient de commencer, avec la durée de ce blocage. */
+export type BlockedKey = {
+  key: string;
+  retryAfterSeconds: number;
+};
+
 export type AttemptDecision =
-  | { admitted: true }
+  /** `newlyBlocked` n'est présent que si cette tentative a déclenché un blocage. */
+  | { admitted: true; newlyBlocked?: BlockedKey[] }
   | { admitted: false; retryAfterSeconds: number };
 
 export type LoginKeys = {
@@ -43,7 +50,7 @@ export function loginKeys(ip: string, email: string): LoginKeys {
 /**
  * Décide si la tentative est admise. Si une des clés est bloquée, rien n'est
  * incrémenté (une tentative refusée ne prolonge pas le blocage). Sinon, chaque
- * clé compte la tentative.
+ * clé compte la tentative, et celles que cette tentative vient de bloquer sont signalées.
  */
 export async function admitAttempt(
   store: RateLimitStore,
@@ -60,8 +67,16 @@ export async function admitAttempt(
     return { admitted: false, retryAfterSeconds };
   }
 
+  const newlyBlocked: BlockedKey[] = [];
   for (const key of keys) {
-    await store.save(key, recordFailure(states.get(key) ?? null, now));
+    const next = recordFailure(states.get(key) ?? null, now);
+    await store.save(key, next);
+    // Aucune clé n'était bloquée avant (sinon on serait sorti plus haut) : un blocage actif
+    // dans le nouvel état vient donc de cette tentative.
+    const blockedFor = getRetryAfterSeconds(next, now);
+    if (blockedFor > 0) {
+      newlyBlocked.push({ key, retryAfterSeconds: blockedFor });
+    }
   }
-  return { admitted: true };
+  return newlyBlocked.length === 0 ? { admitted: true } : { admitted: true, newlyBlocked };
 }
