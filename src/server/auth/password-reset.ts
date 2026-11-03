@@ -96,7 +96,8 @@ export type ResetPasswordInput = {
 };
 
 export type ResetPasswordResult =
-  | { status: "reset"; userId: string }
+  /** `email` sert à l'alerte de sécurité « mot de passe modifié ». */
+  | { status: "reset"; userId: string; email: string }
   // Lien inconnu, expiré ou déjà utilisé : volontairement indiscernables (§6.1).
   | { status: "invalid_link" }
   | { status: "invalid_password"; issues: string[] }
@@ -121,14 +122,15 @@ async function consumeReset(
     return { status: "invalid_link" };
   }
   const passwordHash = await deps.hashPassword(password);
-  if (!(await updateUserPasswordHash(db, reset.userId, passwordHash))) {
+  const account = await updateUserPasswordHash(db, reset.userId, passwordHash);
+  if (account === null) {
     return { status: "invalid_link" };
   }
   // D'éventuels autres jetons du compte (demandes simultanées) n'ont plus lieu d'être.
   await deletePendingPasswordResets(db, reset.userId);
   // Changement de mot de passe : toutes les sessions sont invalidées (§6.1).
   await revokeAllUserSessions(db, reset.userId, null);
-  return { status: "reset", userId: reset.userId };
+  return { status: "reset", userId: reset.userId, email: account.email };
 }
 
 /**

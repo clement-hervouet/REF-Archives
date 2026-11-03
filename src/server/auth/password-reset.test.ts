@@ -141,7 +141,7 @@ describe("resetPassword", () => {
   const success: Scenario = {
     lock_reset: [{ id: RESET_ID, user_id: USER_ID, expires_at: EXPIRES }],
     mark_used: [{ id: RESET_ID }],
-    update_password: [{ id: USER_ID }],
+    update_password: [{ email: EMAIL }],
   };
 
   it("refuse un jeton mal formé avant tout accès à la base", async () => {
@@ -199,7 +199,7 @@ describe("resetPassword", () => {
   it("change le mot de passe, purge les autres jetons et révoque toutes les sessions", async () => {
     const { deps, calls } = build(success);
     const result = await resetPassword(deps, { token: TOKEN, password: PASSWORD, ip: IP });
-    expect(result).toEqual({ status: "reset", userId: USER_ID });
+    expect(result).toEqual({ status: "reset", userId: USER_ID, email: EMAIL });
     expect(kinds(calls)).toEqual([
       "lock_reset",
       "mark_used",
@@ -207,6 +207,16 @@ describe("resetPassword", () => {
       "delete_resets",
       "revoke_sessions",
     ]);
+  });
+
+  it("renvoie invalid_link si le compte n'existe plus au moment du changement", async () => {
+    const { deps, calls } = build({
+      lock_reset: success.lock_reset ?? [],
+      mark_used: success.mark_used ?? [],
+    });
+    const result = await resetPassword(deps, { token: TOKEN, password: PASSWORD, ip: IP });
+    expect(result).toEqual({ status: "invalid_link" });
+    expect(kinds(calls)).toEqual(["lock_reset", "mark_used", "update_password"]);
   });
 
   it("n'écrit en base que le hash, jamais le mot de passe en clair", async () => {

@@ -1,0 +1,81 @@
+import { describe, expect, it } from "vitest";
+import { EmailDeliveryError } from "@/lib/errors";
+import type { EmailMessage } from "@/lib/schemas/email";
+import {
+  buildAccountLockedEmail,
+  buildPasswordChangedEmail,
+  sendAccountLockedAlert,
+  sendPasswordChangedAlert,
+} from "./security-alert-email";
+
+const EMAIL = "arbitre@example.com";
+
+function recorder(): { sent: EmailMessage[]; send: (message: EmailMessage) => Promise<void> } {
+  const sent: EmailMessage[] = [];
+  return {
+    sent,
+    send: (message) => {
+      sent.push(message);
+      return Promise.resolve();
+    },
+  };
+}
+
+describe("buildPasswordChangedEmail", () => {
+  it("cible le compte avec un sujet fixe", () => {
+    const message = buildPasswordChangedEmail({ email: EMAIL });
+    expect(message.to).toBe(EMAIL);
+    expect(message.subject).toBe("Votre mot de passe REF-Archives a été modifié");
+  });
+
+  it("indique que les sessions ont été fermées et renvoie vers « Mot de passe oublié ? »", () => {
+    const { text } = buildPasswordChangedEmail({ email: EMAIL });
+    expect(text).toContain("sessions");
+    expect(text).toContain("Mot de passe oublié ?");
+  });
+
+  it("ne contient aucun lien (anti-hameçonnage, §6.6)", () => {
+    const message = buildPasswordChangedEmail({ email: EMAIL });
+    expect(message.text).not.toContain("http");
+    expect(message.html).not.toContain("<a ");
+  });
+});
+
+describe("buildAccountLockedEmail", () => {
+  it("cible le compte avec un sujet fixe", () => {
+    const message = buildAccountLockedEmail({ email: EMAIL, minutes: 15 });
+    expect(message.to).toBe(EMAIL);
+    expect(message.subject).toBe("Connexions suspendues sur votre compte REF-Archives");
+  });
+
+  it("indique la durée de la suspension", () => {
+    expect(buildAccountLockedEmail({ email: EMAIL, minutes: 30 }).text).toContain("30 minutes");
+  });
+
+  it("ne contient aucun lien ni adresse IP", () => {
+    const message = buildAccountLockedEmail({ email: EMAIL, minutes: 15 });
+    expect(message.text).not.toContain("http");
+    expect(message.html).not.toContain("<a ");
+  });
+});
+
+describe("sendPasswordChangedAlert / sendAccountLockedAlert", () => {
+  it("envoient l'alerte et renvoient true", async () => {
+    const { sent, send } = recorder();
+    const deps = { send, onError: () => undefined };
+    expect(await sendPasswordChangedAlert(deps, { email: EMAIL })).toBe(true);
+    expect(await sendAccountLockedAlert(deps, { email: EMAIL, minutes: 15 })).toBe(true);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("renvoient false sans lever d'erreur si l'envoi échoue, et ne transmettent que le nom de l'erreur", async () => {
+    const errors: string[] = [];
+    const deps = {
+      send: () => Promise.reject(new EmailDeliveryError("arbitre@example.com")),
+      onError: (name: string) => errors.push(name),
+    };
+    expect(await sendPasswordChangedAlert(deps, { email: EMAIL })).toBe(false);
+    expect(await sendAccountLockedAlert(deps, { email: EMAIL, minutes: 15 })).toBe(false);
+    expect(errors).toEqual(["EmailDeliveryError", "EmailDeliveryError"]);
+  });
+});
