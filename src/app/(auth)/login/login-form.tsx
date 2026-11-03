@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { fr } from "@/i18n/fr";
 import { login } from "./actions";
@@ -67,6 +68,12 @@ export function LoginForm() {
       >
         {isPending ? fr.auth.login.submitting : fr.auth.login.submit}
       </button>
+      <Link
+        href="/forgot-password"
+        className="inline-flex min-h-11 items-center self-start text-sm underline"
+      >
+        {fr.auth.login.forgotPassword}
+      </Link>
     </form>
   );
 }

@@ -12,6 +12,8 @@ export const securityEventTypeSchema = z.enum([
   "invitation_revoked",
   "invitation_accepted",
   "invitation_rejected",
+  "password_reset_requested",
+  "password_reset_completed",
 ]);
 export type SecurityEventType = z.infer<typeof securityEventTypeSchema>;
 

@@ -7,6 +7,8 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: fr.auth.login.title };
 
+type LoginPageProps = { searchParams: Promise<{ reset?: string | string[] }> };
+
 /**
  * Un visiteur déjà connecté n'a rien à faire ici. C'est la page qui redirige (après
  * vérification en base), pas le proxy : un cookie périmé provoquerait une boucle.
@@ -20,13 +22,29 @@ async function RedirectIfSignedIn() {
   return null;
 }
 
-export default function LoginPage() {
+/** Confirmation affichée après un reset réussi (`/login?reset=1`). */
+async function ResetNotice({ searchParams }: LoginPageProps) {
+  const { reset } = await searchParams;
+  if (reset !== "1") {
+    return null;
+  }
+  return (
+    <p role="status" className="rounded-md border border-neutral-400 p-3 text-sm">
+      {fr.auth.login.passwordResetDone}
+    </p>
+  );
+}
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
       <Suspense fallback={null}>
         <RedirectIfSignedIn />
       </Suspense>
       <h1 className="text-2xl font-semibold">{fr.auth.login.title}</h1>
+      <Suspense fallback={null}>
+        <ResetNotice searchParams={searchParams} />
+      </Suspense>
       <LoginForm />
     </main>
   );
