@@ -47,11 +47,14 @@ export const fr = {
     invitations: {
       title: "Invitations",
       intro:
-        "Invitez une personne à créer un compte. Le lien est valable 72 heures et n'est affiché qu'une seule fois.",
+        "Invitez une personne à créer un compte : elle reçoit le lien par email. Le lien est valable 72 heures et n'est affiché ici qu'une seule fois.",
       email: "Adresse email de la personne invitée",
       submit: "Créer l'invitation",
       submitting: "Création en cours…",
-      created: "Invitation créée pour {email}. Transmettez-lui ce lien :",
+      createdAndSent:
+        "Invitation créée et envoyée à {email}. Vous pouvez aussi lui transmettre ce lien :",
+      createdNotSent:
+        "Invitation créée pour {email}, mais l'email n'a pas pu être envoyé. Transmettez-lui ce lien :",
       linkLabel: "Lien d'invitation",
       copy: "Copier le lien",
       copied: "Lien copié",
@@ -69,6 +72,7 @@ export const fr = {
       errors: {
         invalidEmail: "Cette adresse email n'est pas valide.",
         emailTaken: "Un compte existe déjà avec cette adresse.",
+        rateLimited: "Trop d'invitations envoyées. Réessayez dans {minutes} min.",
       },
     },
   },
@@ -81,6 +85,15 @@ export const fr = {
       title: "Test d'envoi",
       body: "Si vous lisez ce message, la configuration SMTP de REF-Archives fonctionne.",
       action: "Ouvrir REF-Archives",
+    },
+    invitation: {
+      subject: "Invitation à rejoindre REF-Archives",
+      title: "Vous êtes invité sur REF-Archives",
+      body: "Un administrateur vous invite à créer votre compte sur REF-Archives.",
+      validity: "Ce lien est valable {hours} heures et ne peut être utilisé qu'une seule fois.",
+      action: "Créer mon compte",
+      footer:
+        "Vous recevez cet email car un administrateur de REF-Archives a saisi votre adresse. Si vous ne souhaitez pas créer de compte, ignorez ce message : le lien expirera de lui-même.",
     },
   },
 } as const;
