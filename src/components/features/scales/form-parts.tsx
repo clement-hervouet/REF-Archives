@@ -1,6 +1,6 @@
 /**
- * Éléments de formulaire partagés par les barèmes : champ avec libellé, aide et erreur
- * reliées (§7.4), et message de résultat. Sans état : utilisables partout.
+ * Éléments de formulaire partagés (barèmes, indemnités) : champ avec libellé, aide et
+ * erreur reliées (§7.4), et message de résultat. Sans état : utilisables partout.
  */
 import type { ScaleMessage } from "./scale-messages";
 
@@ -18,9 +18,11 @@ type TextFieldProps = {
   defaultValue: string;
   error: string | null;
   hint?: string;
-  type?: "text" | "date";
+  type?: "text" | "date" | "time";
   inputMode?: "decimal";
   maxLength?: number;
+  /** Champ obligatoire (par défaut). */
+  required?: boolean;
 };
 
 export function TextField({
@@ -33,6 +35,7 @@ export function TextField({
   type = "text",
   inputMode,
   maxLength,
+  required = true,
 }: TextFieldProps) {
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -52,7 +55,7 @@ export function TextField({
         inputMode={inputMode}
         maxLength={maxLength}
         defaultValue={defaultValue}
-        required
+        required={required}
         autoComplete="off"
         aria-invalid={error !== null}
         aria-describedby={describedBy === "" ? undefined : describedBy}

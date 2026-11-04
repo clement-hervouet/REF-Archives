@@ -27,6 +27,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {fr.app.name}
         </Link>
         <nav className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/indemnites/nouvelle"
+            className="inline-flex min-h-11 items-center px-3 underline"
+          >
+            {fr.nav.newCompensation}
+          </Link>
           <Link href="/baremes" className="inline-flex min-h-11 items-center px-3 underline">
             {fr.nav.scales}
           </Link>

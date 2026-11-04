@@ -109,6 +109,20 @@ export const compensationFormSchema = compensationFieldsSchema
     ) {
       ctx.addIssue({ code: "custom", path: ["team2"], message: "same_club" });
     }
+    // Vérifiée ici aussi (et pas seulement dans le transform, que Zod saute dès qu'une
+    // autre erreur existe) : toutes les erreurs remontent en un seul envoi. Seulement si
+    // la date et l'heure sont valides séparément, sinon leurs propres erreurs suffisent.
+    if (!isIsoDate(value.date) || !isTimeOfDay(value.time)) {
+      return;
+    }
+    try {
+      parisLocalToUtc(value.date, value.time);
+    } catch (error) {
+      if (!(error instanceof ValidationError)) {
+        throw error;
+      }
+      ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
+    }
   })
   .transform((value, ctx) => {
     let startsAt: Date;

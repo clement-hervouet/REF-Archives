@@ -124,6 +124,16 @@ describe("compensationFormSchema", () => {
     expect(errorPaths({ date: "2026-03-29", time: "02:30" })).toEqual(["time"]);
   });
 
+  it("signale l'heure inexistante en même temps qu'une autre erreur", () => {
+    expect(
+      errorPaths({
+        date: "2026-03-29",
+        time: "02:30",
+        team2: { kind: "existing", clubId: CLUB_A },
+      }),
+    ).toEqual(["team2", "time"]);
+  });
+
   it("refuse une date hors bornes ou invalide", () => {
     expect(errorPaths({ date: "1999-12-31" })).toEqual(["date"]);
     expect(errorPaths({ date: "2026-02-30" })).toEqual(["date"]);
