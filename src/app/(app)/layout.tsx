@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { fr } from "@/i18n/fr";
@@ -22,8 +23,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <span className="font-semibold">{fr.app.name}</span>
-        <nav className="flex items-center gap-2">
+        <Link href="/" className="inline-flex min-h-11 items-center font-semibold">
+          {fr.app.name}
+        </Link>
+        <nav className="flex flex-wrap items-center gap-2">
+          <Link href="/baremes" className="inline-flex min-h-11 items-center px-3 underline">
+            {fr.nav.scales}
+          </Link>
           <Suspense fallback={null}>
             <AdminNav />
           </Suspense>

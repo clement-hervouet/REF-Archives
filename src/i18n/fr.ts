@@ -5,6 +5,8 @@ export const fr = {
   },
   nav: {
     invitations: "Invitations",
+    scales: "Mes barèmes",
+    commonScale: "Barème commun",
   },
   auth: {
     login: {
@@ -76,7 +78,119 @@ export const fr = {
       rateLimited: "Trop de tentatives. Réessayez dans {minutes} min.",
     },
   },
+  scales: {
+    title: "Mes barèmes",
+    intro:
+      "Un barème fixe l'indemnité de match et le taux kilométrique à partir d'une date. Pour changer un montant, ajoutez une ligne avec une nouvelle date : les indemnités déjà saisies gardent l'ancienne.",
+    current: "En vigueur : {amount} · {rate}",
+    noCurrent: "Aucune ligne en vigueur aujourd'hui.",
+    common: {
+      title: "Barème commun",
+      intro:
+        "Partagé par tous et tenu à jour par l'administrateur. Il s'applique à chaque niveau pour lequel vous n'avez pas choisi de barème.",
+      empty: "Le barème commun n'a pas encore de montant : l'administrateur doit le compléter.",
+    },
+    mine: {
+      title: "Mes barèmes personnels",
+      empty: "Vous n'avez pas encore de barème personnel.",
+    },
+    create: {
+      title: "Créer un barème",
+      submit: "Créer le barème",
+      submitting: "Création en cours…",
+      created: "Barème créé.",
+    },
+    fields: {
+      name: "Nom du barème",
+      effectiveFrom: "À partir du",
+      gameAmount: "Indemnité de match (€)",
+      gameAmountHint: "Par exemple 45 ou 45,50",
+      ratePerKm: "Taux kilométrique (€/km)",
+      ratePerKmHint: "Par exemple 0,40 ou 0,425",
+    },
+    table: {
+      caption: "Historique du barème {name}",
+      effectiveFrom: "À partir du",
+      gameAmount: "Match",
+      ratePerKm: "Taux km",
+      actions: "Actions",
+      current: "En vigueur",
+      inUse: "Utilisée",
+    },
+    addRate: {
+      title: "Ajouter une ligne",
+      submit: "Ajouter la ligne",
+      submitting: "Ajout en cours…",
+      added: "Ligne ajoutée.",
+    },
+    rename: {
+      title: "Renommer",
+      label: "Nouveau nom",
+      submit: "Renommer",
+      submitting: "Enregistrement…",
+      renamed: "Barème renommé.",
+    },
+    deleteRate: {
+      submit: "Supprimer",
+      label: "Supprimer la ligne du {date}",
+      deleted: "Ligne supprimée.",
+    },
+    deleteScale: {
+      submit: "Supprimer le barème",
+      confirm: "Confirmer la suppression",
+      cancel: "Annuler",
+      warning:
+        "S'il est utilisé par une indemnité, le barème sera archivé : il ne sera plus proposé, mais l'historique sera conservé.",
+      archived: "Barème archivé : il était utilisé par une indemnité.",
+    },
+    defaults: {
+      title: "Barème par défaut par niveau",
+      intro:
+        "Choisissez le barème présélectionné quand vous saisirez une indemnité pour un niveau. Vous pourrez toujours en choisir un autre.",
+      needScale: "Créez d'abord un barème personnel pour l'associer à un niveau.",
+      common: "Barème commun",
+      label: "Barème par défaut pour {division}",
+      submit: "Enregistrer",
+      submitting: "…",
+      saved: "Enregistré",
+      customized: "{count} niveau(x) personnalisé(s)",
+    },
+    divisions: {
+      category: {
+        Departemental: "Départemental",
+        Regional: "Régional",
+        National: "National",
+        Pro: "Pro",
+      },
+      type: {
+        Masculin: "Masculin",
+        Feminin: "Féminin",
+      },
+      label: "{category} {type} {level}",
+    },
+    errors: {
+      name: "Le nom doit contenir entre 1 et 100 caractères, sur une seule ligne.",
+      effectiveFrom: "Saisissez une date valide, entre 2000 et 2100.",
+      gameAmount: "Montant invalide : saisissez par exemple 45 ou 45,50.",
+      ratePerKm: "Taux invalide : saisissez par exemple 0,40 ou 0,425.",
+      nameTaken: "Vous avez déjà un barème avec ce nom.",
+      dateTaken: "Ce barème a déjà une ligne à cette date.",
+      scaleLimit: "Vous avez atteint le nombre maximal de barèmes.",
+      rateLimit: "Ce barème a atteint le nombre maximal de lignes.",
+      notFound: "Cet élément n'existe plus. Rechargez la page.",
+      rateInUse: "Cette ligne est utilisée par une indemnité : elle ne peut pas être supprimée.",
+      lastRate: "Un barème garde toujours au moins une ligne.",
+      invalid: "Choix invalide. Rechargez la page.",
+    },
+  },
   admin: {
+    commonScale: {
+      title: "Barème commun",
+      intro:
+        "Ce barème est proposé à tous les utilisateurs et s'applique par défaut à tous les niveaux. Pour changer un montant, ajoutez une ligne avec une nouvelle date : les indemnités déjà saisies gardent l'ancienne.",
+      empty:
+        "Aucune ligne pour l'instant : ajoutez la première pour que les utilisateurs puissent saisir des indemnités.",
+    },
     invitations: {
       title: "Invitations",
       intro:
