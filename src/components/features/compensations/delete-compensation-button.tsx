@@ -1,0 +1,73 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { fr } from "@/i18n/fr";
+import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
+
+const t = fr.compensations;
+
+type Props = {
+  compensationId: string;
+  /** Date lisible du match, pour l'étiquette accessible du bouton. */
+  dateLabel: string;
+  action: (
+    previous: DeleteCompensationState,
+    formData: FormData,
+  ) => Promise<DeleteCompensationState>;
+};
+
+/** Suppression en deux temps : un premier clic demande une confirmation explicite. */
+export function DeleteCompensationButton({ compensationId, dateLabel, action }: Props) {
+  const [confirming, setConfirming] = useState(false);
+  const [state, formAction, isPending] = useActionState<DeleteCompensationState, FormData>(action, {
+    status: "idle",
+  });
+
+  if (!confirming) {
+    return (
+      <div className="flex flex-col gap-2">
+        {state.status === "not_found" && (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            {t.errors.compensationNotFound}
+          </p>
+        )}
+        <button
+          type="button"
+          aria-label={t.delete.label.replace("{date}", dateLabel)}
+          onClick={() => {
+            setConfirming(true);
+          }}
+          className={SECONDARY_BUTTON_CLASS}
+        >
+          {t.delete.submit}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-3 rounded-md border border-red-700 p-3">
+      <input type="hidden" name="compensationId" value={compensationId} />
+      <p className="text-sm">{t.delete.warning}</p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="min-h-11 rounded-md bg-red-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+        >
+          {t.delete.confirm}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setConfirming(false);
+          }}
+          className={SECONDARY_BUTTON_CLASS}
+        >
+          {t.delete.cancel}
+        </button>
+      </div>
+    </form>
+  );
+}

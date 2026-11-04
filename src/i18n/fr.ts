@@ -4,7 +4,7 @@ export const fr = {
     tagline: "Indemnités, disponibilités et notes d'arbitre.",
   },
   nav: {
-    newCompensation: "Nouvelle indemnité",
+    compensations: "Mes indemnités",
     invitations: "Invitations",
     scales: "Mes barèmes",
     commonScale: "Barème commun",
@@ -185,6 +185,52 @@ export const fr = {
     },
   },
   compensations: {
+    list: {
+      title: "Mes indemnités",
+      intro:
+        "Les montants sont recalculés avec la ligne de barème en vigueur à la date de chaque match.",
+      create: "Nouvelle indemnité",
+      empty: "Aucune indemnité pour l'instant.",
+      emptyMonth: "Aucune indemnité en {month}.",
+      monthTitle: "Indemnités de {month}",
+      matchOn: "{date} à {time}",
+      teams: "{team1} – {team2}",
+      details: "{division} · {address}",
+      scale: "Barème : {scale}",
+      amounts: "Match {game} · Kilométrage {mileage} ({distance} aller-retour)",
+      total: "Total",
+      edit: "Modifier",
+      editLabel: "Modifier l'indemnité du {date}",
+    },
+    totals: {
+      title: "Totaux par mois",
+      caption: "Totaux des indemnités par mois",
+      month: "Mois",
+      count: "Matchs",
+      game: "Matchs (€)",
+      mileage: "Kilométrage (€)",
+      total: "Total",
+      show: "Voir {month}",
+      current: "affiché",
+    },
+    edit: {
+      title: "Modifier l'indemnité",
+      intro: "Changer la date du match peut changer la ligne de barème appliquée, donc le montant.",
+      submit: "Enregistrer les modifications",
+      submitting: "Enregistrement…",
+      updated: "Indemnité modifiée : {total} (match {game} + kilométrage {mileage}).",
+      back: "Retour à mes indemnités",
+      archivedScale:
+        "Le barème de cette indemnité a été supprimé : choisissez-en un autre pour l'enregistrer.",
+    },
+    delete: {
+      submit: "Supprimer",
+      label: "Supprimer l'indemnité du {date}",
+      warning: "L'indemnité sera retirée de la liste et des totaux.",
+      confirm: "Confirmer la suppression",
+      cancel: "Annuler",
+      deleted: "Indemnité supprimée.",
+    },
     new: {
       title: "Nouvelle indemnité",
       intro:
@@ -246,6 +292,7 @@ export const fr = {
         "Le barème choisi n'a aucun montant en vigueur à la date du match. Choisissez-en un autre, ou ajoutez une ligne dans Mes barèmes.",
       clubLimit: "Vous avez atteint le nombre maximal de clubs.",
       compensationLimit: "Vous avez atteint le nombre maximal d'indemnités.",
+      compensationNotFound: "Cette indemnité n'existe plus. Revenez à la liste.",
     },
   },
   admin: {

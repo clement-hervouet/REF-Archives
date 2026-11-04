@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "../db/fake-db";
 import type { Queryable } from "../db/users";
 import {
+  compensationFormValues,
   fieldOfIssuePath,
   handleCreateCompensation,
+  handleDeleteCompensation,
+  handleUpdateCompensation,
   readCompensationFormData,
 } from "./compensation-form";
 import type { CompensationDeps } from "./create-compensation";
@@ -200,6 +203,133 @@ describe("handleCreateCompensation", () => {
     expect(await handleCreateCompensation(deps, USER_ID, form(BASE))).toEqual({
       status: "not_found",
       field: "divisionId",
+    });
+  });
+});
+
+describe("handleUpdateCompensation", () => {
+  it("refuse un identifiant d'indemnité invalide sans requête", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleUpdateCompensation(deps, USER_ID, form({ ...BASE, compensationId: "1" })),
+    ).toEqual({ status: "not_found", field: "compensation" });
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("valide le formulaire avant toute requête", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleUpdateCompensation(
+        deps,
+        USER_ID,
+        form({ ...BASE, compensationId: COMPENSATION_ID, oneWayDistance: "x" }),
+      ),
+    ).toEqual({ status: "invalid", fields: ["oneWayDistance"] });
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("modifie l'indemnité de l'utilisateur", async () => {
+    const { deps, query } = setup();
+    for (const rows of [
+      [{ id: COMPENSATION_ID }],
+      [{ id: DIVISION_ID }],
+      [
+        {
+          id: RATE_ID,
+          effective_from: "2026-01-01",
+          game_amount_cents: 3000,
+          cents_per_km: "40.00",
+        },
+      ],
+      [
+        { id: CLUB_A, address_id: ADDRESS_A },
+        { id: CLUB_B, address_id: ADDRESS_B },
+      ],
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+    ]) {
+      query.mockResolvedValueOnce({ rows });
+    }
+    expect(
+      await handleUpdateCompensation(
+        deps,
+        USER_ID,
+        form({ ...BASE, compensationId: COMPENSATION_ID }),
+      ),
+    ).toEqual({
+      status: "updated",
+      amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+  });
+});
+
+describe("handleDeleteCompensation", () => {
+  it("supprime l'indemnité de l'utilisateur", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [{ id: COMPENSATION_ID }] });
+    expect(
+      await handleDeleteCompensation(deps, USER_ID, form({ compensationId: COMPENSATION_ID })),
+    ).toEqual({ status: "deleted" });
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+  });
+
+  it("répond introuvable pour l'indemnité d'un autre utilisateur ou déjà supprimée", async () => {
+    const { deps } = setup();
+    expect(
+      await handleDeleteCompensation(deps, USER_ID, form({ compensationId: COMPENSATION_ID })),
+    ).toEqual({ status: "not_found" });
+  });
+
+  it("refuse un identifiant invalide sans requête", async () => {
+    const { deps, query } = setup();
+    expect(await handleDeleteCompensation(deps, USER_ID, form({ compensationId: "x" }))).toEqual({
+      status: "not_found",
+    });
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("compensationFormValues", () => {
+  const compensation = {
+    id: COMPENSATION_ID,
+    startsAt: new Date("2026-11-14T18:00:00Z"),
+    divisionId: DIVISION_ID,
+    team1ClubId: CLUB_A,
+    team2ClubId: CLUB_B,
+    addressId: ADDRESS_A,
+    team1AddressId: ADDRESS_A,
+    scaleId: SCALE_ID,
+    distanceM: 47_000,
+  };
+
+  it("préremplit le formulaire à l'heure de Paris, distance aller", () => {
+    expect(compensationFormValues(compensation)).toEqual({
+      compensationId: COMPENSATION_ID,
+      date: "2026-11-14",
+      time: "19:00",
+      divisionId: DIVISION_ID,
+      scaleId: SCALE_ID,
+      team1Club: CLUB_A,
+      team2Club: CLUB_B,
+      oneWayDistance: "23,5",
+    });
+  });
+
+  it("coche l'exception quand l'adresse diffère de celle du club de l'équipe 1", () => {
+    const values = compensationFormValues({ ...compensation, addressId: ADDRESS_B });
+    expect(values.venueException).toBe("on");
+    expect(values.venueAddress).toBe(ADDRESS_B);
+  });
+
+  it("produit des valeurs que le formulaire relit à l'identique", () => {
+    const values = compensationFormValues({ ...compensation, addressId: ADDRESS_B });
+    expect(readCompensationFormData(form(values))).toMatchObject({
+      date: "2026-11-14",
+      time: "19:00",
+      venue: { kind: "existing", addressId: ADDRESS_B },
+      oneWayDistance: "23,5",
     });
   });
 });

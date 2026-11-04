@@ -28,6 +28,20 @@ export function isTimeOfDay(value: string): boolean {
   return TIME_PATTERN.test(value);
 }
 
+/** Heure `HH:MM` à Paris d'un instant UTC, ex. pour préremplir un champ `time`. */
+export function toParisTimeOfDay(instant: Date): string {
+  if (Number.isNaN(instant.getTime())) {
+    throw new ValidationError("invalid_date");
+  }
+  let hour = "";
+  let minute = "";
+  for (const part of parisPartsFormat.formatToParts(instant)) {
+    if (part.type === "hour") hour = part.value;
+    if (part.type === "minute") minute = part.value;
+  }
+  return `${hour}:${minute}`;
+}
+
 /**
  * Heure murale de Paris à l'instant `instantMs`, exprimée comme si elle était en UTC
  * (en millisecondes). La différence avec `instantMs` est le décalage de Paris.

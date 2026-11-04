@@ -1,6 +1,6 @@
 /**
- * Formulaire « Nouvelle indemnité » : lecture du FormData, validation Zod, puis
- * création. Ni Next.js ni authentification ici : la Server Action vérifie la session et
+ * Formulaire d'indemnité (saisie et modification) : lecture du FormData, validation
+ * Zod, puis enregistrement ; suppression. Ni Next.js ni authentification ici : la Server Action vérifie la session et
  * passe l'utilisateur (§6.2). Le propriétaire ne vient jamais du formulaire.
  *
  * Champs du formulaire HTML :
@@ -9,25 +9,35 @@
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
  *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*).
  */
-import type { z } from "zod";
+import { z } from "zod";
 import {
   COMPENSATION_FIELDS,
   NEW_CHOICE,
   type AddressPart,
   type CompensationField,
 } from "@/lib/compensation-form-fields";
+import { toParisIsoDate } from "@/lib/dates";
+import { oneWayKmInput } from "@/lib/distance";
+import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
+import { softDeleteCompensation } from "../db/compensations";
+import type { CompensationForEdit } from "../db/compensations";
 import type { CompensationAmount } from "./amount";
-import { createCompensation } from "./create-compensation";
+import { createCompensation, updateCompensation } from "./create-compensation";
 import type { CompensationDeps, CreateCompensationRejection } from "./create-compensation";
 
 type Prefix = "team1" | "team2" | "venue";
 
-export type CreateCompensationState =
+/** État du formulaire d'indemnité, en création comme en modification (`useActionState`). */
+export type CompensationFormState =
   | { status: "idle" }
   | { status: "invalid"; fields: CompensationField[] }
   | CreateCompensationRejection
-  | { status: "created"; amount: CompensationAmount };
+  | { status: "created"; amount: CompensationAmount }
+  | { status: "updated"; amount: CompensationAmount };
+
+export type DeleteCompensationState =
+  { status: "idle" } | { status: "deleted" } | { status: "not_found" };
 
 /** Valeur texte d'un champ ; un fichier ou un champ absent devient `undefined` (refusé par Zod). */
 function text(formData: FormData, name: string): string | undefined {
@@ -132,11 +142,73 @@ export async function handleCreateCompensation(
   deps: CompensationDeps,
   userId: string,
   formData: FormData,
-): Promise<CreateCompensationState> {
+): Promise<CompensationFormState> {
   const parsed = compensationFormSchema.safeParse(readCompensationFormData(formData));
   if (!parsed.success) {
     return { status: "invalid", fields: invalidFields(parsed.error) };
   }
   const result = await createCompensation(deps, userId, parsed.data);
   return result.status === "created" ? { status: "created", amount: result.amount } : result;
+}
+
+const compensationIdSchema = z.uuid();
+
+/**
+ * Valide le formulaire puis modifie l'indemnité désignée par le champ caché
+ * `compensationId`. Le service vérifie qu'elle appartient à `userId` : l'identifiant
+ * venant du navigateur, il n'est jamais cru sur parole.
+ */
+export async function handleUpdateCompensation(
+  deps: CompensationDeps,
+  userId: string,
+  formData: FormData,
+): Promise<CompensationFormState> {
+  const compensationId = compensationIdSchema.safeParse(text(formData, "compensationId"));
+  if (!compensationId.success) {
+    return { status: "not_found", field: "compensation" };
+  }
+  const parsed = compensationFormSchema.safeParse(readCompensationFormData(formData));
+  if (!parsed.success) {
+    return { status: "invalid", fields: invalidFields(parsed.error) };
+  }
+  return updateCompensation(deps, userId, compensationId.data, parsed.data);
+}
+
+/** Supprime (soft delete) une indemnité de `userId`. */
+export async function handleDeleteCompensation(
+  deps: CompensationDeps,
+  userId: string,
+  formData: FormData,
+): Promise<DeleteCompensationState> {
+  const compensationId = compensationIdSchema.safeParse(text(formData, "compensationId"));
+  if (!compensationId.success) {
+    return { status: "not_found" };
+  }
+  const deleted = await deps.transaction((db) =>
+    softDeleteCompensation(db, { compensationId: compensationId.data, userId }),
+  );
+  return deleted ? { status: "deleted" } : { status: "not_found" };
+}
+
+/**
+ * Valeurs du formulaire pour modifier une indemnité : mêmes noms de champs que la
+ * saisie. L'adresse du match n'est une « exception » que si elle diffère de celle du
+ * club de l'équipe 1.
+ */
+export function compensationFormValues(compensation: CompensationForEdit): Record<string, string> {
+  const values: Record<string, string> = {
+    compensationId: compensation.id,
+    date: toParisIsoDate(compensation.startsAt),
+    time: toParisTimeOfDay(compensation.startsAt),
+    divisionId: compensation.divisionId,
+    scaleId: compensation.scaleId,
+    team1Club: compensation.team1ClubId,
+    team2Club: compensation.team2ClubId,
+    oneWayDistance: oneWayKmInput(compensation.distanceM),
+  };
+  if (compensation.addressId !== compensation.team1AddressId) {
+    values.venueException = "on";
+    values.venueAddress = compensation.addressId;
+  }
+  return values;
 }

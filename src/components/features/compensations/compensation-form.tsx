@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Formulaire « Nouvelle indemnité » (bloc 6). Les listes (niveau, barème, clubs, adresse)
+ * Formulaire d'indemnité (bloc 6), pour la saisie comme pour la modification. Les listes (niveau, barème, clubs, adresse)
  * sont contrôlées pour afficher les champs de création à la volée et présélectionner le
  * barème du niveau ; les champs texte restent non contrôlés (`defaultValue`).
  */
@@ -15,8 +15,8 @@ import {
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
-import type { CreateCompensationState } from "@/server/compensation/compensation-form";
-import type { AddressSummary, ClubSummary } from "@/server/db/clubs";
+import type { CompensationFormState } from "@/server/compensation/compensation-form";
+import type { CompensationFormData } from "@/server/compensation/form-data";
 import type { Division } from "@/server/db/divisions";
 import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
@@ -27,37 +27,41 @@ import { SelectField } from "./select-field";
 const t = fr.compensations;
 
 type Action = (
-  previous: CreateCompensationState,
+  previous: CompensationFormState,
   formData: FormData,
-) => Promise<CreateCompensationState>;
+) => Promise<CompensationFormState>;
 
-export type CompensationFormData = {
-  divisions: readonly Division[];
-  /** Barèmes choisissables : le commun en premier, puis ceux de l'utilisateur. */
-  scales: readonly { id: string; name: string }[];
-  /** Barème présélectionné pour chaque niveau (choix de l'utilisateur, sinon le commun). */
-  defaultScaleByDivision: Readonly<Record<string, string>>;
-  clubs: readonly ClubSummary[];
-  addresses: readonly AddressSummary[];
+type Props = CompensationFormData & {
+  action: Action;
+  /**
+   * Modification d'une indemnité existante : valeurs de départ, dont l'identifiant
+   * (`compensationId`, champ caché vérifié côté serveur). Sans elles : saisie.
+   */
+  initialValues?: Readonly<Record<string, string>>;
 };
 
-type Props = CompensationFormData & { action: Action };
-
-export function CompensationForm({ action, ...data }: Props) {
+export function CompensationForm({ action, initialValues, ...data }: Props) {
+  const editing = initialValues !== undefined;
   const { state, valueOf, formKey, formAction, isPending } = useScaleForm(
     action,
     { status: "idle" },
-    ["created"],
+    // Après une saisie réussie, le formulaire se vide ; après une modification, il garde
+    // les valeurs enregistrées.
+    editing ? [] : ["created"],
+    initialValues,
   );
+  const labels = editing ? t.edit : t.new;
+  const compensationId = valueOf("compensationId");
 
   return (
     <div className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
       {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
       <form key={formKey} action={formAction} className="flex flex-col gap-6">
+        {editing && <input type="hidden" name="compensationId" value={compensationId} />}
         <Fields data={data} state={state} valueOf={valueOf} />
         <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
-          {isPending ? t.new.submitting : t.new.submit}
+          {isPending ? labels.submitting : labels.submit}
         </button>
       </form>
     </div>
@@ -66,7 +70,7 @@ export function CompensationForm({ action, ...data }: Props) {
 
 type FieldsProps = {
   data: CompensationFormData;
-  state: CreateCompensationState;
+  state: CompensationFormState;
   valueOf: (name: string) => string;
 };
 

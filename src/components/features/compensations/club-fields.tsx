@@ -5,7 +5,7 @@
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
-import type { CreateCompensationState } from "@/server/compensation/compensation-form";
+import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { ClubSummary } from "@/server/db/clubs";
 import { AddressFields } from "./address-fields";
 import { fieldError } from "./compensation-messages";
@@ -21,7 +21,7 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   valueOf: (name: string) => string;
-  state: CreateCompensationState;
+  state: CompensationFormState;
 };
 
 export function ClubFields({

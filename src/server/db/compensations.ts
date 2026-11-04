@@ -1,12 +1,14 @@
 /**
- * Requêtes SQL de la saisie d'une indemnité (bloc 6) : adresses, clubs, équipes, barème
- * applicable et indemnité elle-même.
+ * Requêtes SQL des indemnités (bloc 6) : saisie (adresses, clubs, équipes, barème
+ * applicable), liste, totaux, modification et suppression.
  *
  * Propriété (§6.2) : chaque requête filtre sur `user_id`. Les FK composites (x_id, user_id)
  * l'imposent aussi en base ; les vérifications ici servent à répondre « introuvable »
  * proprement au lieu de laisser échouer une contrainte.
  */
 import { z } from "zod";
+import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
+import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
 import type { Queryable } from "./users";
 
 /** Limites anti-abus (application potentiellement publique). */
@@ -270,4 +272,229 @@ export async function insertCompensation(
     MAX_COMPENSATIONS_PER_USER,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
+}
+
+// ─── Lecture : liste, totaux, modification ─────────────────────────────────
+
+/** Ce qu'il faut pour calculer le montant d'une indemnité (totaux mensuels). */
+export type CompensationAmountRow = {
+  startsAt: Date;
+  distanceM: number;
+  gameAmountCents: number;
+  centsPerKm: string;
+};
+
+export type CompensationListItem = CompensationAmountRow & {
+  id: string;
+  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  team1Name: string;
+  team2Name: string;
+  address: { street: string; number: string | null; postalCode: string; city: string };
+  scaleName: string;
+};
+
+/** Valeurs d'une indemnité pour préremplir le formulaire de modification. */
+export type CompensationForEdit = {
+  id: string;
+  startsAt: Date;
+  divisionId: string;
+  team1ClubId: string;
+  team2ClubId: string;
+  addressId: string;
+  /** Adresse du club de l'équipe 1 : si c'est celle du match, la case « exception » est décochée. */
+  team1AddressId: string;
+  scaleId: string;
+  distanceM: number;
+};
+
+// Les jointures reprennent user_id : on ne lit jamais l'équipe, le club ou l'adresse d'un autre.
+const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, r.game_amount_cents,
+  r.cents_per_km::text AS cents_per_km
+FROM compensation c
+JOIN scale_rate r ON r.id = c.scale_rate_id
+WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
+
+const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m,
+  d.division, d.type, d.level,
+  club1.name AS team1_name, club2.name AS team2_name,
+  a.street, a.number, a.postal_code, a.city,
+  s.name AS scale_name, r.game_amount_cents, r.cents_per_km::text AS cents_per_km
+FROM compensation c
+JOIN division d ON d.id = c.division_id
+JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
+JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
+JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
+JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
+JOIN scale_rate r ON r.id = c.scale_rate_id
+JOIN scale s ON s.id = r.scale_id
+WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
+ORDER BY c.starts_at, c.id`;
+
+const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m,
+  t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
+  club1.address_id AS team1_address_id, r.scale_id
+FROM compensation c
+JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
+JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
+JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
+JOIN scale_rate r ON r.id = c.scale_rate_id
+WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
+
+const amountRowSchema = z.object({
+  starts_at: z.date(),
+  distance_m: z.number().int(),
+  game_amount_cents: z.number().int(),
+  cents_per_km: z.string(),
+});
+
+const listItemRowSchema = amountRowSchema.extend({
+  id: z.uuid(),
+  division: divisionCategorySchema,
+  type: divisionTypeSchema,
+  level: divisionLevelSchema,
+  team1_name: z.string(),
+  team2_name: z.string(),
+  street: z.string(),
+  number: z.string().nullable(),
+  postal_code: z.string(),
+  city: z.string(),
+  scale_name: z.string(),
+});
+
+const editRowSchema = z.object({
+  id: z.uuid(),
+  starts_at: z.date(),
+  division_id: z.uuid(),
+  address_id: z.uuid(),
+  distance_m: z.number().int(),
+  team1_club_id: z.uuid(),
+  team2_club_id: z.uuid(),
+  team1_address_id: z.uuid(),
+  scale_id: z.uuid(),
+});
+
+function toAmountRow(row: z.infer<typeof amountRowSchema>): CompensationAmountRow {
+  return {
+    startsAt: row.starts_at,
+    distanceM: row.distance_m,
+    gameAmountCents: row.game_amount_cents,
+    centsPerKm: row.cents_per_km,
+  };
+}
+
+/** Toutes les indemnités actives de l'utilisateur, réduites au calcul du montant. */
+export async function listCompensationAmounts(
+  db: Queryable,
+  userId: string,
+): Promise<CompensationAmountRow[]> {
+  const result = await db.query(LIST_AMOUNTS_SQL, [userId]);
+  return result.rows.map((raw) => toAmountRow(amountRowSchema.parse(raw)));
+}
+
+/** Indemnités actives dont le match commence dans `[from, to)`, de la plus ancienne à la plus récente. */
+export async function listCompensationsInRange(
+  db: Queryable,
+  input: { userId: string; from: Date; to: Date },
+): Promise<CompensationListItem[]> {
+  const result = await db.query(LIST_IN_RANGE_SQL, [input.userId, input.from, input.to]);
+  return result.rows.map((raw) => {
+    const row = listItemRowSchema.parse(raw);
+    return {
+      ...toAmountRow(row),
+      id: row.id,
+      division: { category: row.division, type: row.type, level: row.level },
+      team1Name: row.team1_name,
+      team2Name: row.team2_name,
+      address: {
+        street: row.street,
+        number: row.number,
+        postalCode: row.postal_code,
+        city: row.city,
+      },
+      scaleName: row.scale_name,
+    };
+  });
+}
+
+/** Indemnité active de l'utilisateur, pour la modifier ; `null` si introuvable ou supprimée. */
+export async function findCompensationForEdit(
+  db: Queryable,
+  input: { compensationId: string; userId: string },
+): Promise<CompensationForEdit | null> {
+  const result = await db.query(FIND_FOR_EDIT_SQL, [input.compensationId, input.userId]);
+  const raw = result.rows[0];
+  if (raw === undefined) {
+    return null;
+  }
+  const row = editRowSchema.parse(raw);
+  return {
+    id: row.id,
+    startsAt: row.starts_at,
+    divisionId: row.division_id,
+    team1ClubId: row.team1_club_id,
+    team2ClubId: row.team2_club_id,
+    addressId: row.address_id,
+    team1AddressId: row.team1_address_id,
+    scaleId: row.scale_id,
+    distanceM: row.distance_m,
+  };
+}
+
+// ─── Modification et suppression ───────────────────────────────────────────
+
+const LOCK_COMPENSATION_SQL = `SELECT id FROM compensation
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+FOR UPDATE`;
+
+const UPDATE_COMPENSATION_SQL = `UPDATE compensation
+SET scale_rate_id = $3, distance_m = $4, starts_at = $5, division_id = $6,
+  team1_id = $7, team2_id = $8, address_id = $9
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING id`;
+
+// Soft delete (§5.6) : la purge physique viendra avec le job planifié.
+const SOFT_DELETE_COMPENSATION_SQL = `UPDATE compensation
+SET deleted_at = now()
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING id`;
+
+/**
+ * Verrouille une indemnité active de l'utilisateur jusqu'à la fin de la transaction.
+ * Faux si elle n'existe pas, est supprimée ou appartient à un autre utilisateur.
+ */
+export async function lockCompensation(
+  db: Queryable,
+  input: { compensationId: string; userId: string },
+): Promise<boolean> {
+  const result = await db.query(LOCK_COMPENSATION_SQL, [input.compensationId, input.userId]);
+  return result.rows.length > 0;
+}
+
+/** Remplace les informations d'une indemnité active de l'utilisateur. */
+export async function updateCompensation(
+  db: Queryable,
+  input: Omit<NewCompensation, "userId"> & { compensationId: string; userId: string },
+): Promise<boolean> {
+  const result = await db.query(UPDATE_COMPENSATION_SQL, [
+    input.compensationId,
+    input.userId,
+    input.scaleRateId,
+    input.distanceM,
+    input.startsAt,
+    input.divisionId,
+    input.team1Id,
+    input.team2Id,
+    input.addressId,
+  ]);
+  return result.rows.length > 0;
+}
+
+/** Supprime (soft delete) une indemnité active de l'utilisateur. Faux si introuvable. */
+export async function softDeleteCompensation(
+  db: Queryable,
+  input: { compensationId: string; userId: string },
+): Promise<boolean> {
+  const result = await db.query(SOFT_DELETE_COMPENSATION_SQL, [input.compensationId, input.userId]);
+  return result.rows.length > 0;
 }

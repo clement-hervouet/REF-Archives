@@ -4,7 +4,7 @@
  */
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
-import type { CreateCompensationState } from "@/server/compensation/compensation-form";
+import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import { fieldError } from "./compensation-messages";
 
 const t = fr.compensations.fields;
@@ -13,7 +13,7 @@ type Props = {
   idBase: string;
   prefix: "team1" | "team2" | "venue";
   valueOf: (name: string) => string;
-  state: CreateCompensationState;
+  state: CompensationFormState;
 };
 
 export function AddressFields({ idBase, prefix, valueOf, state }: Props) {

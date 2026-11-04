@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { compensationFormSchema, type CompensationFormInput } from "@/lib/schemas/compensations";
 import { makeFakeDb } from "../db/fake-db";
 import type { Queryable } from "../db/users";
-import { createCompensation, type CompensationDeps } from "./create-compensation";
+import {
+  createCompensation,
+  updateCompensation,
+  type CompensationDeps,
+} from "./create-compensation";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const DIVISION_ID = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
@@ -283,5 +287,59 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     query.mockRejectedValueOnce(new Error("connexion perdue"));
     await expect(createCompensation(deps, USER_ID, form())).rejects.toThrow("connexion perdue");
+  });
+});
+
+describe("updateCompensation", () => {
+  it("verrouille l'indemnité, recalcule la ligne et met à jour", async () => {
+    const { deps, query, transactionCount } = setup();
+    answer(
+      query,
+      [{ id: COMPENSATION_ID }],
+      [{ id: DIVISION_ID }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+    );
+    // Match déplacé en août : la ligne du 01/01 s'applique (45 € et 0,40 €/km).
+    expect(
+      await updateCompensation(deps, USER_ID, COMPENSATION_ID, form({ date: "2026-08-15" })),
+    ).toEqual({
+      status: "updated",
+      amount: { gameCents: 4500, mileageCents: 1880, totalCents: 6380 },
+    });
+    expect(transactionCount()).toBe(1);
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+    expect(query.mock.calls[6]?.[1]).toEqual([
+      COMPENSATION_ID,
+      USER_ID,
+      RATE_OLD,
+      47_000,
+      new Date("2026-08-15T17:00:00Z"),
+      DIVISION_ID,
+      TEAM_1,
+      TEAM_2,
+      ADDRESS_A,
+    ]);
+  });
+
+  it("refuse une indemnité introuvable, supprimée ou d'un autre utilisateur", async () => {
+    const { deps, query } = setup();
+    answer(query, []);
+    expect(await updateCompensation(deps, USER_ID, COMPENSATION_ID, form())).toEqual({
+      status: "not_found",
+      field: "compensation",
+    });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("transmet les refus de la résolution", async () => {
+    const { deps, query } = setup();
+    answer(query, [{ id: COMPENSATION_ID }], [{ id: DIVISION_ID }], RATES);
+    expect(
+      await updateCompensation(deps, USER_ID, COMPENSATION_ID, form({ date: "2025-12-31" })),
+    ).toEqual({ status: "no_rate_at_date" });
   });
 });

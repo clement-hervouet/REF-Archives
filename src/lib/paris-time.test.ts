@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "./errors";
-import { isTimeOfDay, parisLocalToUtc } from "./paris-time";
+import { isTimeOfDay, parisLocalToUtc, toParisTimeOfDay } from "./paris-time";
 
 describe("isTimeOfDay", () => {
   it("accepte les heures HH:MM", () => {
@@ -45,5 +45,21 @@ describe("parisLocalToUtc", () => {
   it("refuse une date ou une heure invalide", () => {
     expect(() => parisLocalToUtc("2026-02-30", "19:00")).toThrow(ValidationError);
     expect(() => parisLocalToUtc("2026-11-14", "25:00")).toThrow(ValidationError);
+  });
+});
+
+describe("toParisTimeOfDay", () => {
+  it("donne l'heure de Paris, été comme hiver", () => {
+    expect(toParisTimeOfDay(new Date("2026-11-14T18:00:00Z"))).toBe("19:00");
+    expect(toParisTimeOfDay(new Date("2026-06-20T18:30:00Z"))).toBe("20:30");
+    expect(toParisTimeOfDay(new Date("2026-12-31T23:05:00Z"))).toBe("00:05");
+  });
+
+  it("est l'inverse de parisLocalToUtc", () => {
+    expect(toParisTimeOfDay(parisLocalToUtc("2026-10-25", "02:30"))).toBe("02:30");
+  });
+
+  it("refuse une date invalide", () => {
+    expect(() => toParisTimeOfDay(new Date("x"))).toThrow(ValidationError);
   });
 });

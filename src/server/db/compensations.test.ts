@@ -5,11 +5,17 @@ import {
   addressBelongsTo,
   divisionExists,
   ensureTeam,
+  findCompensationForEdit,
   insertAddress,
   insertClub,
   insertCompensation,
   listApplicableRates,
+  listCompensationAmounts,
+  listCompensationsInRange,
+  lockCompensation,
   lockOwnedClubs,
+  softDeleteCompensation,
+  updateCompensation,
 } from "./compensations";
 import { makeFakeDb } from "./fake-db";
 
@@ -205,5 +211,146 @@ describe("insertCompensation", () => {
   it("renvoie null quand la limite est atteinte", async () => {
     const { db } = makeFakeDb([{ id: null }]);
     expect(await insertCompensation(db, input)).toBeNull();
+  });
+});
+
+describe("listCompensationAmounts", () => {
+  it("lit les montants des indemnités actives de l'utilisateur", async () => {
+    const startsAt = new Date("2026-11-14T18:00:00Z");
+    const { db, query } = makeFakeDb([
+      { starts_at: startsAt, distance_m: 47_000, game_amount_cents: 4800, cents_per_km: "42.50" },
+    ]);
+    expect(await listCompensationAmounts(db, USER_ID)).toEqual([
+      { startsAt, distanceM: 47_000, gameAmountCents: 4800, centsPerKm: "42.50" },
+    ]);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
+  });
+});
+
+describe("listCompensationsInRange", () => {
+  it("filtre par utilisateur et période, et structure chaque ligne", async () => {
+    const startsAt = new Date("2026-11-14T18:00:00Z");
+    const from = new Date("2026-10-31T23:00:00Z");
+    const to = new Date("2026-11-30T23:00:00Z");
+    const { db, query } = makeFakeDb([
+      {
+        id: COMPENSATION_ID,
+        starts_at: startsAt,
+        distance_m: 47_000,
+        game_amount_cents: 4800,
+        cents_per_km: "42.50",
+        division: "Regional",
+        type: "Masculin",
+        level: "1",
+        team1_name: "Club Alpha",
+        team2_name: "Club Beta",
+        street: "Rue Nationale",
+        number: "10",
+        postal_code: "59000",
+        city: "Lille",
+        scale_name: "Comité",
+      },
+    ]);
+    expect(await listCompensationsInRange(db, { userId: USER_ID, from, to })).toEqual([
+      {
+        id: COMPENSATION_ID,
+        startsAt,
+        distanceM: 47_000,
+        gameAmountCents: 4800,
+        centsPerKm: "42.50",
+        division: { category: "Regional", type: "Masculin", level: "1" },
+        team1Name: "Club Alpha",
+        team2Name: "Club Beta",
+        address: { street: "Rue Nationale", number: "10", postalCode: "59000", city: "Lille" },
+        scaleName: "Comité",
+      },
+    ]);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, from, to]);
+  });
+});
+
+describe("findCompensationForEdit", () => {
+  it("renvoie l'indemnité de l'utilisateur", async () => {
+    const startsAt = new Date("2026-11-14T18:00:00Z");
+    const { db, query } = makeFakeDb([
+      {
+        id: COMPENSATION_ID,
+        starts_at: startsAt,
+        division_id: DIVISION_ID,
+        address_id: ADDRESS_ID,
+        distance_m: 47_000,
+        team1_club_id: CLUB_A,
+        team2_club_id: CLUB_B,
+        team1_address_id: ADDRESS_ID,
+        scale_id: SCALE_ID,
+      },
+    ]);
+    expect(
+      await findCompensationForEdit(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
+    ).toEqual({
+      id: COMPENSATION_ID,
+      startsAt,
+      divisionId: DIVISION_ID,
+      team1ClubId: CLUB_A,
+      team2ClubId: CLUB_B,
+      addressId: ADDRESS_ID,
+      team1AddressId: ADDRESS_ID,
+      scaleId: SCALE_ID,
+      distanceM: 47_000,
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+  });
+
+  it("renvoie null pour une indemnité introuvable, supprimée ou d'un autre", async () => {
+    const { db } = makeFakeDb();
+    expect(
+      await findCompensationForEdit(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
+    ).toBeNull();
+  });
+});
+
+describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
+  const ids = { compensationId: COMPENSATION_ID, userId: USER_ID };
+
+  it("filtrent toujours par utilisateur", async () => {
+    const { db, query } = makeFakeDb([{ id: COMPENSATION_ID }]);
+    expect(await lockCompensation(db, ids)).toBe(true);
+    expect(await softDeleteCompensation(db, ids)).toBe(true);
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+    expect(query.mock.calls[1]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+  });
+
+  it("passe les nouvelles valeurs dans l'ordre", async () => {
+    const startsAt = new Date("2026-11-14T18:00:00Z");
+    const { db, query } = makeFakeDb([{ id: COMPENSATION_ID }]);
+    expect(
+      await updateCompensation(db, {
+        ...ids,
+        scaleRateId: RATE_ID,
+        distanceM: 1000,
+        startsAt,
+        divisionId: DIVISION_ID,
+        team1Id: TEAM_ID,
+        team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+        addressId: ADDRESS_ID,
+      }),
+    ).toBe(true);
+    expect(query.mock.calls[0]?.[1]).toEqual([
+      COMPENSATION_ID,
+      USER_ID,
+      RATE_ID,
+      1000,
+      startsAt,
+      DIVISION_ID,
+      TEAM_ID,
+      "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+      ADDRESS_ID,
+    ]);
+  });
+
+  it("répondent faux quand rien n'est touché", async () => {
+    const { db } = makeFakeDb();
+    expect(await lockCompensation(db, ids)).toBe(false);
+    expect(await softDeleteCompensation(db, ids)).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CreateCompensationState } from "@/server/compensation/compensation-form";
+import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import { compensationStatusMessage, fieldError } from "./compensation-messages";
 
 describe("compensationStatusMessage", () => {
@@ -37,7 +37,7 @@ describe("compensationStatusMessage", () => {
 });
 
 describe("fieldError", () => {
-  const invalid: CreateCompensationState = {
+  const invalid: CompensationFormState = {
     status: "invalid",
     fields: ["date", "team1", "team2.name", "venue.postalCode", "oneWayDistance"],
   };

@@ -1,7 +1,7 @@
 /**
- * Création d'une indemnité autonome (bloc 6), en une seule transaction : clubs et
- * adresses créés à la volée, équipes retrouvées ou créées, ligne de barème en vigueur
- * à la date du match, puis l'indemnité.
+ * Enregistrement d'une indemnité autonome (bloc 6) : création et modification, chacune
+ * en une seule transaction. Clubs et adresses créés à la volée, équipes retrouvées ou
+ * créées, ligne de barème en vigueur à la date du match, puis l'indemnité.
  *
  * Ni Next.js ni authentification ici : la Server Action vérifie l'utilisateur et valide
  * le formulaire (`compensationFormSchema`) AVANT d'appeler ce service. Tout refus annule
@@ -18,9 +18,11 @@ import {
   insertClub,
   insertCompensation,
   listApplicableRates,
+  lockCompensation,
   lockOwnedClubs,
+  updateCompensation as updateCompensationRow,
 } from "../db/compensations";
-import type { LockedClub } from "../db/compensations";
+import type { ApplicableRate, LockedClub, NewCompensation } from "../db/compensations";
 import type { Queryable } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
@@ -31,8 +33,11 @@ type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type CompensationDeps = { transaction: Transaction };
 
-/** Champ du formulaire qui désigne une ressource introuvable (ou pas à l'utilisateur). */
-export type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue";
+/**
+ * Ressource introuvable (ou pas à l'utilisateur) : un champ du formulaire, ou
+ * l'indemnité elle-même pour une modification.
+ */
+export type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "compensation";
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }
@@ -43,6 +48,9 @@ export type CreateCompensationRejection =
 export type CreateCompensationResult =
   | { status: "created"; compensationId: string; amount: CompensationAmount }
   | CreateCompensationRejection;
+
+export type UpdateCompensationResult =
+  { status: "updated"; amount: CompensationAmount } | CreateCompensationRejection;
 
 /** Refus levé dans la transaction pour la faire annuler ; jamais visible hors de ce module. */
 class CompensationRejected extends AppError {
@@ -96,12 +104,20 @@ async function resolveVenue(
   }
 }
 
-/** Les étapes, dans l'ordre : d'abord tout ce qui peut refuser sans rien écrire. */
-async function createInTransaction(
+type ResolvedCompensation = {
+  rate: ApplicableRate;
+  row: Omit<NewCompensation, "userId">;
+};
+
+/**
+ * Tout ce que l'indemnité référence, résolu et vérifié : d'abord ce qui peut refuser
+ * sans rien écrire, puis les créations à la volée.
+ */
+async function resolveCompensation(
   db: Queryable,
   userId: string,
   form: CompensationForm,
-): Promise<CreateCompensationResult> {
+): Promise<ResolvedCompensation> {
   if (!(await divisionExists(db, form.divisionId))) {
     reject({ status: "not_found", field: "divisionId" });
   }
@@ -126,24 +142,33 @@ async function createInTransaction(
   const team1Id = await ensureTeam(db, { userId, clubId: club1.id, divisionId: form.divisionId });
   const team2Id = await ensureTeam(db, { userId, clubId: club2.id, divisionId: form.divisionId });
 
-  const compensationId = await insertCompensation(db, {
-    userId,
-    scaleRateId: rate.id,
-    distanceM: form.distanceM,
-    startsAt: form.startsAt,
-    divisionId: form.divisionId,
-    team1Id,
-    team2Id,
-    addressId,
-  });
-  if (compensationId === null) {
-    reject({ status: "limit_reached", resource: "compensation" });
-  }
   return {
-    status: "created",
-    compensationId,
-    amount: computeCompensation(rate, form.distanceM),
+    rate,
+    row: {
+      scaleRateId: rate.id,
+      distanceM: form.distanceM,
+      startsAt: form.startsAt,
+      divisionId: form.divisionId,
+      team1Id,
+      team2Id,
+      addressId,
+    },
   };
+}
+
+/** Exécute `action` dans une transaction et transforme un refus en résultat. */
+async function runRejectable<T>(
+  deps: CompensationDeps,
+  action: (db: Queryable) => Promise<T>,
+): Promise<T | CreateCompensationRejection> {
+  try {
+    return await deps.transaction(action);
+  } catch (error: unknown) {
+    if (error instanceof CompensationRejected) {
+      return error.rejection;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -155,12 +180,37 @@ export async function createCompensation(
   userId: string,
   form: CompensationForm,
 ): Promise<CreateCompensationResult> {
-  try {
-    return await deps.transaction((db) => createInTransaction(db, userId, form));
-  } catch (error: unknown) {
-    if (error instanceof CompensationRejected) {
-      return error.rejection;
+  return runRejectable(deps, async (db): Promise<CreateCompensationResult> => {
+    const { rate, row } = await resolveCompensation(db, userId, form);
+    const compensationId = await insertCompensation(db, { ...row, userId });
+    if (compensationId === null) {
+      reject({ status: "limit_reached", resource: "compensation" });
     }
-    throw error;
-  }
+    return {
+      status: "created",
+      compensationId,
+      amount: computeCompensation(rate, form.distanceM),
+    };
+  });
+}
+
+/**
+ * Remplace les informations d'une indemnité de `userId`. La ligne de barème est
+ * recalculée : changer la date du match peut changer le montant.
+ */
+export async function updateCompensation(
+  deps: CompensationDeps,
+  userId: string,
+  compensationId: string,
+  form: CompensationForm,
+): Promise<UpdateCompensationResult> {
+  return runRejectable(deps, async (db): Promise<UpdateCompensationResult> => {
+    // Verrou d'abord : une suppression simultanée ne peut pas passer entre-temps.
+    if (!(await lockCompensation(db, { compensationId, userId }))) {
+      reject({ status: "not_found", field: "compensation" });
+    }
+    const { rate, row } = await resolveCompensation(db, userId, form);
+    await updateCompensationRow(db, { ...row, compensationId, userId });
+    return { status: "updated", amount: computeCompensation(rate, form.distanceM) };
+  });
 }
