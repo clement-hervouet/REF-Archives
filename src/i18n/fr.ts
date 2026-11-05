@@ -305,6 +305,10 @@ export const fr = {
     },
   },
   games: {
+    summary: {
+      item: "{slot} : {name}",
+      separator: " · ",
+    },
     completeMatch: "Compléter le match",
     completeMatchLabel: "Compléter le match du {date} (arbitres, observateur, notes)",
     viewMatch: "Voir le match",
@@ -547,7 +551,7 @@ export const fr = {
     upcoming: {
       title: "À venir",
       intro:
-        "Vos matchs prévus, d'après les indemnités saisies. Les collègues s'ajouteront avec les matchs complets.",
+        "Vos matchs prévus, d'après les indemnités saisies, avec les officiels de chaque match complet.",
       weekendTitle: "Ce weekend (samedi {saturday} et dimanche {sunday})",
       weekendEmpty: "Aucun match prévu ce weekend.",
       laterTitle: "Les {weeks} semaines suivantes",
@@ -557,6 +561,7 @@ export const fr = {
       itineraryLabel: "Itinéraire vers {address} (nouvel onglet)",
       edit: "Modifier",
       editLabel: "Modifier le match du {date}",
+      officials: "Officiels : {officials}",
     },
   },
   calendar: {
@@ -630,6 +635,7 @@ export const fr = {
       countOne: "1 match est prévu ce weekend :",
       countMany: "{count} matchs sont prévus ce weekend :",
       matchLine: "{when} : {team1} – {team2} ({division}), {address}",
+      officialsLine: "Officiels : {officials}",
       action: "Voir mes matchs à venir",
     },
     test: {

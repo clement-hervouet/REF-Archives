@@ -3,7 +3,7 @@ import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { addDays, formatShortDate } from "@/lib/weeks";
 import { requireUserOrRedirect } from "@/server/auth/session";
-import { listCompensationsInRange } from "@/server/db/compensations";
+import { listUpcomingMatches } from "@/server/db/upcoming-matches";
 import { getDb } from "@/server/db/pool";
 import { UPCOMING_LATER_WEEKS, upcomingRanges } from "@/server/reminders/upcoming";
 
@@ -16,8 +16,8 @@ export default async function UpcomingPage() {
   const ranges = upcomingRanges(toParisIsoDate(new Date()));
   // Requêtes filtrées par propriétaire (§5.6) : l'utilisateur vient de la session.
   const [weekendMatches, laterMatches] = await Promise.all([
-    listCompensationsInRange(db, { userId: user.id, ...ranges.weekend }),
-    listCompensationsInRange(db, { userId: user.id, ...ranges.later }),
+    listUpcomingMatches(db, { userId: user.id, ...ranges.weekend }),
+    listUpcomingMatches(db, { userId: user.id, ...ranges.later }),
   ]);
 
   return (

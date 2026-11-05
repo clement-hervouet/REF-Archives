@@ -1,27 +1,25 @@
 /**
- * Matchs à venir (page « À venir ») : heure, équipes, niveau, lieu, lien d'itinéraire et
- * export du match vers un agenda (fichier `.ics`).
+ * Matchs à venir (page « À venir ») : heure, équipes, niveau, lieu, officiels du match
+ * complet (bloc 9), lien d'itinéraire et export du match vers un agenda (fichier `.ics`).
  * Ni montant ni barème : c'est une fiche pratique pour se rendre au match.
  */
 import Link from "next/link";
 import { addressLabel } from "@/components/features/compensations/address-label";
+import { officialsSummary } from "@/components/features/games/officials-summary";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { matchExportPath } from "@/lib/app-paths";
+import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatWeekdayDateTime } from "@/lib/format";
 import { itineraryUrl } from "@/lib/itinerary";
 import { formatShortDate } from "@/lib/weeks";
-import type { CompensationListItem } from "@/server/db/compensations";
+import type { UpcomingMatchRow } from "@/server/db/upcoming-matches";
 
 const t = fr.reminders.upcoming;
 
 const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4";
 
-export type UpcomingMatch = Pick<
-  CompensationListItem,
-  "id" | "startsAt" | "team1Name" | "team2Name" | "division" | "address"
->;
+export type UpcomingMatch = UpcomingMatchRow;
 
 export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch[] }) {
   return (
@@ -29,6 +27,7 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
       {matches.map((match) => {
         const address = addressLabel(match.address);
         const date = formatShortDate(toParisIsoDate(match.startsAt));
+        const officials = officialsSummary(match.officials);
         return (
           <li key={match.id}>
             <article className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4 md:flex-row md:items-start md:justify-between">
@@ -41,6 +40,11 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
                 </h3>
                 <p className="text-sm text-neutral-700">{divisionLabel(match.division)}</p>
                 <p className="text-sm break-words">{address}</p>
+                {officials !== null && (
+                  <p className="text-sm break-words">
+                    {t.officials.replace("{officials}", officials)}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2 md:justify-end">
                 <a
@@ -61,6 +65,23 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
                 >
                   {fr.calendar.export.label}
                 </a>
+                {match.gameId === null ? (
+                  <Link
+                    href={completeGamePath(match.id)}
+                    aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                    className={LINK_CLASS}
+                  >
+                    {fr.games.completeMatch}
+                  </Link>
+                ) : (
+                  <Link
+                    href={gamePath(match.gameId)}
+                    aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                    className={LINK_CLASS}
+                  >
+                    {fr.games.viewMatch}
+                  </Link>
+                )}
                 <Link
                   href={`/indemnites/${match.id}/modifier`}
                   aria-label={t.editLabel.replace("{date}", date)}
