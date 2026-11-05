@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
+import { matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
 import { formatCents, formatIsoDate } from "@/lib/format";
@@ -65,6 +66,15 @@ export function CompensationList({ items, deleteAction }: Props) {
                   {formatCents(item.amount.totalCents)}
                 </p>
                 <div className="flex flex-wrap gap-2 md:justify-end">
+                  {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+                  <a
+                    href={matchExportPath(item.id)}
+                    download
+                    aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
+                    className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                  >
+                    {fr.calendar.export.label}
+                  </a>
                   <Link
                     href={`/indemnites/${item.id}/modifier`}
                     aria-label={t.editLabel.replace("{date}", date)}

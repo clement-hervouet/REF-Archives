@@ -40,7 +40,7 @@ describe("insertSecurityEvent", () => {
 });
 
 describe("securityEventTypeSchema", () => {
-  it("accepte les sept types d'événements", () => {
+  it("accepte les onze types d'événements", () => {
     for (const type of [
       "login_succeeded",
       "login_failed",
@@ -49,6 +49,10 @@ describe("securityEventTypeSchema", () => {
       "invitation_revoked",
       "invitation_accepted",
       "invitation_rejected",
+      "password_reset_requested",
+      "password_reset_completed",
+      "calendar_feed_created",
+      "calendar_feed_revoked",
     ]) {
       expect(securityEventTypeSchema.safeParse(type).success).toBe(true);
     }
