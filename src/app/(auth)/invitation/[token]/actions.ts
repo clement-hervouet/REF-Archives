@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { tokenSchema } from "@/lib/schemas/auth";
+import type { ProfileIssue } from "@/lib/schemas/profile";
 import { signIn } from "@/server/auth/auth";
 import { getClientIp } from "@/server/auth/client-ip";
 import { createAcceptInvitationDeps } from "@/server/auth/invitation-deps";
@@ -14,6 +15,7 @@ export type AcceptFormState =
   | { status: "idle" }
   | { status: "mismatch" }
   | { status: "invalid_invitation" }
+  | { status: "invalid_profile"; issues: ProfileIssue[] }
   | { status: "invalid_password"; issues: string[] }
   | { status: "rate_limited"; retryAfterMinutes: number };
 
@@ -46,12 +48,21 @@ export async function acceptInvitationAction(
   ) {
     return { status: "invalid_invitation" };
   }
+  // Un champ absent devient une chaîne vide : `acceptInvitation` le refuse avec le bon code.
+  const firstname = formData.get("firstname");
+  const lastname = formData.get("lastname");
   if (password !== confirmation) {
     return { status: "mismatch" };
   }
 
   const ip = getClientIp(await headers());
-  const result = await acceptInvitation(createAcceptInvitationDeps(), { token, password, ip });
+  const result = await acceptInvitation(createAcceptInvitationDeps(), {
+    token,
+    firstname: typeof firstname === "string" ? firstname : "",
+    lastname: typeof lastname === "string" ? lastname : "",
+    password,
+    ip,
+  });
 
   switch (result.status) {
     case "invalid_invitation":
@@ -61,6 +72,8 @@ export async function acceptInvitationAction(
         await recordSecurityEvent({ type: "invitation_rejected", ip });
       }
       return { status: "invalid_invitation" };
+    case "invalid_profile":
+      return { status: "invalid_profile", issues: result.issues };
     case "invalid_password":
       return { status: "invalid_password", issues: result.issues };
     case "rate_limited":

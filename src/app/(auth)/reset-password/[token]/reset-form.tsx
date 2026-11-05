@@ -17,7 +17,10 @@ const PASSWORD_ISSUE_MESSAGES: Record<string, string> = {
 
 function passwordIssueMessage(issues: string[]): string {
   const first = issues[0];
-  return (first === undefined ? undefined : PASSWORD_ISSUE_MESSAGES[first]) ?? fr.validation.passwordInvalid;
+  return (
+    (first === undefined ? undefined : PASSWORD_ISSUE_MESSAGES[first]) ??
+    fr.validation.passwordInvalid
+  );
 }
 
 function errorMessage(state: ResetPasswordFormState): string | null {
@@ -49,7 +52,10 @@ export function ResetForm({ token }: { token: string }) {
         </p>
       )}
       {state.status === "invalid_link" && (
-        <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm underline">
+        <Link
+          href="/forgot-password"
+          className="inline-flex min-h-11 items-center text-sm underline"
+        >
           {t.requestNew}
         </Link>
       )}

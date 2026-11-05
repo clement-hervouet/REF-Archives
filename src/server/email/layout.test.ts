@@ -7,7 +7,11 @@ const base = {
   paragraphs: ["Premier paragraphe", "Second paragraphe"],
   footer: "Pied de page",
 };
-const action = { label: "Cliquer", url: "https://example.com/a?x=1&y=2", fallback: "Copiez ce lien :" };
+const action = {
+  label: "Cliquer",
+  url: "https://example.com/a?x=1&y=2",
+  fallback: "Copiez ce lien :",
+};
 
 describe("renderEmail", () => {
   it("produit un texte avec titre, paragraphes et pied de page", () => {
@@ -35,7 +39,7 @@ describe("renderEmail", () => {
     const { html } = renderEmail({
       ...base,
       title: "<script>alert(1)</script>",
-      paragraphs: ["Tom & Jerry \"l'ami\""],
+      paragraphs: ['Tom & Jerry "l\'ami"'],
     });
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");

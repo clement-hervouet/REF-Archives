@@ -74,7 +74,11 @@ export async function processReminder(
     if (message === null) {
       return "nothingToSend";
     }
-    const key = { userId: recipient.userId, kind: reminder.kind, periodStart: reminder.periodStart };
+    const key = {
+      userId: recipient.userId,
+      kind: reminder.kind,
+      periodStart: reminder.periodStart,
+    };
     if (!(await deps.claim(key))) {
       return "alreadySent";
     }

@@ -59,24 +59,23 @@ describe("createInvitation", () => {
     const { db, query } = makeFakeDb();
     query
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }] });
+      .mockResolvedValueOnce({
+        rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
+      });
     await createInvitation(db, input);
     expect(query.mock.calls).toHaveLength(2);
     expect(query.mock.calls[0]?.[0]).toContain("revoked_at = now()");
     expect(query.mock.calls[0]?.[1]).toEqual([EMAIL]);
-    expect(query.mock.calls[1]?.[1]).toEqual([
-      EMAIL,
-      TOKEN_HASH,
-      ADMIN_ID,
-      INVITATION_TTL_SECONDS,
-    ]);
+    expect(query.mock.calls[1]?.[1]).toEqual([EMAIL, TOKEN_HASH, ADMIN_ID, INVITATION_TTL_SECONDS]);
   });
 
   it("renvoie l'identifiant, l'email et la date d'expiration", async () => {
     const { db, query } = makeFakeDb();
     query
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }] });
+      .mockResolvedValueOnce({
+        rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
+      });
     expect(await createInvitation(db, input)).toEqual({
       id: INVITATION_ID,
       email: EMAIL,
@@ -107,7 +106,9 @@ describe("createInvitation", () => {
     const { db, query } = makeFakeDb();
     query
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: "pas-un-uuid", email: EMAIL, expires_at: EXPIRES_AT }] });
+      .mockResolvedValueOnce({
+        rows: [{ id: "pas-un-uuid", email: EMAIL, expires_at: EXPIRES_AT }],
+      });
     await expect(createInvitation(db, input)).rejects.toThrow();
   });
 });

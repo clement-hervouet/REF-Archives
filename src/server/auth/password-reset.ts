@@ -158,7 +158,5 @@ export async function resetPassword(
     return { status: "rate_limited", retryAfterSeconds: decision.retryAfterSeconds };
   }
 
-  return deps.transaction((db) =>
-    consumeReset(deps, db, hashToken(token.data), password.data),
-  );
+  return deps.transaction((db) => consumeReset(deps, db, hashToken(token.data), password.data));
 }

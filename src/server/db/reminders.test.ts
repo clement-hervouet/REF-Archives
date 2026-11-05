@@ -99,9 +99,9 @@ describe("claimReminderDispatch", () => {
 
   it("refuse une période qui n'est pas une date", async () => {
     const { db, query } = makeFakeDb();
-    await expect(
-      claimReminderDispatch(db, { ...key, periodStart: "2026-11-31" }),
-    ).rejects.toThrow(ValidationError);
+    await expect(claimReminderDispatch(db, { ...key, periodStart: "2026-11-31" })).rejects.toThrow(
+      ValidationError,
+    );
     expect(query).not.toHaveBeenCalled();
   });
 });

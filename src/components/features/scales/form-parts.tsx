@@ -23,6 +23,8 @@ type TextFieldProps = {
   maxLength?: number;
   /** Champ obligatoire (par défaut). */
   required?: boolean;
+  /** Valeur de `autocomplete` (ex. `given-name`) ; désactivé par défaut. */
+  autoComplete?: string;
 };
 
 export function TextField({
@@ -36,6 +38,7 @@ export function TextField({
   inputMode,
   maxLength,
   required = true,
+  autoComplete = "off",
 }: TextFieldProps) {
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -56,7 +59,7 @@ export function TextField({
         maxLength={maxLength}
         defaultValue={defaultValue}
         required={required}
-        autoComplete="off"
+        autoComplete={autoComplete}
         aria-invalid={error !== null}
         aria-describedby={describedBy === "" ? undefined : describedBy}
         className={FIELD_CLASS}

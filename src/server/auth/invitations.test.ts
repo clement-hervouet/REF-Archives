@@ -14,6 +14,13 @@ const EMAIL = "invite@example.com";
 const PASSWORD = "correct horse battery staple";
 const TOKEN = `${"A".repeat(42)}b`; // 43 caractères base64url, comme un vrai jeton
 const IP = "203.0.113.7";
+const INPUT = {
+  token: TOKEN,
+  firstname: " Clément ",
+  lastname: "Hervouet",
+  password: PASSWORD,
+  ip: IP,
+};
 
 const INVITATION_ROW = { id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT };
 const USER_ROW = { id: NEW_USER_ID, email: EMAIL, role: "user" };
@@ -91,20 +98,20 @@ describe("acceptInvitation", () => {
   it("crée le compte avec l'email de l'invitation et le rôle utilisateur", async () => {
     const { deps, query } = setup();
     scriptSuccess(query);
-    expect(await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, INPUT)).toEqual({
       status: "created",
       userId: NEW_USER_ID,
       email: EMAIL,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([hashToken(TOKEN)]);
-    expect(query.mock.calls[2]?.[1]).toEqual([EMAIL, "hashed", "user"]);
+    expect(query.mock.calls[2]?.[1]).toEqual([EMAIL, "hashed", "user", "Clément", "Hervouet"]);
     expect(deps.hashPassword).toHaveBeenCalledWith(PASSWORD);
   });
 
   it("marque l'invitation acceptée avant de créer le compte", async () => {
     const { deps, query } = setup();
     scriptSuccess(query);
-    await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP });
+    await acceptInvitation(deps, INPUT);
     expect(query.mock.calls[0]?.[0]).toContain("FOR UPDATE");
     expect(query.mock.calls[1]?.[0]).toContain("accepted_at = now()");
     expect(query.mock.calls[2]?.[0]).toContain('INSERT INTO "user"');
@@ -113,7 +120,7 @@ describe("acceptInvitation", () => {
   it("n'écrit jamais le mot de passe en clair dans une requête", async () => {
     const { deps, query } = setup();
     scriptSuccess(query);
-    await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP });
+    await acceptInvitation(deps, INPUT);
     expect(JSON.stringify(query.mock.calls)).not.toContain(PASSWORD);
     expect(JSON.stringify(query.mock.calls)).not.toContain(TOKEN);
   });
@@ -121,7 +128,7 @@ describe("acceptInvitation", () => {
   it("compte la tentative par IP et par jeton, sans donnée en clair", async () => {
     const { deps, query } = setup();
     scriptSuccess(query);
-    await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP });
+    await acceptInvitation(deps, INPUT);
     const keys = deps.admitAttempt.mock.lastCall?.[0] ?? [];
     expect(keys).toHaveLength(2);
     expect(keys[0]).toMatch(/^invitation:ip:[0-9a-f]{64}$/);
@@ -134,16 +141,35 @@ describe("acceptInvitation", () => {
 
   it("refuse un jeton mal formé sans compter ni toucher à la base", async () => {
     const { deps, query } = setup();
-    expect(await acceptInvitation(deps, { token: "court", password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, { ...INPUT, token: "court" })).toEqual({
       status: "invalid_invitation",
     });
     expect(deps.admitAttempt).not.toHaveBeenCalled();
     expect(query).not.toHaveBeenCalled();
   });
 
+  it("refuse un nom ou un prénom manquant avec les codes d'erreur, sans compter ni hacher", async () => {
+    const { deps, query } = setup();
+    expect(await acceptInvitation(deps, { ...INPUT, firstname: "  ", lastname: "" })).toEqual({
+      status: "invalid_profile",
+      issues: ["firstname.required", "lastname.required"],
+    });
+    expect(deps.admitAttempt).not.toHaveBeenCalled();
+    expect(deps.hashPassword).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("refuse un prénom contenant un caractère de contrôle", async () => {
+    const { deps } = setup();
+    expect(await acceptInvitation(deps, { ...INPUT, firstname: "Cl\nem" })).toEqual({
+      status: "invalid_profile",
+      issues: ["firstname.invalid"],
+    });
+  });
+
   it("refuse un mot de passe trop faible avec les codes d'erreur, sans compter ni hacher", async () => {
     const { deps, query } = setup();
-    expect(await acceptInvitation(deps, { token: TOKEN, password: "court", ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, { ...INPUT, password: "court" })).toEqual({
       status: "invalid_password",
       issues: ["password.too_short"],
     });
@@ -154,18 +180,14 @@ describe("acceptInvitation", () => {
 
   it("refuse un mot de passe courant", async () => {
     const { deps } = setup();
-    const result = await acceptInvitation(deps, {
-      token: TOKEN,
-      password: "Password1234",
-      ip: IP,
-    });
+    const result = await acceptInvitation(deps, { ...INPUT, password: "Password1234" });
     expect(result).toEqual({ status: "invalid_password", issues: ["password.too_common"] });
   });
 
   it("s'arrête quand le rate limiting refuse", async () => {
     const { deps, query } = setup();
     deps.admitAttempt.mockResolvedValue({ admitted: false, retryAfterSeconds: 840 });
-    expect(await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, INPUT)).toEqual({
       status: "rate_limited",
       retryAfterSeconds: 840,
     });
@@ -175,7 +197,7 @@ describe("acceptInvitation", () => {
 
   it("refuse une invitation inconnue, expirée, utilisée ou révoquée, sans hacher ni créer", async () => {
     const { deps, query } = setup();
-    expect(await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, INPUT)).toEqual({
       status: "invalid_invitation",
     });
     expect(query.mock.calls).toHaveLength(1);
@@ -185,7 +207,7 @@ describe("acceptInvitation", () => {
   it("ne crée pas de compte quand le marquage échoue (invitation consommée entre-temps)", async () => {
     const { deps, query } = setup();
     query.mockResolvedValueOnce({ rows: [INVITATION_ROW] }).mockResolvedValueOnce({ rows: [] });
-    expect(await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, INPUT)).toEqual({
       status: "invalid_invitation",
     });
     expect(query.mock.calls).toHaveLength(2);
@@ -198,7 +220,7 @@ describe("acceptInvitation", () => {
       .mockResolvedValueOnce({ rows: [INVITATION_ROW] })
       .mockResolvedValueOnce({ rows: [{ id: INVITATION_ID }] })
       .mockRejectedValueOnce(Object.assign(new Error("duplicate key"), { code: "23505" }));
-    expect(await acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP })).toEqual({
+    expect(await acceptInvitation(deps, INPUT)).toEqual({
       status: "invalid_invitation",
     });
   });
@@ -207,8 +229,6 @@ describe("acceptInvitation", () => {
     const { deps, query } = setup();
     const failure = new Error("connexion perdue");
     query.mockRejectedValue(failure);
-    await expect(
-      acceptInvitation(deps, { token: TOKEN, password: PASSWORD, ip: IP }),
-    ).rejects.toBe(failure);
+    await expect(acceptInvitation(deps, INPUT)).rejects.toBe(failure);
   });
 });

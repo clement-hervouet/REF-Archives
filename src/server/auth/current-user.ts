@@ -11,7 +11,20 @@ export type CurrentUser = {
   sessionId: string;
   email: string;
   role: UserRole;
+  /** `null` tant que le profil n'est pas complété (voir `hasCompleteProfile`). */
+  firstname: string | null;
+  lastname: string | null;
 };
+
+/** Utilisateur dont le nom et le prénom sont renseignés : celui que voient les pages. */
+export type ProfiledUser = CurrentUser & { firstname: string; lastname: string };
+
+/** Vrai quand le nom et le prénom sont renseignés (obligatoires pour utiliser l'application). */
+export function hasCompleteProfile<U extends Pick<CurrentUser, "firstname" | "lastname">>(
+  user: U,
+): user is U & { firstname: string; lastname: string } {
+  return user.firstname !== null && user.lastname !== null;
+}
 
 const sessionIdSchema = z.uuid();
 
@@ -37,5 +50,7 @@ export async function resolveCurrentUser(
     sessionId: active.sessionId,
     email: active.email,
     role: active.role,
+    firstname: active.firstname,
+    lastname: active.lastname,
   };
 }

@@ -38,9 +38,6 @@ describe("isPublicPath", () => {
 
 describe("SESSION_COOKIE_NAMES", () => {
   it("couvre le cookie HTTP et le cookie HTTPS d'Auth.js", () => {
-    expect(SESSION_COOKIE_NAMES).toEqual([
-      "authjs.session-token",
-      "__Secure-authjs.session-token",
-    ]);
+    expect(SESSION_COOKIE_NAMES).toEqual(["authjs.session-token", "__Secure-authjs.session-token"]);
   });
 });

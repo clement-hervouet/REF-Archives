@@ -41,7 +41,10 @@ describe("parseReminderSettingsForm", () => {
 
   it("refuse un délai hors bornes, décimal ou absent", () => {
     for (const weeks of ["0", "13", "5.5", "-1", "abc", ""]) {
-      expect(parseReminderSettingsForm(form({ availabilityReminderWeeks: weeks })), weeks).toBeNull();
+      expect(
+        parseReminderSettingsForm(form({ availabilityReminderWeeks: weeks })),
+        weeks,
+      ).toBeNull();
     }
     expect(parseReminderSettingsForm(form({}))).toBeNull();
   });

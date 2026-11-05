@@ -127,7 +127,14 @@ async function main(): Promise<void> {
       const db: Queryable = {
         query: (text, values) => client.query<Record<string, unknown>>(text, values),
       };
-      const user = await createUser(db, { email: email.data, passwordHash, role: "admin" });
+      // Sans nom ni prénom : l'application les fait compléter à la première connexion (§3.12).
+      const user = await createUser(db, {
+        email: email.data,
+        passwordHash,
+        role: "admin",
+        firstname: null,
+        lastname: null,
+      });
       console.log(`Compte admin créé : ${user.email} (${user.id})`);
     });
   } catch (error: unknown) {

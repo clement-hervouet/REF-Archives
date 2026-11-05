@@ -75,7 +75,9 @@ describe("createSecurityEventRecorder", () => {
   it("ne lève jamais d'erreur quand l'écriture échoue", async () => {
     const { deps, record } = setup();
     deps.insert.mockRejectedValue(new Error("connexion perdue"));
-    await expect(record({ type: "login_succeeded", userId: USER_ID, ip: IP })).resolves.toBeUndefined();
+    await expect(
+      record({ type: "login_succeeded", userId: USER_ID, ip: IP }),
+    ).resolves.toBeUndefined();
   });
 
   it("signale seulement le nom de l'erreur, jamais son message", async () => {

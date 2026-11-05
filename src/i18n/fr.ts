@@ -45,7 +45,8 @@ export const fr = {
   },
   invitation: {
     title: "Créer votre compte",
-    intro: "Vous avez été invité avec l'adresse {email}. Choisissez votre mot de passe.",
+    intro:
+      "Vous avez été invité avec l'adresse {email}. Indiquez votre prénom et votre nom, puis choisissez votre mot de passe.",
     password: "Mot de passe",
     passwordHint: "12 caractères minimum. Une phrase de passe fonctionne très bien.",
     confirmation: "Confirmer le mot de passe",
@@ -55,6 +56,34 @@ export const fr = {
     invalid: "Ce lien d'invitation n'est pas valide ou a expiré. Demandez-en un nouveau.",
     errors: {
       mismatch: "Les deux mots de passe ne correspondent pas.",
+    },
+  },
+  profile: {
+    firstname: "Prénom",
+    lastname: "Nom",
+    complete: {
+      title: "Compléter mon profil",
+      intro:
+        "Votre prénom et votre nom sont désormais nécessaires pour utiliser l'application. Vous pourrez les modifier dans les paramètres.",
+      submit: "Continuer",
+      submitting: "Enregistrement…",
+    },
+    settings: {
+      title: "Mon compte",
+      email: "Adresse email : {email}",
+      submit: "Enregistrer",
+      submitting: "Enregistrement…",
+      saved: "Nom et prénom enregistrés.",
+    },
+    errors: {
+      firstnameRequired: "Saisissez votre prénom.",
+      firstnameTooLong: "Le prénom est trop long (100 caractères maximum).",
+      firstnameInvalid: "Le prénom contient des caractères non autorisés.",
+      lastnameRequired: "Saisissez votre nom.",
+      lastnameTooLong: "Le nom est trop long (100 caractères maximum).",
+      lastnameInvalid: "Le nom contient des caractères non autorisés.",
+      invalid: "Vérifiez votre prénom et votre nom.",
+      notFound: "Votre compte est introuvable. Reconnectez-vous.",
     },
   },
   forgotPassword: {
@@ -549,6 +578,7 @@ export const fr = {
     },
     settings: {
       title: "Paramètres",
+      sectionTitle: "Emails de rappel",
       intro:
         "Choisissez les emails de rappel que vous recevez. Les alertes de sécurité sont toujours envoyées.",
       availability: {

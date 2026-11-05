@@ -21,6 +21,9 @@ export type ActiveSession = {
   userId: string;
   email: string;
   role: UserRole;
+  /** `null` tant que l'utilisateur n'a pas complété son profil (comptes d'avant le bloc 10). */
+  firstname: string | null;
+  lastname: string | null;
 };
 
 const createdSessionRowSchema = z.object({
@@ -33,6 +36,8 @@ const activeSessionRowSchema = z.object({
   user_id: z.uuid(),
   email: z.string(),
   role: userRoleSchema,
+  firstname: z.string().nullable(),
+  lastname: z.string().nullable(),
 });
 
 const INSERT_SESSION_SQL = `INSERT INTO session (user_id, expires_at)
@@ -40,7 +45,7 @@ VALUES ($1, now() + $2::integer * interval '1 second')
 RETURNING id, expires_at`;
 
 // Les deux conditions de validité vivent ici et nulle part ailleurs.
-const FIND_ACTIVE_SESSION_SQL = `SELECT s.id, s.user_id, u.email, u.role
+const FIND_ACTIVE_SESSION_SQL = `SELECT s.id, s.user_id, u.email, u.role, u.firstname, u.lastname
 FROM session s
 JOIN "user" u ON u.id = s.user_id
 WHERE s.id = $1 AND s.revoked_at IS NULL AND s.expires_at > now()`;
@@ -81,6 +86,8 @@ export async function findActiveSession(
     userId: parsed.user_id,
     email: parsed.email,
     role: parsed.role,
+    firstname: parsed.firstname,
+    lastname: parsed.lastname,
   };
 }
 
