@@ -1,7 +1,7 @@
 export const fr = {
   app: {
     name: "REF-Archives",
-    tagline: "Indemnités, disponibilités et notes d'arbitre.",
+    tagline: "Indemnités, rappels et notes d'arbitre.",
   },
   notFound: {
     title: "Page introuvable",
@@ -13,6 +13,8 @@ export const fr = {
     invitations: "Invitations",
     scales: "Mes barèmes",
     commonScale: "Barème commun",
+    upcoming: "À venir",
+    settings: "Paramètres",
   },
   auth: {
     login: {
@@ -340,6 +342,55 @@ export const fr = {
       },
     },
   },
+  reminders: {
+    home: {
+      availability: "Pensez à saisir vos indisponibilités du weekend du {date}.",
+      weekendNone: "Aucun match prévu ce weekend.",
+      weekendOne: "1 match prévu ce weekend.",
+      weekendMany: "{count} matchs prévus ce weekend.",
+      seeUpcoming: "Voir les matchs à venir",
+      settingsLink: "Régler les rappels",
+    },
+    settings: {
+      title: "Paramètres",
+      intro:
+        "Choisissez les emails de rappel que vous recevez. Les alertes de sécurité sont toujours envoyées.",
+      availability: {
+        legend: "Rappel des indisponibilités",
+        enabled: "Recevoir chaque lundi un rappel pour saisir mes indisponibilités",
+        weeks: "Délai du rappel",
+        weeksOne: "1 semaine à l'avance",
+        weeksMany: "{count} semaines à l'avance",
+        hint: "Le rappel du lundi vise le weekend situé ce nombre de semaines plus loin.",
+      },
+      weekendRecap: {
+        legend: "Récapitulatif du weekend",
+        enabled: "Recevoir à partir du jeudi le récapitulatif de mes matchs du weekend",
+        hint: "Envoyé seulement si au moins un match est prévu du vendredi au dimanche.",
+      },
+      submit: "Enregistrer",
+      submitting: "Enregistrement…",
+      saved: "Paramètres enregistrés.",
+      errors: {
+        invalid: "Les paramètres envoyés ne sont pas valides.",
+        notFound: "Votre compte est introuvable. Reconnectez-vous.",
+      },
+    },
+    upcoming: {
+      title: "À venir",
+      intro:
+        "Vos matchs prévus, d'après les indemnités saisies. Les collègues s'ajouteront avec les matchs complets.",
+      weekendTitle: "Ce weekend (samedi {saturday} et dimanche {sunday})",
+      weekendEmpty: "Aucun match prévu ce weekend.",
+      laterTitle: "Les {weeks} semaines suivantes",
+      laterEmpty: "Aucun autre match prévu.",
+      teams: "{team1} – {team2}",
+      itinerary: "Itinéraire",
+      itineraryLabel: "Itinéraire vers {address} (nouvel onglet)",
+      edit: "Modifier",
+      editLabel: "Modifier le match du {date}",
+    },
+  },
   email: {
     footer:
       "Vous recevez cet email car une action a été demandée sur REF-Archives. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
@@ -347,6 +398,23 @@ export const fr = {
     securityFooter:
       "Cet email est une alerte de sécurité de REF-Archives. Il ne contient aucun lien et ne vous demandera jamais votre mot de passe.",
     linkFallback: "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :",
+    // Emails non essentiels (§9) : toujours désactivables depuis les paramètres.
+    reminderFooter:
+      "Vous recevez cet email car ce rappel est activé dans vos paramètres REF-Archives. Vous pouvez le désactiver ou modifier son délai à tout moment.",
+    availabilityReminder: {
+      subject: "Saisissez vos indisponibilités du weekend du {date}",
+      title: "Pensez à vos indisponibilités",
+      body: "Pensez à saisir vos indisponibilités pour le weekend du samedi {saturday} et du dimanche {sunday}.",
+      action: "Gérer mes rappels",
+    },
+    weekendRecap: {
+      subject: "Vos matchs du weekend du {date}",
+      title: "Vos matchs du weekend",
+      countOne: "1 match est prévu ce weekend :",
+      countMany: "{count} matchs sont prévus ce weekend :",
+      matchLine: "{when} : {team1} – {team2} ({division}), {address}",
+      action: "Voir mes matchs à venir",
+    },
     test: {
       subject: "Test d'envoi REF-Archives",
       title: "Test d'envoi",

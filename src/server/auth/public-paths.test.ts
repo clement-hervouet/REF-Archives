@@ -9,6 +9,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/api/auth/callback/credentials")).toBe(true);
     expect(isPublicPath("/api/ical/abc.ics")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
+    expect(isPublicPath("/api/cron/reminders")).toBe(true);
   });
 
   it("refuse les pages de l'application", () => {
@@ -22,6 +23,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/api/authz")).toBe(false);
     expect(isPublicPath("/api/auth-bypass")).toBe(false);
     expect(isPublicPath("/api/icalendar")).toBe(false);
+    expect(isPublicPath("/api/cronjobs")).toBe(false);
   });
 
   it("ne rend pas publique une page qui contient seulement le nom d'une route publique", () => {

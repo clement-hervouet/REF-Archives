@@ -7,7 +7,8 @@
 export const SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.session-token"];
 
 // Les entrées /api/ical et /api/health anticipent les prochaines étapes
-// (flux iCal protégé par jeton, healthcheck Docker).
+// (flux iCal protégé par jeton, healthcheck Docker). /api/cron est protégé par
+// CRON_SECRET, vérifié dans chaque route.
 const PUBLIC_PATHS = [
   "/login",
   "/invitation",
@@ -16,6 +17,7 @@ const PUBLIC_PATHS = [
   "/api/auth",
   "/api/ical",
   "/api/health",
+  "/api/cron",
 ];
 
 /** Vrai si le chemin (ou un de ses sous-chemins) est accessible sans session. */

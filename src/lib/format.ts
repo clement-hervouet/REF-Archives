@@ -12,6 +12,17 @@ const dateTimeFormat = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
+// `h23` : minuit s'écrit 00, jamais 24 (piège connu de `hour12: false`).
+const weekdayDateTimeFormat = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Europe/Paris",
+});
+
 // Uniquement pour les séparateurs de milliers de la partie entière.
 const integerFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 
@@ -21,6 +32,22 @@ const NBSP = "\u00a0";
 /** Date et heure courtes, ex. « 01/11/2026 11:00 ». */
 export function formatDateTime(date: Date): string {
   return dateTimeFormat.format(date);
+}
+
+/**
+ * Jour, date et heure à Paris, ex. « vendredi 06/11 à 20:30 ». Reconstruit à partir des
+ * parties pour ne pas dépendre de la ponctuation choisie par la locale.
+ */
+export function formatWeekdayDateTime(date: Date): string {
+  if (Number.isNaN(date.getTime())) {
+    throw new ValidationError("invalid_date");
+  }
+  const parts = new Map<string, string>();
+  for (const part of weekdayDateTimeFormat.formatToParts(date)) {
+    parts.set(part.type, part.value);
+  }
+  const get = (type: string): string => parts.get(type) ?? "";
+  return `${get("weekday")} ${get("day")}/${get("month")} à ${get("hour")}:${get("minute")}`;
 }
 
 /** Date calendaire `AAAA-MM-JJ` (colonne `date`) affichée « JJ/MM/AAAA », sans fuseau. */

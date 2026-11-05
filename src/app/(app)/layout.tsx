@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { fr } from "@/i18n/fr";
+import { SETTINGS_PATH, UPCOMING_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { logout } from "./actions";
 import { AdminNav } from "./admin-nav";
@@ -27,11 +28,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {fr.app.name}
         </Link>
         <nav className="flex flex-wrap items-center gap-2">
+          <Link href={UPCOMING_PATH} className="inline-flex min-h-11 items-center px-3 underline">
+            {fr.nav.upcoming}
+          </Link>
           <Link href="/indemnites" className="inline-flex min-h-11 items-center px-3 underline">
             {fr.nav.compensations}
           </Link>
           <Link href="/baremes" className="inline-flex min-h-11 items-center px-3 underline">
             {fr.nav.scales}
+          </Link>
+          <Link href={SETTINGS_PATH} className="inline-flex min-h-11 items-center px-3 underline">
+            {fr.nav.settings}
           </Link>
           <Suspense fallback={null}>
             <AdminNav />
