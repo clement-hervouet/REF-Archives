@@ -12,7 +12,11 @@ import { updateCompensationAction } from "./actions";
 
 const t = fr.compensations;
 
-export default async function EditCompensationPage(props: PageProps<"/indemnites/[id]/modifier">) {
+// Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
+// avant le typecheck, sur un clone sans `.next/types`.
+type EditCompensationPageProps = { params: Promise<{ id: string }> };
+
+export default async function EditCompensationPage(props: EditCompensationPageProps) {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
   const user = await requireUserOrRedirect();
   const id = z.uuid().safeParse((await props.params).id);

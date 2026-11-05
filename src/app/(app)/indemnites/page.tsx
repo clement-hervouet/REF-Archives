@@ -18,7 +18,13 @@ function monthParam(value: string | string[] | undefined): string | null {
   return typeof value === "string" && isMonth(value) ? value : null;
 }
 
-export default async function CompensationsPage(props: PageProps<"/indemnites">) {
+// Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
+// avant le typecheck, sur un clone sans `.next/types`.
+type CompensationsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function CompensationsPage(props: CompensationsPageProps) {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
   const user = await requireUserOrRedirect();
   const db = getDb();
