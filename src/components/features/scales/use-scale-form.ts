@@ -2,7 +2,8 @@
  * `useActionState` qui garde la saisie quand l'action échoue. React 19 réinitialise
  * un `<form action>` après chaque envoi, même en cas d'erreur : sans ce hook, une faute
  * de frappe ferait perdre tout le formulaire. Le formulaire est remonté (`key`) avec
- * les valeurs saisies en `defaultValue`, ou vidé après un succès.
+ * les valeurs saisies en `defaultValue`, ou vidé après un succès. Il peut aussi partir de
+ * valeurs existantes (modification).
  */
 import { useActionState } from "react";
 
@@ -25,6 +26,8 @@ export function useScaleForm<S extends { status: string }>(
   action: (previous: S, formData: FormData) => Promise<S>,
   initial: S,
   successStatuses: readonly string[],
+  /** Valeurs affichées avant le premier envoi (formulaire de modification). */
+  initialValues: Values = {},
 ) {
   const [wrapped, formAction, isPending] = useActionState(
     async (previous: Wrapped<S>, formData: FormData): Promise<Wrapped<S>> => {
@@ -36,7 +39,7 @@ export function useScaleForm<S extends { status: string }>(
         version: previous.version + 1,
       };
     },
-    { state: initial, values: {}, version: 0 },
+    { state: initial, values: initialValues, version: 0 },
   );
   return {
     state: wrapped.state,

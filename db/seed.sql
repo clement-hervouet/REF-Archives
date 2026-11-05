@@ -76,17 +76,40 @@ INSERT INTO game (id, user_id, starts_at, division_id, address_id, team1_id, tea
   )
 ON CONFLICT DO NOTHING;
 
--- Match du 14/11/2026 : la ligne en vigueur de « Comité fictif » est celle du 01/09/2026.
-INSERT INTO compensation (id, user_id, game_id, scale_rate_id, distance_m) VALUES
+-- Indemnités : chacune porte ses informations de match (bloc 6).
+--  * 14/11/2026, liée au match fictif : la ligne en vigueur de « Comité fictif » est celle
+--    du 01/09/2026.
+--  * 10/10/2026, autonome (sans match), au barème commun, adresse du club de l'équipe 1.
+INSERT INTO compensation (
+  id, user_id, game_id, scale_rate_id, distance_m,
+  starts_at, division_id, team1_id, team2_id, address_id
+) VALUES
   (
     '00000000-0000-4000-8000-000000000093',
     '00000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000091',
     '00000000-0000-4000-8000-0000000000e4',
-    46000
+    46000,
+    '2026-11-14 18:00:00+00',
+    (SELECT id FROM division WHERE division = 'Regional' AND type = 'Masculin' AND level = '1'),
+    '00000000-0000-4000-8000-0000000000d1',
+    '00000000-0000-4000-8000-0000000000d2',
+    '00000000-0000-4000-8000-0000000000a4'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000094',
+    '00000000-0000-4000-8000-000000000001',
+    NULL,
+    '00000000-0000-4000-8000-0000000000e1',
+    24000,
+    '2026-10-10 18:30:00+00',
+    (SELECT id FROM division WHERE division = 'Regional' AND type = 'Masculin' AND level = '1'),
+    '00000000-0000-4000-8000-0000000000d2',
+    '00000000-0000-4000-8000-0000000000d1',
+    '00000000-0000-4000-8000-0000000000a3'
   )
 ON CONFLICT DO NOTHING;
 
 INSERT INTO note (id, user_id, game_id, body) VALUES
   ('00000000-0000-4000-8000-000000000092', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000091', 'Match fictif de développement.')
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING;

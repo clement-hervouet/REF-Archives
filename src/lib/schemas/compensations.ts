@@ -1,0 +1,153 @@
+/**
+ * Schéma du formulaire d'indemnité (bloc 6, §6.3). La Server Action reconstruit cet objet
+ * depuis le FormData, puis tout passe ici avant la moindre requête.
+ *
+ * Une indemnité est autonome : elle porte elle-même les informations du match indemnisé,
+ * sans référence obligatoire à un match complet (arbitres, notes : bloc ultérieur).
+ * - équipes : un club existant (par identifiant) ou un nouveau, créé à la volée ;
+ * - adresse : celle du club de l'équipe 1 par défaut, une autre seulement en cas
+ *   d'exception (case à cocher) ;
+ * - distance : saisie en km aller, stockée en mètres aller-retour (×2).
+ */
+import { z } from "zod";
+import { isIsoDate } from "@/lib/dates";
+import { ValidationError } from "@/lib/errors";
+import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
+
+/** Bornes raisonnables pour la date d'un match. */
+export const MATCH_DATE_MIN = "2000-01-01";
+export const MATCH_DATE_MAX = "2100-12-31";
+
+/** Distance aller maximale (2 000 km) ; l'aller-retour reste sous la borne SQL de 4 000 km. */
+export const MAX_ONE_WAY_DISTANCE_M = 2_000_000;
+
+/** Km aller : jusqu'à 4 chiffres, au plus 3 décimales (le mètre), virgule ou point. */
+const KM_PATTERN = /^(\d{1,4})(?:[.,](\d{1,3}))?$/;
+/** Aucun caractère de contrôle (sauts de ligne, tabulations, NUL…). */
+const NO_CONTROL_CHARS = /^[^\p{Cc}]*$/u;
+/** Code postal générique (France et étranger) : lettres, chiffres, espace, tiret. */
+const POSTAL_CODE_PATTERN = /^[0-9A-Za-z][0-9A-Za-z -]{1,9}$/;
+
+const requiredText = (max: number) => z.string().trim().min(1).max(max).regex(NO_CONTROL_CHARS);
+
+/** Champ texte facultatif : une saisie vide devient `null` (colonne NULL). */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .regex(NO_CONTROL_CHARS)
+    .transform((value) => (value === "" ? null : value));
+
+/** « 23,5 » km aller → 23 500 m. Suppose une chaîne déjà validée. */
+function oneWayKmToMeters(value: string): number {
+  const [whole = "0", fraction = ""] = value.split(/[.,]/);
+  return Number(whole) * 1000 + Number(fraction.padEnd(3, "0"));
+}
+
+/** Km aller saisis → mètres aller-retour. */
+export const oneWayDistanceSchema = z
+  .string()
+  .trim()
+  .regex(KM_PATTERN)
+  .transform(oneWayKmToMeters)
+  .refine((meters) => meters <= MAX_ONE_WAY_DISTANCE_M)
+  .transform((meters) => meters * 2);
+
+export const newAddressSchema = z.object({
+  street: requiredText(255),
+  number: optionalText(20),
+  postalCode: z.string().trim().regex(POSTAL_CODE_PATTERN),
+  city: requiredText(255),
+  country: optionalText(100),
+});
+
+/**
+ * Équipe : désignée par son club. L'équipe elle-même (club + niveau du match) est
+ * retrouvée ou créée côté serveur.
+ */
+export const teamChoiceSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
+  z.object({ kind: z.literal("new"), name: requiredText(255), address: newAddressSchema }),
+]);
+
+/**
+ * Adresse du match : celle du club de l'équipe 1 (cas normal), ou une exception
+ * (adresse déjà connue ou nouvelle).
+ */
+export const venueChoiceSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("team1") }),
+  z.object({ kind: z.literal("existing"), addressId: z.uuid() }),
+  z.object({ kind: z.literal("new"), address: newAddressSchema }),
+]);
+
+const compensationFieldsSchema = z.object({
+  date: z
+    .string()
+    .trim()
+    .refine(isIsoDate)
+    .refine((value) => value >= MATCH_DATE_MIN && value <= MATCH_DATE_MAX),
+  time: z.string().trim().refine(isTimeOfDay),
+  divisionId: z.uuid(),
+  team1: teamChoiceSchema,
+  team2: teamChoiceSchema,
+  venue: venueChoiceSchema,
+  scaleId: z.uuid(),
+  oneWayDistance: oneWayDistanceSchema,
+});
+
+/**
+ * Formulaire complet. Après validation : `startsAt` (instant UTC) et `distanceM` (mètres
+ * aller-retour) remplacent la saisie brute.
+ */
+export const compensationFormSchema = compensationFieldsSchema
+  .superRefine((value, ctx) => {
+    if (
+      value.team1.kind === "existing" &&
+      value.team2.kind === "existing" &&
+      value.team1.clubId === value.team2.clubId
+    ) {
+      ctx.addIssue({ code: "custom", path: ["team2"], message: "same_club" });
+    }
+    // Vérifiée ici aussi (et pas seulement dans le transform, que Zod saute dès qu'une
+    // autre erreur existe) : toutes les erreurs remontent en un seul envoi. Seulement si
+    // la date et l'heure sont valides séparément, sinon leurs propres erreurs suffisent.
+    if (!isIsoDate(value.date) || !isTimeOfDay(value.time)) {
+      return;
+    }
+    try {
+      parisLocalToUtc(value.date, value.time);
+    } catch (error) {
+      if (!(error instanceof ValidationError)) {
+        throw error;
+      }
+      ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
+    }
+  })
+  .transform((value, ctx) => {
+    let startsAt: Date;
+    try {
+      startsAt = parisLocalToUtc(value.date, value.time);
+    } catch (error) {
+      if (!(error instanceof ValidationError)) {
+        throw error;
+      }
+      ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
+      return z.NEVER;
+    }
+    return {
+      startsAt,
+      divisionId: value.divisionId,
+      team1: value.team1,
+      team2: value.team2,
+      venue: value.venue,
+      scaleId: value.scaleId,
+      distanceM: value.oneWayDistance,
+    };
+  });
+
+export type CompensationFormInput = z.input<typeof compensationFormSchema>;
+export type CompensationForm = z.output<typeof compensationFormSchema>;
+
+/** Champs du formulaire d'indemnité, pour signaler précisément ceux qui sont invalides. */
+export type CompensationFormField = keyof z.input<typeof compensationFieldsSchema>;
