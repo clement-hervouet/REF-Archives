@@ -47,7 +47,10 @@ describe("listColleagues", () => {
 describe("findOwnedColleagueIds", () => {
   it("ne garde que les collègues de l'utilisateur", async () => {
     const { db, query } = makeFakeDb([{ id: PERSON_A }]);
-    const ids = await findOwnedColleagueIds(db, { userId: USER_ID, personIds: [PERSON_A, PERSON_B] });
+    const ids = await findOwnedColleagueIds(db, {
+      userId: USER_ID,
+      personIds: [PERSON_A, PERSON_B],
+    });
     expect([...ids]).toEqual([PERSON_A]);
     expect(query.mock.calls[0]?.[0]).toContain("NOT is_self");
     expect(query.mock.calls[0]?.[1]).toEqual([[PERSON_A, PERSON_B], USER_ID]);

@@ -20,7 +20,9 @@ export type AvailabilityReminderEmailInput = {
 };
 
 /** Construit l'email de rappel des indisponibilités. */
-export function buildAvailabilityReminderEmail(input: AvailabilityReminderEmailInput): EmailMessage {
+export function buildAvailabilityReminderEmail(
+  input: AvailabilityReminderEmailInput,
+): EmailMessage {
   const saturday = formatShortDate(input.weekendSaturday);
   const sunday = formatShortDate(addDays(input.weekendSaturday, 1));
   const { text, html } = renderEmail({

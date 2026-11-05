@@ -72,8 +72,8 @@ describe("parseEnv — variables email", () => {
 
   it("exige https pour APP_URL en production", () => {
     expect(() => parseEnv({ ...base, NODE_ENV: "production" })).toThrow(/APP_URL/);
-    expect(parseEnv({ ...base, NODE_ENV: "production", APP_URL: "https://ref.example.com" }).APP_URL).toBe(
-      "https://ref.example.com",
-    );
+    expect(
+      parseEnv({ ...base, NODE_ENV: "production", APP_URL: "https://ref.example.com" }).APP_URL,
+    ).toBe("https://ref.example.com");
   });
 });

@@ -23,8 +23,7 @@ export type BlockedKey = {
 
 export type AttemptDecision =
   /** `newlyBlocked` n'est présent que si cette tentative a déclenché un blocage. */
-  | { admitted: true; newlyBlocked?: BlockedKey[] }
-  | { admitted: false; retryAfterSeconds: number };
+  { admitted: true; newlyBlocked?: BlockedKey[] } | { admitted: false; retryAfterSeconds: number };
 
 export type LoginKeys = {
   ipKey: string;

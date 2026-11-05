@@ -7,10 +7,7 @@ import { parseReminderSettingsForm } from "@/lib/schemas/reminders";
 import type { ReminderSettings } from "./schedule";
 
 export type ReminderSettingsState =
-  | { status: "idle" }
-  | { status: "invalid" }
-  | { status: "not_found" }
-  | { status: "saved" };
+  { status: "idle" } | { status: "invalid" } | { status: "not_found" } | { status: "saved" };
 
 export type ReminderSettingsDeps = {
   update: (userId: string, settings: ReminderSettings) => Promise<boolean>;

@@ -31,9 +31,7 @@ describe("normalizeClipUrl", () => {
       "https://drive.google.com/file/d/xyz",
     );
     expect(normalizeClipUrl("http://example.com")).toBe("http://example.com/");
-    expect(normalizeClipUrl("https://example.com/mon clip")).toBe(
-      "https://example.com/mon%20clip",
-    );
+    expect(normalizeClipUrl("https://example.com/mon clip")).toBe("https://example.com/mon%20clip");
   });
 
   it("refuse les schémas dangereux ou non web", () => {

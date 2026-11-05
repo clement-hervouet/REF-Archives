@@ -9,7 +9,10 @@ import { SETTINGS_PATH } from "@/lib/app-paths";
 import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/pool";
 import { updateReminderSettings } from "@/server/db/reminders";
-import { type ReminderSettingsState, handleUpdateReminderSettings } from "@/server/reminders/settings";
+import {
+  type ReminderSettingsState,
+  handleUpdateReminderSettings,
+} from "@/server/reminders/settings";
 
 export async function updateReminderSettingsAction(
   _previous: ReminderSettingsState,

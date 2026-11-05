@@ -73,8 +73,8 @@ describe("dueReminders", () => {
       weekendRecapEnabled: false,
     };
     expect(dueReminders("2026-11-05", noneEnabled)).toEqual([]);
-    expect(
-      dueReminders("2026-11-05", { ...ALL_ON, availabilityReminderEnabled: false }),
-    ).toEqual([{ kind: "weekend_recap", periodStart: "2026-11-07" }]);
+    expect(dueReminders("2026-11-05", { ...ALL_ON, availabilityReminderEnabled: false })).toEqual([
+      { kind: "weekend_recap", periodStart: "2026-11-07" },
+    ]);
   });
 });

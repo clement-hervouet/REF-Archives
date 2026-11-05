@@ -89,7 +89,9 @@ describe("findOfficialsIssues", () => {
 
   it("refuse un collègue à deux places, signalé sur la seconde", () => {
     expect(
-      findOfficialsIssues(officials({ referee2: existing(PERSON_A), observer: existing(PERSON_A) })),
+      findOfficialsIssues(
+        officials({ referee2: existing(PERSON_A), observer: existing(PERSON_A) }),
+      ),
     ).toEqual([{ slot: "observer", code: "person_twice" }]);
   });
 
@@ -154,8 +156,10 @@ describe("officialsSchema", () => {
   it("refuse un identifiant de personne mal formé ou un type de place inconnu", () => {
     expect(officialsSchema.safeParse(officials({ referee2: existing("42") })).success).toBe(false);
     expect(
-      officialsSchema.safeParse({ ...officials(), referee2: { kind: "account", personId: PERSON_A } })
-        .success,
+      officialsSchema.safeParse({
+        ...officials(),
+        referee2: { kind: "account", personId: PERSON_A },
+      }).success,
     ).toBe(false);
   });
 });

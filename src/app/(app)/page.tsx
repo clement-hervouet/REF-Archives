@@ -48,7 +48,10 @@ export default async function HomePage() {
           <p id="home-availability" className="font-medium">
             {t.availability.replace("{date}", formatShortDate(reminderSaturday))}
           </p>
-          <Link href={SETTINGS_PATH} className="inline-flex min-h-11 items-center self-start underline">
+          <Link
+            href={SETTINGS_PATH}
+            className="inline-flex min-h-11 items-center self-start underline"
+          >
             {t.settingsLink}
           </Link>
         </section>
@@ -56,7 +59,10 @@ export default async function HomePage() {
 
       <section className="flex flex-col gap-2 rounded-md border border-neutral-300 p-4">
         <p className="font-medium">{weekendCountLabel(weekendMatches.length)}</p>
-        <Link href={UPCOMING_PATH} className="inline-flex min-h-11 items-center self-start underline">
+        <Link
+          href={UPCOMING_PATH}
+          className="inline-flex min-h-11 items-center self-start underline"
+        >
           {t.seeUpcoming}
         </Link>
       </section>
