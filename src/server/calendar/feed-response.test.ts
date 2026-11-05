@@ -26,9 +26,7 @@ function makeDeps(userId: string | null, matches: CalendarMatch[] = [MATCH]) {
   const findUserIdByTokenHash = vi
     .fn<CalendarFeedDeps["findUserIdByTokenHash"]>()
     .mockResolvedValue(userId);
-  const listMatchesSince = vi
-    .fn<CalendarFeedDeps["listMatchesSince"]>()
-    .mockResolvedValue(matches);
+  const listMatchesSince = vi.fn<CalendarFeedDeps["listMatchesSince"]>().mockResolvedValue(matches);
   return {
     deps: { findUserIdByTokenHash, listMatchesSince } satisfies CalendarFeedDeps,
     findUserIdByTokenHash,

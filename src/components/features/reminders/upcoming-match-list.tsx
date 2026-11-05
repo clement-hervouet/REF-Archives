@@ -1,11 +1,13 @@
 /**
- * Matchs à venir (page « À venir ») : heure, équipes, niveau, lieu et lien d'itinéraire.
+ * Matchs à venir (page « À venir ») : heure, équipes, niveau, lieu, lien d'itinéraire et
+ * export du match vers un agenda (fichier `.ics`).
  * Ni montant ni barème : c'est une fiche pratique pour se rendre au match.
  */
 import Link from "next/link";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
+import { matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatWeekdayDateTime } from "@/lib/format";
 import { itineraryUrl } from "@/lib/itinerary";
@@ -49,6 +51,15 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
                   className={LINK_CLASS}
                 >
                   {t.itinerary}
+                </a>
+                {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+                <a
+                  href={matchExportPath(match.id)}
+                  download
+                  aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
+                  className={LINK_CLASS}
+                >
+                  {fr.calendar.export.label}
                 </a>
                 <Link
                   href={`/indemnites/${match.id}/modifier`}

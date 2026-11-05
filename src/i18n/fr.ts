@@ -400,6 +400,45 @@ export const fr = {
       level: "Niveau : {division}",
       arrival: "L'événement commence 1 h avant le match (arrivée des arbitres).",
     },
+    settings: {
+      title: "Abonnement calendrier",
+      intro:
+        "Abonnez votre agenda (Google Agenda, Samsung Calendar, Apple Calendrier, Outlook…) à vos matchs. Il se met à jour seul quand vous saisissez, modifiez ou supprimez un match, au rythme de l'agenda : souvent plusieurs heures chez Google.",
+      content:
+        "Le flux contient vos matchs des 12 derniers mois et à venir : équipes, niveau, adresse et horaire. Aucun montant ni barème.",
+      none: "Aucun lien d'abonnement pour l'instant.",
+      activeSince: "Lien d'abonnement actif depuis le {date}.",
+      create: "Créer mon lien d'abonnement",
+      regenerate: "Régénérer le lien",
+      revoke: "Révoquer le lien",
+      regenerateWarning:
+        "L'ancien lien cessera immédiatement de fonctionner : vos agendas ne recevront plus vos matchs tant que vous ne les aurez pas abonnés au nouveau lien.",
+      revokeWarning:
+        "Le lien cessera immédiatement de fonctionner et vos agendas ne recevront plus vos matchs.",
+      confirmRegenerate: "Confirmer la régénération",
+      confirmRevoke: "Confirmer la révocation",
+      cancel: "Annuler",
+      pending: "Traitement…",
+      urlLabel: "Votre lien d'abonnement",
+      urlOnce:
+        "Ce lien n'est affiché qu'une seule fois : copiez-le maintenant. Il donne accès à vos matchs sans mot de passe, ne le partagez pas.",
+      copy: "Copier le lien",
+      copied: "Lien copié.",
+      copyFailed: "Copie impossible : sélectionnez le lien et copiez-le à la main.",
+      openInApp: "Ouvrir dans mon agenda",
+      howTo:
+        "Google Agenda (sur ordinateur) : « Autres agendas » → « + » → « À partir de l'URL », puis collez le lien. Samsung Calendar, Apple Calendrier ou Outlook : « Ouvrir dans mon agenda », ou leur option « S'abonner à un calendrier ».",
+      created: "Nouveau lien d'abonnement créé.",
+      revoked: "Lien d'abonnement révoqué.",
+      errors: {
+        invalid: "La demande envoyée n'est pas valide.",
+        notFound: "Aucun lien d'abonnement à révoquer.",
+      },
+    },
+    export: {
+      label: "Ajouter à l'agenda",
+      ariaLabel: "Ajouter le match du {date} à mon agenda (fichier .ics)",
+    },
   },
   email: {
     footer:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateToken } from "@/server/auth/tokens";
-import { parseCalendarFeedFile } from "./calendar";
+import { parseCalendarFeedFile, parseCalendarFeedIntent } from "./calendar";
 
 const TOKEN = "a".repeat(20) + "B-_9".repeat(5) + "zzz";
 
@@ -27,5 +27,26 @@ describe("parseCalendarFeedFile", () => {
     expect(parseCalendarFeedFile(`${TOKEN.slice(1)}+.ics`)).toBeNull();
     expect(parseCalendarFeedFile(`${TOKEN.slice(1)}=.ics`)).toBeNull();
     expect(parseCalendarFeedFile(`../${TOKEN.slice(3)}.ics`)).toBeNull();
+  });
+});
+
+describe("parseCalendarFeedIntent", () => {
+  function form(intent?: string): FormData {
+    const data = new FormData();
+    if (intent !== undefined) {
+      data.set("intent", intent);
+    }
+    return data;
+  }
+
+  it("accepte create et revoke", () => {
+    expect(parseCalendarFeedIntent(form("create"))).toBe("create");
+    expect(parseCalendarFeedIntent(form("revoke"))).toBe("revoke");
+  });
+
+  it("refuse une intention absente ou inconnue", () => {
+    expect(parseCalendarFeedIntent(form())).toBeNull();
+    expect(parseCalendarFeedIntent(form("delete"))).toBeNull();
+    expect(parseCalendarFeedIntent(form("CREATE"))).toBeNull();
   });
 });
