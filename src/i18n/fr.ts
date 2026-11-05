@@ -391,6 +391,16 @@ export const fr = {
       editLabel: "Modifier le match du {date}",
     },
   },
+  calendar: {
+    feedName: "REF-Archives – Mes matchs",
+    // Texte des événements iCal : aucun montant ni barème (§5.4, strict nécessaire).
+    event: {
+      summary: "Arbitrage : {team1} – {team2}",
+      tipOff: "Coup d'envoi : {when}",
+      level: "Niveau : {division}",
+      arrival: "L'événement commence 1 h avant le match (arrivée des arbitres).",
+    },
+  },
   email: {
     footer:
       "Vous recevez cet email car une action a été demandée sur REF-Archives. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
