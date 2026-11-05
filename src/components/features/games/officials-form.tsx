@@ -60,26 +60,40 @@ export function OfficialsForm({ action, colleagues, initialValues, hidden, label
       <FormMessage message={officialsStatusMessage(state)} />
       <form key={formKey} action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name={hidden.name} value={hidden.value} />
-        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
-          <legend className="px-1 font-semibold">{t.officials.legend}</legend>
-          <p className="text-sm text-neutral-700">{t.officials.intro}</p>
-          <div className="grid gap-6 md:grid-cols-2">
-            {OFFICIAL_SLOTS.map((slot) => (
-              <SlotFields
-                key={slot}
-                slot={slot}
-                colleagues={colleagues}
-                current={current}
-                error={slotError(slot, state)}
-              />
-            ))}
-          </div>
-        </fieldset>
+        <OfficialsFieldset colleagues={colleagues} current={current} state={state} />
         <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
           {isPending ? labels.submitting : labels.submit}
         </button>
       </form>
     </div>
+  );
+}
+
+type OfficialsFieldsetProps = {
+  colleagues: readonly Colleague[];
+  /** Valeur actuelle d'un champ (saisie conservée ou valeur enregistrée). */
+  current: (name: string) => string;
+  state: OfficialsFormState;
+};
+
+/** Les quatre places, sans `<form>` : aussi utilisé par le formulaire de match sans indemnité. */
+export function OfficialsFieldset({ colleagues, current, state }: OfficialsFieldsetProps) {
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <legend className="px-1 font-semibold">{t.officials.legend}</legend>
+      <p className="text-sm text-neutral-700">{t.officials.intro}</p>
+      <div className="grid gap-6 md:grid-cols-2">
+        {OFFICIAL_SLOTS.map((slot) => (
+          <SlotFields
+            key={slot}
+            slot={slot}
+            colleagues={colleagues}
+            current={current}
+            error={slotError(slot, state)}
+          />
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

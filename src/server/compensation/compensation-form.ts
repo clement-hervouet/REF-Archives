@@ -126,7 +126,8 @@ export function fieldOfIssuePath(path: readonly PropertyKey[]): CompensationFiel
   return isField(top) ? top : null;
 }
 
-function invalidFields(error: z.ZodError): CompensationField[] {
+/** Champs invalides, dans l'ordre du formulaire (aussi utilisé par le match complet, bloc 9). */
+export function invalidFields(error: z.ZodError): CompensationField[] {
   const failed = new Set<CompensationField>();
   for (const issue of error.issues) {
     const field = fieldOfIssuePath(issue.path);

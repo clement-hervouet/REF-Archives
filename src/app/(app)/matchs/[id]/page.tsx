@@ -69,15 +69,18 @@ export default async function GamePage(props: GamePageProps) {
             .replace("{division}", divisionLabel(game.division))
             .replace("{address}", addressLabel(game.address))}
         </p>
-        {game.compensationId === null ? (
-          <p className="text-sm text-neutral-700">{t.detail.noCompensation}</p>
-        ) : (
-          <Link
-            href={`/indemnites/${game.compensationId}/modifier`}
-            className={`${LINK_CLASS} self-start`}
-          >
-            {t.detail.editCompensation}
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/matchs/${game.id}/modifier`} className={LINK_CLASS}>
+            {t.info.edit}
           </Link>
+          {game.compensationId !== null && (
+            <Link href={`/indemnites/${game.compensationId}/modifier`} className={LINK_CLASS}>
+              {t.detail.editCompensation}
+            </Link>
+          )}
+        </div>
+        {game.compensationId === null && (
+          <p className="text-sm text-neutral-700">{t.detail.noCompensation}</p>
         )}
       </section>
 

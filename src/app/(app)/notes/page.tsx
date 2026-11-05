@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { GameNoteList } from "@/components/features/games/game-note-list";
 import { GameNotesFilters } from "@/components/features/games/game-notes-filters";
 import { fr } from "@/i18n/fr";
@@ -32,13 +33,22 @@ export default async function GameNotesPage(props: GameNotesPageProps) {
     filters.category !== null ||
     filters.level !== null ||
     filters.type !== null ||
-    filters.clubId !== null;
+    filters.clubId !== null ||
+    filters.includeWithoutNote;
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+      <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="flex max-w-2xl flex-col gap-2">
+          <h1 className="text-2xl font-semibold">{t.title}</h1>
+          <p className="text-neutral-700">{t.intro}</p>
+        </div>
+        <Link
+          href="/matchs/nouveau"
+          className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center self-start`}
+        >
+          {fr.games.standalone.create}
+        </Link>
       </section>
 
       <GameNotesFilters filters={filters} clubs={clubs} />

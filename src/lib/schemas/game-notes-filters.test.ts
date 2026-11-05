@@ -11,9 +11,17 @@ describe("parseGameNotesFilters", () => {
         niveau: "U15",
         type: "Feminin",
         club: CLUB_ID,
+        tous: "1",
         page: "3",
       }),
-    ).toEqual({ category: "Regional", level: "U15", type: "Feminin", clubId: CLUB_ID, page: 3 });
+    ).toEqual({
+      category: "Regional",
+      level: "U15",
+      type: "Feminin",
+      clubId: CLUB_ID,
+      includeWithoutNote: true,
+      page: 3,
+    });
   });
 
   it("sans paramètre : aucun filtre, page 1", () => {
@@ -22,6 +30,7 @@ describe("parseGameNotesFilters", () => {
       level: null,
       type: null,
       clubId: null,
+      includeWithoutNote: false,
       page: 1,
     });
   });
@@ -33,9 +42,17 @@ describe("parseGameNotesFilters", () => {
         niveau: "u15",
         type: ["Masculin", "Feminin"],
         club: "1 OR 1=1",
+        tous: "oui",
         page: "0",
       }),
-    ).toEqual({ category: null, level: null, type: null, clubId: null, page: 1 });
+    ).toEqual({
+      category: null,
+      level: null,
+      type: null,
+      clubId: null,
+      includeWithoutNote: false,
+      page: 1,
+    });
     for (const page of ["-1", "1.5", "abc", "01", "1001", "99999"]) {
       expect(parseGameNotesFilters({ page }).page).toBe(1);
     }
@@ -54,14 +71,22 @@ describe("gameNotesSearch", () => {
         level: "1",
         type: "Masculin",
         clubId: CLUB_ID,
+        includeWithoutNote: true,
         page: 2,
       }),
-    ).toBe(`?categorie=National&niveau=1&type=Masculin&club=${CLUB_ID}&page=2`);
+    ).toBe(`?categorie=National&niveau=1&type=Masculin&club=${CLUB_ID}&tous=1&page=2`);
   });
 
   it("omet les filtres vides et la page 1", () => {
     expect(
-      gameNotesSearch({ category: null, level: null, type: null, clubId: null, page: 1 }),
+      gameNotesSearch({
+        category: null,
+        level: null,
+        type: null,
+        clubId: null,
+        includeWithoutNote: false,
+        page: 1,
+      }),
     ).toBe("");
   });
 });

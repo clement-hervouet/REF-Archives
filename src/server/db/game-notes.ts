@@ -31,6 +31,8 @@ export type GameNoteListItem = {
   excerpt: string | null;
   excerptTruncated: boolean;
   clipCount: number;
+  /** Faux pour un match sans note (filtre « tous les matchs »). */
+  hasNote: boolean;
 };
 
 export type GameNotesPage = { items: GameNoteListItem[]; hasMore: boolean };
@@ -45,13 +47,14 @@ const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, d.division, d.type,
     WHEN g.referee3_id = s.id THEN 'referee3'
     WHEN g.observer_id = s.id THEN 'observer'
   END AS self_slot,
+  n.id IS NOT NULL AS has_note,
   n.confidence, n.stress,
   left(n.body, $7::integer) AS excerpt,
   coalesce(char_length(n.body) > $7::integer, false) AS excerpt_truncated,
   (SELECT count(*) FROM note_clip c WHERE c.note_id = n.id AND c.user_id = n.user_id)::integer
     AS clip_count
 FROM game g
-JOIN note n ON n.game_id = g.id AND n.user_id = g.user_id AND n.deleted_at IS NULL
+LEFT JOIN note n ON n.game_id = g.id AND n.user_id = g.user_id AND n.deleted_at IS NULL
 JOIN division d ON d.id = g.division_id
 JOIN team t1 ON t1.id = g.team1_id AND t1.user_id = g.user_id
 JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = g.user_id
@@ -63,6 +66,7 @@ WHERE g.user_id = $1 AND g.deleted_at IS NULL
   AND ($3::text IS NULL OR d.type::text = $3::text)
   AND ($4::uuid IS NULL OR club1.id = $4::uuid OR club2.id = $4::uuid)
   AND ($8::text IS NULL OR d.level::text = $8::text)
+  AND ($9::boolean OR n.id IS NOT NULL)
 ORDER BY g.starts_at DESC, g.id
 LIMIT $5::integer OFFSET $6::integer`;
 
@@ -80,9 +84,13 @@ const rowSchema = z.object({
   excerpt: z.string().nullable(),
   excerpt_truncated: z.boolean(),
   clip_count: z.number().int(),
+  has_note: z.boolean(),
 });
 
-/** Matchs actifs de l'utilisateur qui ont une note active, du plus récent au plus ancien. */
+/**
+ * Matchs actifs de l'utilisateur qui ont une note active (ou tous, avec
+ * `includeWithoutNote`), du plus récent au plus ancien.
+ */
 export async function listGamesWithNotes(
   db: Queryable,
   input: { userId: string; filters: GameNotesFilters },
@@ -97,6 +105,7 @@ export async function listGamesWithNotes(
     (filters.page - 1) * GAME_NOTES_PAGE_SIZE,
     NOTE_EXCERPT_LENGTH,
     filters.level,
+    filters.includeWithoutNote,
   ]);
   const rows = result.rows.map((raw) => rowSchema.parse(raw));
   return {
@@ -113,6 +122,7 @@ export async function listGamesWithNotes(
       excerpt: row.excerpt,
       excerptTruncated: row.excerpt_truncated,
       clipCount: row.clip_count,
+      hasNote: row.has_note,
     })),
   };
 }

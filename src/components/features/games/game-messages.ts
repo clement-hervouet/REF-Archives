@@ -5,7 +5,9 @@
 import { fr } from "@/i18n/fr";
 import type { OfficialSlot } from "@/lib/schemas/officials";
 import type { ScaleMessage } from "@/components/features/scales/scale-messages";
+import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { ColleagueFormState } from "@/server/games/colleagues-form";
+import type { GameFormState } from "@/server/games/game-info-form";
 import type { NoteField, NoteFormState } from "@/server/games/note-form";
 import type { OfficialsFormState } from "@/server/games/officials-form";
 
@@ -31,11 +33,21 @@ export function officialsStatusMessage(state: OfficialsFormState): ScaleMessage 
       };
     case "already_linked":
       return { tone: "error", text: t.errors.alreadyLinked };
+    case "no_rate_at_date":
+      return { tone: "error", text: t.errors.noRateAtDate };
     case "limit_reached":
-      return {
-        tone: "error",
-        text: state.resource === "game" ? t.errors.gameLimit : t.errors.colleagueLimit,
-      };
+      return { tone: "error", text: limitMessage(state.resource) };
+  }
+}
+
+function limitMessage(resource: "game" | "colleague" | "club"): string {
+  switch (resource) {
+    case "game":
+      return t.errors.gameLimit;
+    case "colleague":
+      return t.errors.colleagueLimit;
+    case "club":
+      return fr.compensations.errors.clubLimit;
   }
 }
 
@@ -107,4 +119,71 @@ export function colleagueStatusMessage(state: ColleagueFormState): ScaleMessage 
     case "limit_reached":
       return { tone: "error", text: c.errors.limit };
   }
+}
+
+/** Message global du formulaire de match (sans indemnité, ou informations modifiées). */
+export function gameFormStatusMessage(state: GameFormState): ScaleMessage | null {
+  switch (state.status) {
+    case "idle":
+    case "created":
+      return null;
+    case "updated":
+      return { tone: "success", text: t.info.updated };
+    case "invalid":
+      return { tone: "error", text: t.errors.invalid };
+    case "no_rate_at_date":
+      return { tone: "error", text: t.errors.noRateAtDate };
+    case "limit_reached":
+      return { tone: "error", text: limitMessage(state.resource) };
+    case "not_found":
+      switch (state.field) {
+        case "divisionId":
+        case "team1":
+        case "team2":
+        case "venue":
+          return { tone: "error", text: fr.compensations.errors.notFound };
+        default:
+          return officialsStatusMessage({ status: "not_found", field: state.field });
+      }
+    case "already_linked":
+      return officialsStatusMessage(state);
+  }
+}
+
+/** État vu par les champs du match (partagés avec l'indemnité) : erreurs de champ seulement. */
+export function matchFieldsState(state: GameFormState): CompensationFormState {
+  if (state.status === "invalid") {
+    return { status: "invalid", fields: state.fields };
+  }
+  if (state.status === "not_found") {
+    switch (state.field) {
+      case "divisionId":
+      case "team1":
+      case "team2":
+      case "venue":
+        return { status: "not_found", field: state.field };
+      default:
+        return { status: "idle" };
+    }
+  }
+  return { status: "idle" };
+}
+
+/** État vu par les places des officiels : erreurs de place seulement. */
+export function officialsFieldState(state: GameFormState): OfficialsFormState {
+  if (state.status === "invalid") {
+    return { status: "invalid", errors: state.officials };
+  }
+  if (state.status === "not_found") {
+    switch (state.field) {
+      case "referee1":
+      case "referee2":
+      case "referee3":
+      case "observer":
+        return { status: "not_found", field: state.field };
+      default:
+        return { status: "idle" };
+    }
+  }
+  return { status: "idle" };
 }

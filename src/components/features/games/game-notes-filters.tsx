@@ -103,6 +103,16 @@ export function GameNotesFilters({ filters, clubs }: Props) {
             </select>
           </div>
         </div>
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            type="checkbox"
+            name="tous"
+            value="1"
+            defaultChecked={filters.includeWithoutNote}
+            className="h-5 w-5 shrink-0"
+          />
+          <span>{t.includeWithoutNote}</span>
+        </label>
         <div className="flex flex-wrap gap-2">
           <button type="submit" className={PRIMARY_BUTTON_CLASS}>
             {t.submit}

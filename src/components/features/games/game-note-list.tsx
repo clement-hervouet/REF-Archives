@@ -49,6 +49,7 @@ export function GameNoteList({ items }: { items: readonly GameNoteListItem[] }) 
                   ))}
                 </ul>
               )}
+              {!item.hasNote && <p className="text-sm text-neutral-700">{t.noNote}</p>}
               {item.excerpt !== null && (
                 <p className="text-sm break-words whitespace-pre-line">
                   {item.excerptTruncated ? `${item.excerpt}…` : item.excerpt}

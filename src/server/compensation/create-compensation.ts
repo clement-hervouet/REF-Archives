@@ -12,23 +12,19 @@ import { toParisIsoDate } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import type { CompensationForm } from "@/lib/schemas/compensations";
 import {
-  addressBelongsTo,
   divisionExists,
-  ensureTeam,
-  insertAddress,
-  insertClub,
   insertCompensation,
   listApplicableRates,
   lockCompensation,
-  lockOwnedClubs,
   updateCompensation as updateCompensationRow,
 } from "../db/compensations";
-import type { ApplicableRate, LockedClub, NewCompensation } from "../db/compensations";
+import type { ApplicableRate, NewCompensation } from "../db/compensations";
 import { syncGameFromCompensation } from "../db/games";
 import type { Queryable } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
+import { resolveMatchInfo } from "./resolve-match";
 
 /** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
 type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
@@ -67,45 +63,6 @@ function reject(rejection: CreateCompensationRejection): never {
   throw new CompensationRejected(rejection);
 }
 
-type TeamSide = "team1" | "team2";
-
-/** Club d'une équipe : celui choisi (verrouillé plus tôt) ou un nouveau, avec son adresse. */
-async function resolveClub(
-  db: Queryable,
-  userId: string,
-  choice: CompensationForm["team1"],
-  side: TeamSide,
-  lockedClubs: ReadonlyMap<string, LockedClub>,
-): Promise<LockedClub> {
-  if (choice.kind === "existing") {
-    return lockedClubs.get(choice.clubId) ?? reject({ status: "not_found", field: side });
-  }
-  const addressId = await insertAddress(db, { userId, address: choice.address });
-  const clubId = await insertClub(db, { userId, name: choice.name, addressId });
-  return clubId === null
-    ? reject({ status: "limit_reached", resource: "club" })
-    : { id: clubId, addressId };
-}
-
-/** Adresse du match : celle du club de l'équipe 1, sauf exception. */
-async function resolveVenue(
-  db: Queryable,
-  userId: string,
-  venue: CompensationForm["venue"],
-  club1: LockedClub,
-): Promise<string> {
-  switch (venue.kind) {
-    case "team1":
-      return club1.addressId;
-    case "existing":
-      return (await addressBelongsTo(db, { addressId: venue.addressId, userId }))
-        ? venue.addressId
-        : reject({ status: "not_found", field: "venue" });
-    case "new":
-      return insertAddress(db, { userId, address: venue.address });
-  }
-}
-
 type ResolvedCompensation = {
   rate: ApplicableRate;
   row: Omit<NewCompensation, "userId">;
@@ -113,7 +70,8 @@ type ResolvedCompensation = {
 
 /**
  * Tout ce que l'indemnité référence, résolu et vérifié : d'abord ce qui peut refuser
- * sans rien écrire, puis les créations à la volée.
+ * sans rien écrire (niveau, barème), puis le match (`resolve-match.ts`, créations à la
+ * volée).
  */
 async function resolveCompensation(
   db: Queryable,
@@ -133,28 +91,11 @@ async function resolveCompensation(
     reject({ status: "no_rate_at_date" });
   }
 
-  const existingClubIds = [form.team1, form.team2].flatMap((team) =>
-    team.kind === "existing" ? [team.clubId] : [],
-  );
-  const lockedClubs = await lockOwnedClubs(db, { userId, clubIds: existingClubIds });
-  const club1 = await resolveClub(db, userId, form.team1, "team1", lockedClubs);
-  const club2 = await resolveClub(db, userId, form.team2, "team2", lockedClubs);
-  const addressId = await resolveVenue(db, userId, form.venue, club1);
-
-  const team1Id = await ensureTeam(db, { userId, clubId: club1.id, divisionId: form.divisionId });
-  const team2Id = await ensureTeam(db, { userId, clubId: club2.id, divisionId: form.divisionId });
+  const match = await resolveMatchInfo(db, userId, form, reject);
 
   return {
     rate,
-    row: {
-      scaleRateId: rate.id,
-      distanceM: form.distanceM,
-      startsAt: form.startsAt,
-      divisionId: form.divisionId,
-      team1Id,
-      team2Id,
-      addressId,
-    },
+    row: { ...match, scaleRateId: rate.id, distanceM: form.distanceM },
   };
 }
 

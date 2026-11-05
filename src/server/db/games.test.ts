@@ -4,6 +4,11 @@ import {
   MAX_GAMES_PER_USER,
   findCompensationForGame,
   findGame,
+  findGameForEdit,
+  insertGame,
+  lockLinkedCompensation,
+  updateCompensationFromGame,
+  updateGameInfo,
   insertGameFromCompensation,
   linkCompensationToGame,
   lockCompensationLink,
@@ -239,5 +244,137 @@ describe("findCompensationForGame", () => {
     expect(
       await findCompensationForGame(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
     ).toBeNull();
+  });
+});
+
+const DIVISION_ID = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
+const TEAM_1 = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
+const TEAM_2 = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02";
+const ADDRESS_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
+const SCALE_ID = "0b6d5a8e-2f4c-4d1a-9e3b-7c5f1a2d8e40";
+const RATE_ID = "c4e6a8b0-2d4f-4a6c-9e1b-3d5f7a9c1e61";
+const STARTS_AT = new Date("2026-11-14T18:00:00Z");
+const MATCH = {
+  startsAt: STARTS_AT,
+  divisionId: DIVISION_ID,
+  team1Id: TEAM_1,
+  team2Id: TEAM_2,
+  addressId: ADDRESS_ID,
+};
+
+describe("insertGame", () => {
+  it("crée un match sans indemnité sous la limite", async () => {
+    const { db, query } = makeFakeDb([{ id: GAME_ID }]);
+    expect(await insertGame(db, { userId: USER_ID, match: MATCH, officials: OFFICIALS })).toBe(
+      GAME_ID,
+    );
+    expect(query.mock.calls[0]?.[1]).toEqual([
+      USER_ID,
+      STARTS_AT,
+      DIVISION_ID,
+      ADDRESS_ID,
+      TEAM_1,
+      TEAM_2,
+      PERSON_A,
+      SELF_ID,
+      null,
+      null,
+      MAX_GAMES_PER_USER,
+    ]);
+  });
+
+  it("renvoie null quand la limite est atteinte", async () => {
+    const { db } = makeFakeDb([{ id: null }]);
+    expect(
+      await insertGame(db, { userId: USER_ID, match: MATCH, officials: OFFICIALS }),
+    ).toBeNull();
+  });
+});
+
+describe("updateGameInfo", () => {
+  it("remplace les informations du match de l'utilisateur", async () => {
+    const { db, query } = makeFakeDb();
+    await updateGameInfo(db, { gameId: GAME_ID, userId: USER_ID, match: MATCH });
+    expect(query.mock.calls[0]?.[1]).toEqual([
+      GAME_ID,
+      USER_ID,
+      STARTS_AT,
+      DIVISION_ID,
+      ADDRESS_ID,
+      TEAM_1,
+      TEAM_2,
+    ]);
+  });
+});
+
+describe("lockLinkedCompensation", () => {
+  it("verrouille l'indemnité liée et renvoie son barème", async () => {
+    const { db, query } = makeFakeDb([{ id: COMPENSATION_ID, scale_id: SCALE_ID }]);
+    expect(await lockLinkedCompensation(db, { gameId: GAME_ID, userId: USER_ID })).toEqual({
+      compensationId: COMPENSATION_ID,
+      scaleId: SCALE_ID,
+    });
+    expect(query.mock.calls[0]?.[0]).toContain("FOR UPDATE OF c");
+    expect(query.mock.calls[0]?.[1]).toEqual([GAME_ID, USER_ID]);
+  });
+
+  it("null sans indemnité liée", async () => {
+    const { db } = makeFakeDb();
+    expect(await lockLinkedCompensation(db, { gameId: GAME_ID, userId: USER_ID })).toBeNull();
+  });
+});
+
+describe("updateCompensationFromGame", () => {
+  it("recopie les informations et la nouvelle ligne de barème", async () => {
+    const { db, query } = makeFakeDb();
+    await updateCompensationFromGame(db, {
+      compensationId: COMPENSATION_ID,
+      userId: USER_ID,
+      match: MATCH,
+      scaleRateId: RATE_ID,
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([
+      COMPENSATION_ID,
+      USER_ID,
+      STARTS_AT,
+      DIVISION_ID,
+      ADDRESS_ID,
+      TEAM_1,
+      TEAM_2,
+      RATE_ID,
+    ]);
+  });
+});
+
+describe("findGameForEdit", () => {
+  it("renvoie les identifiants pour préremplir le formulaire", async () => {
+    const { db, query } = makeFakeDb([
+      {
+        id: GAME_ID,
+        starts_at: STARTS_AT,
+        division_id: DIVISION_ID,
+        address_id: ADDRESS_ID,
+        team1_club_id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+        team2_club_id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
+        team1_address_id: ADDRESS_ID,
+        compensation_id: null,
+      },
+    ]);
+    expect(await findGameForEdit(db, { gameId: GAME_ID, userId: USER_ID })).toEqual({
+      id: GAME_ID,
+      startsAt: STARTS_AT,
+      divisionId: DIVISION_ID,
+      team1ClubId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+      team2ClubId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
+      addressId: ADDRESS_ID,
+      team1AddressId: ADDRESS_ID,
+      compensationId: null,
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([GAME_ID, USER_ID]);
+  });
+
+  it("null si introuvable", async () => {
+    const { db } = makeFakeDb();
+    expect(await findGameForEdit(db, { gameId: GAME_ID, userId: USER_ID })).toBeNull();
   });
 });

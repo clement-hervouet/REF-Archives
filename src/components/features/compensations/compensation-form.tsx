@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Formulaire d'indemnité (bloc 6), pour la saisie comme pour la modification. Les listes (niveau, barème, clubs, adresse)
+ * Formulaire d'indemnité (bloc 6), pour la saisie comme pour la modification. Ses champs
+ * de match (`MatchFields`) servent aussi au match complet sans indemnité (bloc 9e). Les listes (niveau, barème, clubs, adresse)
  * sont contrôlées pour afficher les champs de création à la volée et présélectionner le
  * barème du niveau ; les champs texte restent non contrôlés (`defaultValue`).
  */
@@ -59,7 +60,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
       {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
       <form key={formKey} action={formAction} className="flex flex-col gap-6">
         {editing && <input type="hidden" name="compensationId" value={compensationId} />}
-        <Fields data={data} state={state} valueOf={valueOf} />
+        <MatchFields data={data} state={state} valueOf={valueOf} />
         <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
           {isPending ? labels.submitting : labels.submit}
         </button>
@@ -72,6 +73,8 @@ type FieldsProps = {
   data: CompensationFormData;
   state: CompensationFormState;
   valueOf: (name: string) => string;
+  /** Faux pour un match complet sans indemnité : ni barème ni déplacement. */
+  withCompensation?: boolean;
 };
 
 /** Niveaux regroupés par catégorie (Départemental, Régional…), dans l'ordre reçu. */
@@ -85,7 +88,8 @@ function groupByCategory(divisions: readonly Division[]): [Division["category"],
   return [...groups.entries()];
 }
 
-function Fields({ data, state, valueOf }: FieldsProps) {
+/** Champs d'un match (date, niveau, équipes, adresse), plus barème et distance pour une indemnité. */
+export function MatchFields({ data, state, valueOf, withCompensation = true }: FieldsProps) {
   const id = useId();
   const [divisionId, setDivisionId] = useState(valueOf("divisionId"));
   const [scaleId, setScaleId] = useState(
@@ -143,24 +147,26 @@ function Fields({ data, state, valueOf }: FieldsProps) {
               </optgroup>
             ))}
           </SelectField>
-          <SelectField
-            id={`${id}-scale`}
-            name="scaleId"
-            label={t.fields.scale}
-            hint={t.fields.scaleHint}
-            value={scaleId}
-            onChange={setScaleId}
-            error={fieldError("scaleId", state)}
-          >
-            <option value="" disabled>
-              {t.fields.scale}
-            </option>
-            {data.scales.map((scale) => (
-              <option key={scale.id} value={scale.id}>
-                {scale.name}
+          {withCompensation && (
+            <SelectField
+              id={`${id}-scale`}
+              name="scaleId"
+              label={t.fields.scale}
+              hint={t.fields.scaleHint}
+              value={scaleId}
+              onChange={setScaleId}
+              error={fieldError("scaleId", state)}
+            >
+              <option value="" disabled>
+                {t.fields.scale}
               </option>
-            ))}
-          </SelectField>
+              {data.scales.map((scale) => (
+                <option key={scale.id} value={scale.id}>
+                  {scale.name}
+                </option>
+              ))}
+            </SelectField>
+          )}
         </div>
       </fieldset>
 
@@ -238,21 +244,23 @@ function Fields({ data, state, valueOf }: FieldsProps) {
         )}
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
-        <legend className="px-1 font-semibold">{t.sections.travel}</legend>
-        <div className="md:max-w-xs">
-          <TextField
-            id={`${id}-distance`}
-            name="oneWayDistance"
-            inputMode="decimal"
-            label={t.fields.distance}
-            hint={t.fields.distanceHint}
-            maxLength={9}
-            defaultValue={valueOf("oneWayDistance")}
-            error={fieldError("oneWayDistance", state)}
-          />
-        </div>
-      </fieldset>
+      {withCompensation && (
+        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+          <legend className="px-1 font-semibold">{t.sections.travel}</legend>
+          <div className="md:max-w-xs">
+            <TextField
+              id={`${id}-distance`}
+              name="oneWayDistance"
+              inputMode="decimal"
+              label={t.fields.distance}
+              hint={t.fields.distanceHint}
+              maxLength={9}
+              defaultValue={valueOf("oneWayDistance")}
+              error={fieldError("oneWayDistance", state)}
+            />
+          </div>
+        </fieldset>
+      )}
     </>
   );
 }

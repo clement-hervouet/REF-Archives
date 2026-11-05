@@ -1,6 +1,6 @@
 /**
  * Filtres de la page « Notes de match » (bloc 9), lus dans l'URL (`?categorie=…&niveau=…
- * &type=…&club=…&page=…`). Un paramètre invalide ou répété est ignoré plutôt que refusé : c'est un
+ * &type=…&club=…&tous=1&page=…`). Un paramètre invalide ou répété est ignoré plutôt que refusé : c'est un
  * filtre d'affichage, une URL bricolée ne doit pas casser la page (§6.3 : rien n'arrive
  * en base sans validation).
  */
@@ -24,6 +24,8 @@ export type GameNotesFilters = {
   level: GameNoteLevel | null;
   type: GameNoteType | null;
   clubId: string | null;
+  /** Vrai (`tous=1`) : aussi les matchs sans note (bloc 9e). */
+  includeWithoutNote: boolean;
   /** Page demandée, à partir de 1. */
   page: number;
 };
@@ -55,6 +57,7 @@ export function parseGameNotesFilters(params: SearchParams): GameNotesFilters {
     level: parseOrNull(levelSchema, single(params.niveau)),
     type: parseOrNull(typeSchema, single(params.type)),
     clubId: parseOrNull(z.uuid(), single(params.club)),
+    includeWithoutNote: single(params.tous) === "1",
     page: parseOrNull(pageSchema, single(params.page)) ?? 1,
   };
 }
@@ -73,6 +76,9 @@ export function gameNotesSearch(filters: GameNotesFilters): string {
   }
   if (filters.clubId !== null) {
     params.set("club", filters.clubId);
+  }
+  if (filters.includeWithoutNote) {
+    params.set("tous", "1");
   }
   if (filters.page > 1) {
     params.set("page", String(filters.page));

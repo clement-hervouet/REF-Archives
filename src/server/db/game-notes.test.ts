@@ -6,7 +6,14 @@ const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const GAME_ID = "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b01";
 const CLUB_ID = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 
-const NO_FILTERS = { category: null, level: null, type: null, clubId: null, page: 1 };
+const NO_FILTERS = {
+  category: null,
+  level: null,
+  type: null,
+  clubId: null,
+  includeWithoutNote: false,
+  page: 1,
+};
 
 function row(index: number) {
   return {
@@ -23,6 +30,7 @@ function row(index: number) {
     excerpt: "Bon placement",
     excerpt_truncated: false,
     clip_count: 2,
+    has_note: true,
   };
 }
 
@@ -31,7 +39,14 @@ describe("listGamesWithNotes", () => {
     const { db, query } = makeFakeDb([row(0)]);
     const page = await listGamesWithNotes(db, {
       userId: USER_ID,
-      filters: { category: "Regional", level: "U15", type: "Feminin", clubId: CLUB_ID, page: 3 },
+      filters: {
+        category: "Regional",
+        level: "U15",
+        type: "Feminin",
+        clubId: CLUB_ID,
+        includeWithoutNote: true,
+        page: 3,
+      },
     });
     expect(page).toEqual({
       hasMore: false,
@@ -48,6 +63,7 @@ describe("listGamesWithNotes", () => {
           excerpt: "Bon placement",
           excerptTruncated: false,
           clipCount: 2,
+          hasNote: true,
         },
       ],
     });
@@ -60,6 +76,7 @@ describe("listGamesWithNotes", () => {
       2 * GAME_NOTES_PAGE_SIZE,
       NOTE_EXCERPT_LENGTH,
       "U15",
+      true,
     ]);
     expect(query.mock.calls[0]?.[0]).toContain("n.deleted_at IS NULL");
   });
@@ -71,6 +88,7 @@ describe("listGamesWithNotes", () => {
       items: [],
     });
     expect(query.mock.calls[0]?.[1]?.[7]).toBeNull();
+    expect(query.mock.calls[0]?.[1]?.[8]).toBe(false);
     expect(query.mock.calls[0]?.[1]?.slice(1, 6)).toEqual([
       null,
       null,
