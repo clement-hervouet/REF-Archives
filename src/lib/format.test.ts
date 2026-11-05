@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "./errors";
-import { formatCents, formatCentsPerKm, formatDateTime, formatIsoDate } from "./format";
+import {
+  formatCents,
+  formatCentsPerKm,
+  formatDateTime,
+  formatIsoDate,
+  formatWeekdayDateTime,
+} from "./format";
 
 /** Remplace les espaces insécables par des espaces simples, pour des attentes lisibles. */
 function plain(value: string): string {
@@ -69,5 +75,22 @@ describe("formatCentsPerKm", () => {
 
   it("refuse un taux mal formé", () => {
     expect(() => formatCentsPerKm("0,40")).toThrow(ValidationError);
+  });
+});
+
+describe("formatWeekdayDateTime", () => {
+  it("affiche le jour, la date et l'heure de Paris", () => {
+    // 19:30 UTC = 20:30 à Paris en hiver.
+    expect(formatWeekdayDateTime(new Date("2026-11-06T19:30:00Z"))).toBe("vendredi 06/11 à 20:30");
+  });
+
+  it("utilise le jour de Paris, pas celui d'UTC, et écrit minuit 00", () => {
+    // Samedi 22:00 UTC = samedi 23:00 à Paris ; dimanche 23:00 UTC = lundi 00:00 à Paris.
+    expect(formatWeekdayDateTime(new Date("2026-11-07T22:00:00Z"))).toBe("samedi 07/11 à 23:00");
+    expect(formatWeekdayDateTime(new Date("2026-11-08T23:00:00Z"))).toBe("lundi 09/11 à 00:00");
+  });
+
+  it("refuse une date invalide", () => {
+    expect(() => formatWeekdayDateTime(new Date("invalide"))).toThrow(ValidationError);
   });
 });

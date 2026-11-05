@@ -347,6 +347,23 @@ export const fr = {
     securityFooter:
       "Cet email est une alerte de sécurité de REF-Archives. Il ne contient aucun lien et ne vous demandera jamais votre mot de passe.",
     linkFallback: "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :",
+    // Emails non essentiels (§9) : toujours désactivables depuis les paramètres.
+    reminderFooter:
+      "Vous recevez cet email car ce rappel est activé dans vos paramètres REF-Archives. Vous pouvez le désactiver ou modifier son délai à tout moment.",
+    availabilityReminder: {
+      subject: "Saisissez vos indisponibilités du weekend du {date}",
+      title: "Pensez à vos indisponibilités",
+      body: "Pensez à saisir vos indisponibilités pour le weekend du samedi {saturday} et du dimanche {sunday}.",
+      action: "Gérer mes rappels",
+    },
+    weekendRecap: {
+      subject: "Vos matchs du weekend du {date}",
+      title: "Vos matchs du weekend",
+      countOne: "1 match est prévu ce weekend :",
+      countMany: "{count} matchs sont prévus ce weekend :",
+      matchLine: "{when} : {team1} – {team2} ({division}), {address}",
+      action: "Voir mes matchs à venir",
+    },
     test: {
       subject: "Test d'envoi REF-Archives",
       title: "Test d'envoi",

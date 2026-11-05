@@ -7,6 +7,12 @@ const optionalString = z.preprocess(
   z.string().min(1).optional(),
 );
 
+/** Secret long et aléatoire ; laissé vide, la fonction qu'il protège est désactivée. */
+const optionalSecret = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(32, "doit faire au moins 32 caractères").optional(),
+);
+
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]),
@@ -31,6 +37,9 @@ const EnvSchema = z
       .min(3)
       .max(254)
       .regex(/^[^\r\n]+@[^\r\n]+$/, "doit contenir une adresse email et aucun saut de ligne"),
+
+    // Secret du job planifié des rappels (route /api/cron/reminders). Absent = rappels désactivés.
+    CRON_SECRET: optionalSecret,
   })
   .refine((env) => env.SMTP_USER === undefined || env.SMTP_PASSWORD !== undefined, {
     message: "obligatoire quand SMTP_USER est défini",
