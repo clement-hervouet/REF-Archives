@@ -6,9 +6,9 @@
 // Nom du cookie Auth.js : préfixé `__Secure-` en HTTPS.
 export const SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.session-token"];
 
-// Les entrées /api/ical et /api/health anticipent les prochaines étapes
-// (flux iCal protégé par jeton, healthcheck Docker). /api/cron est protégé par
-// CRON_SECRET, vérifié dans chaque route.
+// /api/ical : flux iCal protégé par son jeton, vérifié dans la route (bloc 8).
+// /api/health anticipe le healthcheck Docker. /api/cron est protégé par CRON_SECRET,
+// vérifié dans chaque route.
 const PUBLIC_PATHS = [
   "/login",
   "/invitation",
