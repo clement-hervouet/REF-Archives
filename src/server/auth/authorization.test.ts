@@ -8,6 +8,8 @@ const BASE_USER: CurrentUser = {
   sessionId: "9d6c2f4e-1b7a-4e0c-9a55-0c2d7f1e8b33",
   email: "clem@example.com",
   role: "admin",
+  firstname: "Clément",
+  lastname: "Hervouet",
 };
 
 describe("assertAdmin", () => {

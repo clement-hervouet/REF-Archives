@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "../db/fake-db";
-import { resolveCurrentUser } from "./current-user";
+import { hasCompleteProfile, resolveCurrentUser } from "./current-user";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const SESSION_ID = "9d6c2f4e-1b7a-4e0c-9a55-0c2d7f1e8b33";
@@ -9,6 +9,8 @@ const ACTIVE_ROW = {
   user_id: USER_ID,
   email: "clem@example.com",
   role: "admin",
+  firstname: "Clément",
+  lastname: "Hervouet",
 };
 
 describe("resolveCurrentUser", () => {
@@ -20,6 +22,8 @@ describe("resolveCurrentUser", () => {
       sessionId: SESSION_ID,
       email: "clem@example.com",
       role: "admin",
+      firstname: "Clément",
+      lastname: "Hervouet",
     });
     expect(query.mock.calls).toHaveLength(2);
     expect(query.mock.calls[1]?.[1]).toEqual([SESSION_ID]);
@@ -53,5 +57,17 @@ describe("resolveCurrentUser", () => {
       .mockResolvedValueOnce({ rows: [] });
     const user = await resolveCurrentUser(db, SESSION_ID);
     expect(JSON.stringify(user)).not.toContain("secret");
+  });
+});
+
+describe("hasCompleteProfile", () => {
+  it("est vrai quand le nom et le prénom sont renseignés", () => {
+    expect(hasCompleteProfile({ firstname: "Clément", lastname: "Hervouet" })).toBe(true);
+  });
+
+  it("est faux quand l'un des deux manque", () => {
+    expect(hasCompleteProfile({ firstname: null, lastname: null })).toBe(false);
+    expect(hasCompleteProfile({ firstname: "Clément", lastname: null })).toBe(false);
+    expect(hasCompleteProfile({ firstname: null, lastname: "Hervouet" })).toBe(false);
   });
 });

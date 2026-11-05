@@ -17,6 +17,15 @@ export type CreateUserInput = {
   /** Hash argon2id, jamais le mot de passe. */
   passwordHash: string;
   role: UserRole;
+  /** Nom et prénom (validés par `profileSchema`), ou `null` tous les deux (premier admin). */
+  firstname: string | null;
+  lastname: string | null;
+};
+
+/** Nom et prénom validés par `profileSchema`. */
+export type UserProfile = {
+  firstname: string;
+  lastname: string;
 };
 
 export type CreatedUser = {
@@ -61,8 +70,8 @@ const emailRowSchema = z.object({
   email: z.string(),
 });
 
-const INSERT_USER_SQL = `INSERT INTO "user" (email, password_hash, role)
-VALUES ($1, $2, $3)
+const INSERT_USER_SQL = `INSERT INTO "user" (email, password_hash, role, firstname, lastname)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, email, role`;
 
 // `lower(...)` des deux côtés : correspond à l'index d'unicité `user_email_lower_key`.
@@ -72,6 +81,12 @@ WHERE lower(email) = lower($1)`;
 
 const FIND_ID_BY_EMAIL_SQL = `SELECT id FROM "user"
 WHERE lower(email) = lower($1)`;
+
+// Seul le compte de la session est modifié : `id` vient toujours de la session (§6.2).
+const UPDATE_PROFILE_SQL = `UPDATE "user"
+SET firstname = $2, lastname = $3
+WHERE id = $1
+RETURNING id`;
 
 const UPDATE_PASSWORD_HASH_SQL = `UPDATE "user"
 SET password_hash = $2
@@ -88,7 +103,13 @@ function isUniqueViolation(error: unknown): boolean {
  */
 export async function createUser(db: Queryable, input: CreateUserInput): Promise<CreatedUser> {
   try {
-    const result = await db.query(INSERT_USER_SQL, [input.email, input.passwordHash, input.role]);
+    const result = await db.query(INSERT_USER_SQL, [
+      input.email,
+      input.passwordHash,
+      input.role,
+      input.firstname,
+      input.lastname,
+    ]);
     const row = userRowSchema.parse(result.rows[0]);
     return { id: row.id, email: row.email, role: row.role };
   } catch (error: unknown) {
@@ -132,4 +153,17 @@ export async function updateUserPasswordHash(
   const result = await db.query(UPDATE_PASSWORD_HASH_SQL, [userId, passwordHash]);
   const row = result.rows[0];
   return row === undefined ? null : emailRowSchema.parse(row);
+}
+
+/**
+ * Enregistre le nom et le prénom de l'utilisateur. Renvoie `false` si le compte
+ * n'existe plus (supprimé entre-temps).
+ */
+export async function updateUserProfile(
+  db: Queryable,
+  userId: string,
+  profile: UserProfile,
+): Promise<boolean> {
+  const result = await db.query(UPDATE_PROFILE_SQL, [userId, profile.firstname, profile.lastname]);
+  return result.rows.length > 0;
 }

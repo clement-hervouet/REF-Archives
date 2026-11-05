@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useId } from "react";
+import { ProfileFields } from "@/components/features/account/profile-fields";
+import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
 import { acceptInvitationAction } from "./actions";
 import type { AcceptFormState } from "./actions";
@@ -20,6 +22,9 @@ function errorMessages(state: AcceptFormState): string[] {
       return [t.errors.mismatch];
     case "invalid_invitation":
       return [t.invalid];
+    case "invalid_profile":
+      // Le détail est affiché sous chaque champ.
+      return [fr.profile.errors.invalid];
     case "invalid_password":
       return state.issues.map((code) => PASSWORD_MESSAGES[code] ?? fr.validation.passwordInvalid);
     case "rate_limited":
@@ -30,14 +35,19 @@ function errorMessages(state: AcceptFormState): string[] {
 }
 
 export function AcceptForm({ token, email }: { token: string; email: string }) {
-  const [state, formAction, isPending] = useActionState(acceptInvitationAction, {
-    status: "idle",
-  });
+  const id = useId();
+  // Aucun statut de succès : une acceptation réussie redirige. Après une erreur, le prénom
+  // et le nom sont remis dans les champs ; les mots de passe, eux, sont toujours à ressaisir.
+  const { state, valueOf, formKey, formAction, isPending } = useScaleForm(
+    acceptInvitationAction,
+    { status: "idle" },
+    [],
+  );
   const messages = errorMessages(state);
   const describedBy = messages.length > 0 ? "accept-errors accept-hint" : "accept-hint";
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form key={formKey} action={formAction} className="flex flex-col gap-4">
       <p>{t.intro.replace("{email}", email)}</p>
       {messages.length > 0 && (
         <div id="accept-errors" role="alert" className="flex flex-col gap-1">
@@ -49,6 +59,11 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
         </div>
       )}
       <input type="hidden" name="token" value={token} />
+      <ProfileFields
+        idPrefix={id}
+        defaults={{ firstname: valueOf("firstname"), lastname: valueOf("lastname") }}
+        issues={state.status === "invalid_profile" ? state.issues : []}
+      />
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-medium">
           {t.password}

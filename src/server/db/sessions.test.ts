@@ -35,13 +35,39 @@ describe("createSession", () => {
 describe("findActiveSession", () => {
   it("renvoie la session et l'utilisateur associé", async () => {
     const { db } = makeFakeDb([
-      { id: SESSION_ID, user_id: USER_ID, email: "clem@example.com", role: "admin" },
+      {
+        id: SESSION_ID,
+        user_id: USER_ID,
+        email: "clem@example.com",
+        role: "admin",
+        firstname: "Clément",
+        lastname: "Hervouet",
+      },
     ]);
     expect(await findActiveSession(db, SESSION_ID)).toEqual({
       sessionId: SESSION_ID,
       userId: USER_ID,
       email: "clem@example.com",
       role: "admin",
+      firstname: "Clément",
+      lastname: "Hervouet",
+    });
+  });
+
+  it("renvoie un nom et un prénom null pour un compte au profil incomplet", async () => {
+    const { db } = makeFakeDb([
+      {
+        id: SESSION_ID,
+        user_id: USER_ID,
+        email: "clem@example.com",
+        role: "user",
+        firstname: null,
+        lastname: null,
+      },
+    ]);
+    expect(await findActiveSession(db, SESSION_ID)).toMatchObject({
+      firstname: null,
+      lastname: null,
     });
   });
 
@@ -61,7 +87,14 @@ describe("findActiveSession", () => {
 
   it("refuse une ligne dont le rôle est inconnu", async () => {
     const { db } = makeFakeDb([
-      { id: SESSION_ID, user_id: USER_ID, email: "clem@example.com", role: "root" },
+      {
+        id: SESSION_ID,
+        user_id: USER_ID,
+        email: "clem@example.com",
+        role: "root",
+        firstname: null,
+        lastname: null,
+      },
     ]);
     await expect(findActiveSession(db, SESSION_ID)).rejects.toThrow();
   });

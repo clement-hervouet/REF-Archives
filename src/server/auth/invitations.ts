@@ -3,6 +3,8 @@
  * Les dépendances (transaction, hash, rate limiting) sont injectées : testable sans base.
  */
 import { passwordSchema, tokenSchema } from "@/lib/schemas/auth";
+import { parseProfile } from "@/lib/schemas/profile";
+import type { Profile, ProfileIssue } from "@/lib/schemas/profile";
 import { createInvitation, lockPendingInvitation, markInvitationAccepted } from "../db/invitations";
 import { EmailAlreadyUsedError, createUser } from "../db/users";
 import type { Queryable } from "../db/users";
@@ -57,6 +59,9 @@ export type AcceptInvitationDeps = {
 
 export type AcceptInvitationInput = {
   token: string;
+  /** Prénom et nom saisis par l'invité, validés ici (obligatoires, §3.12). */
+  firstname: string;
+  lastname: string;
   password: string;
   /** IP du client telle que transmise par le reverse proxy. */
   ip: string;
@@ -66,6 +71,7 @@ export type AcceptInvitationResult =
   | { status: "created"; userId: string; email: string }
   // Lien inconnu, expiré, déjà utilisé ou révoqué : volontairement indiscernables (§6.1).
   | { status: "invalid_invitation" }
+  | { status: "invalid_profile"; issues: ProfileIssue[] }
   | { status: "invalid_password"; issues: string[] }
   | { status: "rate_limited"; retryAfterSeconds: number };
 
@@ -77,6 +83,7 @@ async function consumeInvitation(
   deps: AcceptInvitationDeps,
   db: Queryable,
   tokenHash: Buffer,
+  profile: Profile,
   password: string,
 ): Promise<AcceptInvitationResult> {
   const invitation = await lockPendingInvitation(db, tokenHash);
@@ -88,12 +95,19 @@ async function consumeInvitation(
   }
   const passwordHash = await deps.hashPassword(password);
   // L'email vient de l'invitation, jamais de l'invité.
-  const user = await createUser(db, { email: invitation.email, passwordHash, role: "user" });
+  const user = await createUser(db, {
+    email: invitation.email,
+    passwordHash,
+    role: "user",
+    firstname: profile.firstname,
+    lastname: profile.lastname,
+  });
   return { status: "created", userId: user.id, email: user.email };
 }
 
 /**
- * Accepte une invitation et crée le compte. Les entrées mal formées sont refusées
+ * Accepte une invitation et crée le compte avec le nom et le prénom de l'invité.
+ * Les entrées mal formées (jeton, nom, prénom, mot de passe) sont refusées
  * avant tout accès à la base et ne comptent pas dans le rate limiting.
  */
 export async function acceptInvitation(
@@ -103,6 +117,10 @@ export async function acceptInvitation(
   const token = tokenSchema.safeParse(input.token);
   if (!token.success) {
     return { status: "invalid_invitation" };
+  }
+  const profile = parseProfile({ firstname: input.firstname, lastname: input.lastname });
+  if (!profile.success) {
+    return { status: "invalid_profile", issues: profile.issues };
   }
   const password = passwordSchema.safeParse(input.password);
   if (!password.success) {
@@ -120,7 +138,7 @@ export async function acceptInvitation(
 
   try {
     return await deps.transaction((db) =>
-      consumeInvitation(deps, db, hashToken(token.data), password.data),
+      consumeInvitation(deps, db, hashToken(token.data), profile.profile, password.data),
     );
   } catch (error: unknown) {
     // Un compte a été créé avec cet email entre-temps : la transaction est annulée.

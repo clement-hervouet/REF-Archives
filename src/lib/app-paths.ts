@@ -34,3 +34,6 @@ export function completeGamePath(compensationId: string): string {
 
 /** Page « Notes de match » : matchs notés, filtrables (bloc 9). */
 export const GAME_NOTES_PATH = "/notes";
+
+/** Page « Compléter mon profil » : nom et prénom obligatoires avant tout le reste (bloc 10). */
+export const COMPLETE_PROFILE_PATH = "/completer-profil";
