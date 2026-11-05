@@ -1,7 +1,7 @@
 export const fr = {
   app: {
     name: "REF-Archives",
-    tagline: "Indemnités, disponibilités et notes d'arbitre.",
+    tagline: "Indemnités, rappels et notes d'arbitre.",
   },
   notFound: {
     title: "Page introuvable",
@@ -13,6 +13,8 @@ export const fr = {
     invitations: "Invitations",
     scales: "Mes barèmes",
     commonScale: "Barème commun",
+    upcoming: "À venir",
+    settings: "Paramètres",
   },
   auth: {
     login: {
@@ -338,6 +340,55 @@ export const fr = {
         emailTaken: "Un compte existe déjà avec cette adresse.",
         rateLimited: "Trop d'invitations envoyées. Réessayez dans {minutes} min.",
       },
+    },
+  },
+  reminders: {
+    home: {
+      availability: "Pensez à saisir vos indisponibilités du weekend du {date}.",
+      weekendNone: "Aucun match prévu ce weekend.",
+      weekendOne: "1 match prévu ce weekend.",
+      weekendMany: "{count} matchs prévus ce weekend.",
+      seeUpcoming: "Voir les matchs à venir",
+      settingsLink: "Régler les rappels",
+    },
+    settings: {
+      title: "Paramètres",
+      intro:
+        "Choisissez les emails de rappel que vous recevez. Les alertes de sécurité sont toujours envoyées.",
+      availability: {
+        legend: "Rappel des indisponibilités",
+        enabled: "Recevoir chaque lundi un rappel pour saisir mes indisponibilités",
+        weeks: "Délai du rappel",
+        weeksOne: "1 semaine à l'avance",
+        weeksMany: "{count} semaines à l'avance",
+        hint: "Le rappel du lundi vise le weekend situé ce nombre de semaines plus loin.",
+      },
+      weekendRecap: {
+        legend: "Récapitulatif du weekend",
+        enabled: "Recevoir à partir du jeudi le récapitulatif de mes matchs du weekend",
+        hint: "Envoyé seulement si au moins un match est prévu du vendredi au dimanche.",
+      },
+      submit: "Enregistrer",
+      submitting: "Enregistrement…",
+      saved: "Paramètres enregistrés.",
+      errors: {
+        invalid: "Les paramètres envoyés ne sont pas valides.",
+        notFound: "Votre compte est introuvable. Reconnectez-vous.",
+      },
+    },
+    upcoming: {
+      title: "À venir",
+      intro:
+        "Vos matchs prévus, d'après les indemnités saisies. Les collègues s'ajouteront avec les matchs complets.",
+      weekendTitle: "Ce weekend (samedi {saturday} et dimanche {sunday})",
+      weekendEmpty: "Aucun match prévu ce weekend.",
+      laterTitle: "Les {weeks} semaines suivantes",
+      laterEmpty: "Aucun autre match prévu.",
+      teams: "{team1} – {team2}",
+      itinerary: "Itinéraire",
+      itineraryLabel: "Itinéraire vers {address} (nouvel onglet)",
+      edit: "Modifier",
+      editLabel: "Modifier le match du {date}",
     },
   },
   email: {
