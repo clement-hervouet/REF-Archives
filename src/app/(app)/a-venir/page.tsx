@@ -24,7 +24,7 @@ export default async function UpcomingPage() {
     <div className="flex flex-col gap-8">
       <section className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
       <section className="flex flex-col gap-3">

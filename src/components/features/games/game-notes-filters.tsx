@@ -27,7 +27,7 @@ type Props = { filters: Filters; clubs: readonly Pick<ClubSummary, "id" | "name"
 export function GameNotesFilters({ filters, clubs }: Props) {
   return (
     <form method="get" action={GAME_NOTES_PATH} className="flex flex-col gap-4">
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.legend}</legend>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-1">

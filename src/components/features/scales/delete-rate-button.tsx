@@ -31,12 +31,12 @@ export function DeleteRateButton({ rateId, dateLabel, action }: Props) {
         type="submit"
         disabled={isPending}
         aria-label={t.deleteRate.label.replace("{date}", dateLabel)}
-        className="min-h-11 rounded-md border border-neutral-400 px-3 disabled:opacity-60"
+        className="min-h-11 rounded-md border border-input px-3 disabled:opacity-60"
       >
         {t.deleteRate.submit}
       </button>
       {message !== null && (
-        <p role="alert" className="max-w-56 text-right text-sm font-medium text-red-700">
+        <p role="alert" className="max-w-56 text-right text-sm font-medium text-destructive">
           {message.text}
         </p>
       )}

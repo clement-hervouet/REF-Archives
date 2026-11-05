@@ -47,7 +47,7 @@ export default async function EditCompensationPage(props: EditCompensationPagePr
           {t.edit.back}
         </Link>
         <h1 className="text-2xl font-semibold">{t.edit.title}</h1>
-        <p className="text-neutral-700">{t.edit.intro}</p>
+        <p className="text-muted-foreground">{t.edit.intro}</p>
         {!scaleStillSelectable && (
           <p role="status" className="font-medium">
             {t.edit.archivedScale}

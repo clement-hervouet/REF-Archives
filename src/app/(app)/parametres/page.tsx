@@ -1,10 +1,13 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ProfileForm } from "@/components/features/account/profile-form";
+import { ThemeForm } from "@/components/features/account/theme-form";
 import { CalendarFeedSection } from "@/components/features/calendar/calendar-feed-section";
 import { ReminderSettingsForm } from "@/components/features/reminders/reminder-settings-form";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
+import { THEME_COOKIE, themePreferenceFromCookie } from "@/lib/theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { getCalendarFeedStatus } from "@/server/db/calendar-feeds";
 import { getDb } from "@/server/db/pool";
@@ -12,6 +15,7 @@ import { getReminderSettings } from "@/server/db/reminders";
 import { updateReminderSettingsAction } from "./actions";
 import { manageCalendarFeedAction } from "./calendar-actions";
 import { updateProfileAction } from "./profile-actions";
+import { updateThemeAction } from "./theme-actions";
 
 const t = fr.reminders.settings;
 const account = fr.profile.settings;
@@ -27,6 +31,7 @@ export default async function SettingsPage() {
   if (settings === null) {
     notFound();
   }
+  const theme = themePreferenceFromCookie((await cookies()).get(THEME_COOKIE)?.value);
 
   return (
     <div className="flex flex-col gap-8">
@@ -34,7 +39,7 @@ export default async function SettingsPage() {
       <section className="flex flex-col gap-3">
         <div className="flex max-w-2xl flex-col gap-1">
           <h2 className="text-lg font-semibold">{account.title}</h2>
-          <p className="text-neutral-700">{account.email.replace("{email}", user.email)}</p>
+          <p className="text-muted-foreground">{account.email.replace("{email}", user.email)}</p>
         </div>
         <ProfileForm
           profile={{ firstname: user.firstname, lastname: user.lastname }}
@@ -44,9 +49,13 @@ export default async function SettingsPage() {
         />
       </section>
       <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">{fr.theme.title}</h2>
+        <ThemeForm current={theme} action={updateThemeAction} />
+      </section>
+      <section className="flex flex-col gap-3">
         <div className="flex max-w-2xl flex-col gap-1">
           <h2 className="text-lg font-semibold">{t.sectionTitle}</h2>
-          <p className="text-neutral-700">{t.intro}</p>
+          <p className="text-muted-foreground">{t.intro}</p>
         </div>
         <ReminderSettingsForm settings={settings} action={updateReminderSettingsAction} />
       </section>

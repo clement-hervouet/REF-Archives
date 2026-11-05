@@ -36,17 +36,17 @@ type Props = {
   showUsage?: boolean;
 };
 
-const DETAILS_CLASS = "rounded-md border border-neutral-300 p-3";
+const DETAILS_CLASS = "rounded-md border border-border p-3";
 const SUMMARY_CLASS = "flex min-h-11 cursor-pointer items-center font-medium";
 
 export function ScaleCard({ scale, actions, emptyText, showUsage = false }: Props) {
   const current = findEffectiveRate(scale.rates, toParisIsoDate(new Date()));
 
   return (
-    <article className="flex flex-col gap-4 rounded-md border border-neutral-400 p-3 md:p-4">
+    <article className="flex flex-col gap-4 rounded-md border border-input p-3 md:p-4">
       <header className="flex flex-col gap-1">
         <h3 className="text-lg font-semibold break-words">{scale.name}</h3>
-        <p className="text-sm text-neutral-700">
+        <p className="text-sm text-muted-foreground">
           {current === null
             ? t.noCurrent
             : t.current

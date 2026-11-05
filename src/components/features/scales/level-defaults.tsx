@@ -36,16 +36,16 @@ export function LevelDefaults({ divisions, defaults, scales, action }: Props) {
       {[...groupByCategory(divisions)].map(([category, group]) => {
         const customized = group.filter((division) => chosen.has(division.id)).length;
         return (
-          <details key={category} className="rounded-md border border-neutral-300 px-3">
+          <details key={category} className="rounded-md border border-border px-3">
             <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 font-medium">
               <span>{t.divisions.category[category]}</span>
               {customized > 0 && (
-                <span className="text-sm font-normal text-neutral-700">
+                <span className="text-sm font-normal text-muted-foreground">
                   {t.defaults.customized.replace("{count}", String(customized))}
                 </span>
               )}
             </summary>
-            <div className="divide-y divide-neutral-200 pb-2">
+            <div className="divide-y divide-border pb-2">
               {group.map((division) => (
                 <LevelDefaultForm
                   key={division.id}

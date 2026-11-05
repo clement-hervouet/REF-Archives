@@ -86,6 +86,15 @@ export const fr = {
       notFound: "Votre compte est introuvable. Reconnectez-vous.",
     },
   },
+  theme: {
+    title: "Apparence",
+    legend: "Thème de l'application",
+    system: "Comme l'appareil",
+    light: "Clair",
+    dark: "Sombre",
+    hint: "Le choix s'applique à cet appareil seulement.",
+    submit: "Appliquer",
+  },
   forgotPassword: {
     title: "Mot de passe oublié",
     intro:

@@ -81,11 +81,11 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             aria-describedby={`${id}-body-hint${bodyError !== null ? ` ${id}-body-error` : ""}`}
             className={FIELD_CLASS}
           />
-          <p id={`${id}-body-hint`} className="text-sm text-neutral-700">
+          <p id={`${id}-body-hint`} className="text-sm text-muted-foreground">
             {t.bodyHint}
           </p>
           {bodyError !== null && (
-            <p id={`${id}-body-error`} className="text-sm font-medium text-red-700">
+            <p id={`${id}-body-error`} className="text-sm font-medium text-destructive">
               {bodyError}
             </p>
           )}
@@ -108,11 +108,11 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             aria-describedby={`${id}-clips-hint${clipsError !== null ? ` ${id}-clips-error` : ""}`}
             className={`${FIELD_CLASS} font-mono text-sm`}
           />
-          <p id={`${id}-clips-hint`} className="text-sm text-neutral-700">
+          <p id={`${id}-clips-hint`} className="text-sm text-muted-foreground">
             {t.clipsHint}
           </p>
           {clipsError !== null && (
-            <p id={`${id}-clips-error`} className="text-sm font-medium text-red-700">
+            <p id={`${id}-clips-error`} className="text-sm font-medium text-destructive">
               {clipsError}
             </p>
           )}
@@ -147,7 +147,7 @@ function LevelField({ idBase, name, legend, value, error }: LevelFieldProps) {
         {options.map((option) => (
           <label
             key={option.value}
-            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-neutral-400 px-3 has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-900 has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2"
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-input px-3 has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2"
           >
             <input
               type="radio"
@@ -160,11 +160,11 @@ function LevelField({ idBase, name, legend, value, error }: LevelFieldProps) {
           </label>
         ))}
       </div>
-      <p id={`${idBase}-hint`} className="text-sm text-neutral-700">
+      <p id={`${idBase}-hint`} className="text-sm text-muted-foreground">
         {t.scaleHint}
       </p>
       {error !== null && (
-        <p id={`${idBase}-error`} className="text-sm font-medium text-red-700">
+        <p id={`${idBase}-error`} className="text-sm font-medium text-destructive">
           {error}
         </p>
       )}

@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
+/*
+ * Thème de l'application (bloc 10, §3.12).
+ * Toutes les couleurs vivent ici, en variables : les composants n'utilisent que les
+ * utilitaires sémantiques (`bg-primary`, `text-muted-foreground`…), jamais de couleur en dur.
+ *
+ * Choix du thème : `<html data-theme="light|dark">` est posé côté serveur depuis le cookie
+ * `theme` (src/lib/theme.ts). Sans attribut, le thème suit le système (`prefers-color-scheme`).
+ * Aucun script : rien à autoriser dans la CSP, et aucun flash au chargement.
+ *
+ * Contrastes vérifiés (WCAG, §7.4) :
+ *  - clair : texte #0B2239 sur blanc 16,1:1 ; texte secondaire #4A5D73 6,8:1 ;
+ *    marine #08335B sur blanc 12,8:1 ; rouge #B7151A sur blanc 6,7:1 ;
+ *    bordure des champs #8796A8 3,0:1 (minimum des composants d'interface).
+ *  - sombre : texte #E6EDF4 sur #061A2E 14,9:1 ; secondaire #9DB0C4 7,9:1 ;
+ *    vert #03A752 5,6:1 ; jaune #F4AD0B 9,1:1. Le rouge #B7151A n'atteint que 2,6:1 sur
+ *    fond sombre : le thème sombre utilise un rouge éclairci #F2878A (7,2:1).
+ *  - le vert #03A752 n'atteint que 3,2:1 sur blanc et le jaune 1,9:1 : en thème clair,
+ *    ils ne portent jamais de texte (bordure, pastille ou fond teinté, texte en `foreground`).
+ *    Texte marine sur fond jaune : 6,6:1.
+ */
+
 :root {
+  color-scheme: light;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0b2239;
+  --card: #ffffff;
+  --card-foreground: #0b2239;
+  --popover: #ffffff;
+  --popover-foreground: #0b2239;
+  --primary: #08335b;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f5f8;
+  --secondary-foreground: #0b2239;
+  --muted: #f2f5f8;
+  --muted-foreground: #4a5d73;
+  --accent: #e8eef5;
+  --accent-foreground: #08335b;
+  --destructive: #b7151a;
+  --destructive-foreground: #ffffff;
+  --success: #03a752;
+  --warning: #f4ad0b;
+  --warning-foreground: #08335b;
+  --border: #d5dde6;
+  --input: #8796a8;
+  --ring: #08335b;
+  --radius: 0.375rem;
+}
+
+/* Thème sombre : choisi explicitement, ou système sombre sans choix explicite. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #061a2e;
+  --foreground: #e6edf4;
+  --card: #0c2540;
+  --card-foreground: #e6edf4;
+  --popover: #0c2540;
+  --popover-foreground: #e6edf4;
+  --primary: #d7e3ef;
+  --primary-foreground: #08335b;
+  --secondary: #0c2540;
+  --secondary-foreground: #e6edf4;
+  --muted: #0c2540;
+  --muted-foreground: #9db0c4;
+  --accent: #12304f;
+  --accent-foreground: #e6edf4;
+  --destructive: #f2878a;
+  --destructive-foreground: #061a2e;
+  --success: #03a752;
+  --warning: #f4ad0b;
+  --warning-foreground: #08335b;
+  --border: #1d3956;
+  --input: #5d7a99;
+  --ring: #9db0c4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --background: #061a2e;
+    --foreground: #e6edf4;
+    --card: #0c2540;
+    --card-foreground: #e6edf4;
+    --popover: #0c2540;
+    --popover-foreground: #e6edf4;
+    --primary: #d7e3ef;
+    --primary-foreground: #08335b;
+    --secondary: #0c2540;
+    --secondary-foreground: #e6edf4;
+    --muted: #0c2540;
+    --muted-foreground: #9db0c4;
+    --accent: #12304f;
+    --accent-foreground: #e6edf4;
+    --destructive: #f2878a;
+    --destructive-foreground: #061a2e;
+    --success: #03a752;
+    --warning: #f4ad0b;
+    --warning-foreground: #08335b;
+    --border: #1d3956;
+    --input: #5d7a99;
+    --ring: #9db0c4;
+  }
+}
+
+/*
+ * Variante `dark:` de Tailwind (utilisée par les composants shadcn/ui) alignée sur la même
+ * règle : sombre si choisi, ou si le système est sombre et que le clair n'est pas imposé.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--color-border);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    /* Montants, dates, heures : des chiffres de même largeur s'alignent en colonne. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Titres en largeur resserrée (axe `wdth` d'Archivo), à la manière d'une feuille de match
+   * ou d'un tableau d'affichage : c'est l'élément distinctif de l'interface, le reste reste sobre.
+   */
+  h1,
+  h2,
+  h3 {
+    font-stretch: 85%;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  /* Focus toujours visible (§7.4), dans la couleur du thème. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

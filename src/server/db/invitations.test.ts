@@ -57,11 +57,9 @@ describe("createInvitation", () => {
 
   it("révoque d'abord les invitations en attente de cet email, puis insère", async () => {
     const { db, query } = makeFakeDb();
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
-      });
+    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
+    });
     await createInvitation(db, input);
     expect(query.mock.calls).toHaveLength(2);
     expect(query.mock.calls[0]?.[0]).toContain("revoked_at = now()");
@@ -71,11 +69,9 @@ describe("createInvitation", () => {
 
   it("renvoie l'identifiant, l'email et la date d'expiration", async () => {
     const { db, query } = makeFakeDb();
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
-      });
+    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: INVITATION_ID, email: EMAIL, expires_at: EXPIRES_AT }],
+    });
     expect(await createInvitation(db, input)).toEqual({
       id: INVITATION_ID,
       email: EMAIL,
@@ -104,11 +100,9 @@ describe("createInvitation", () => {
 
   it("refuse une ligne mal formée", async () => {
     const { db, query } = makeFakeDb();
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [{ id: "pas-un-uuid", email: EMAIL, expires_at: EXPIRES_AT }],
-      });
+    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: "pas-un-uuid", email: EMAIL, expires_at: EXPIRES_AT }],
+    });
     await expect(createInvitation(db, input)).rejects.toThrow();
   });
 });

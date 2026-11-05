@@ -23,10 +23,10 @@ const DETAIL_CELL = `${CELL} hidden md:table-cell`;
 
 export function MonthlyTotalsTable({ totals, selectedMonth }: Props) {
   return (
-    <div className="overflow-x-auto rounded-md border border-neutral-300">
+    <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{t.caption}</caption>
-        <thead className="bg-neutral-100">
+        <thead className="bg-muted">
           <tr>
             <th scope="col" className="px-3 py-2 text-left">
               {t.month}
@@ -52,7 +52,7 @@ export function MonthlyTotalsTable({ totals, selectedMonth }: Props) {
             return (
               <tr
                 key={total.month}
-                className={`border-t border-neutral-200 ${selected ? "bg-neutral-50 font-semibold" : ""}`}
+                className={`border-t border-border ${selected ? "bg-muted font-semibold" : ""}`}
               >
                 <th scope="row" className="px-3 py-2 text-left font-normal">
                   <Link

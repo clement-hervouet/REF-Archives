@@ -43,7 +43,7 @@ export default async function HomePage() {
       {reminderSaturday !== null && (
         <section
           aria-labelledby="home-availability"
-          className="flex flex-col gap-2 rounded-md border border-amber-700 bg-amber-50 p-4 text-amber-950"
+          className="flex flex-col gap-2 rounded-md border border-warning bg-warning/15 p-4"
         >
           <p id="home-availability" className="font-medium">
             {t.availability.replace("{date}", formatShortDate(reminderSaturday))}
@@ -57,7 +57,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <section className="flex flex-col gap-2 rounded-md border border-neutral-300 p-4">
+      <section className="flex flex-col gap-2 rounded-md border border-border p-4">
         <p className="font-medium">{weekendCountLabel(weekendMatches.length)}</p>
         <Link
           href={UPCOMING_PATH}

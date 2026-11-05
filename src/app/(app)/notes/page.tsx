@@ -12,7 +12,7 @@ import { getDb } from "@/server/db/pool";
 
 const t = fr.gameNotes;
 
-const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4";
+const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-input px-4";
 
 // Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
 // avant le typecheck, sur un clone sans `.next/types`.
@@ -41,7 +41,7 @@ export default async function GameNotesPage(props: GameNotesPageProps) {
       <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-2xl font-semibold">{t.title}</h1>
-          <p className="text-neutral-700">{t.intro}</p>
+          <p className="text-muted-foreground">{t.intro}</p>
         </div>
         <Link
           href="/matchs/nouveau"
@@ -69,7 +69,7 @@ export default async function GameNotesPage(props: GameNotesPageProps) {
               {t.previous}
             </Link>
           )}
-          <span className="text-sm text-neutral-700">
+          <span className="text-sm text-muted-foreground">
             {t.pageLabel.replace("{page}", String(filters.page))}
           </span>
           {page.hasMore && (

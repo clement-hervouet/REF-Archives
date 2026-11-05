@@ -18,10 +18,10 @@ export default async function ColleaguesPage() {
     <div className="flex flex-col gap-8">
       <section className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4">
+      <section className="flex flex-col gap-3 rounded-md border border-border p-4">
         <h2 className="text-lg font-semibold">{t.add.legend}</h2>
         <ColleagueForm
           action={createColleagueAction}
@@ -37,11 +37,11 @@ export default async function ColleaguesPage() {
             const name = personLabel(colleague);
             return (
               <li key={colleague.id}>
-                <article className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4">
+                <article className="flex flex-col gap-3 rounded-md border border-border p-4">
                   <h2 className="font-semibold break-words">
                     {name}
                     {colleague.hasAccount && (
-                      <span className="ml-2 text-sm font-normal text-neutral-700">
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
                         ({fr.games.officials.hasAccountBadge})
                       </span>
                     )}

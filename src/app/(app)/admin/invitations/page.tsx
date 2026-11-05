@@ -17,7 +17,7 @@ export default async function InvitationsPage() {
     <div className="flex flex-col gap-8">
       <section className="flex max-w-xl flex-col gap-3">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
         <CreateInvitationForm />
       </section>
 
@@ -30,11 +30,11 @@ export default async function InvitationsPage() {
             {invitations.map((invitation) => (
               <li
                 key={invitation.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-300 p-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
               >
                 <div className="min-w-0">
                   <p className="font-medium break-all">{invitation.email}</p>
-                  <p className="text-sm text-neutral-700">
+                  <p className="text-sm text-muted-foreground">
                     {t.status[invitation.status]}
                     {invitation.status === "pending" &&
                       ` · ${t.expiresOn.replace("{date}", formatDateTime(invitation.expiresAt))}`}
@@ -46,7 +46,7 @@ export default async function InvitationsPage() {
                     <button
                       type="submit"
                       aria-label={t.revokeFor.replace("{email}", invitation.email)}
-                      className="min-h-11 rounded-md border border-neutral-400 px-4"
+                      className="min-h-11 rounded-md border border-input px-4"
                     >
                       {t.revoke}
                     </button>

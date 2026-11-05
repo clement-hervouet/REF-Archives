@@ -67,8 +67,8 @@ export function LevelDefaultForm({
             role={message.tone === "error" ? "alert" : "status"}
             className={
               message.tone === "error"
-                ? "text-sm font-medium text-red-700"
-                : "text-sm font-medium text-green-800"
+                ? "border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+                : "border-l-4 border-success pl-3 text-sm font-medium"
             }
           >
             {message.text}

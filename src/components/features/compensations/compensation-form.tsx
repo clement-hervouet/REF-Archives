@@ -105,7 +105,7 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
 
   return (
     <>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.sections.match}</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
@@ -193,10 +193,10 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
         />
       </div>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.sections.venue}</legend>
         {!venueException && (club1 !== undefined || team1Club === NEW_CHOICE) && (
-          <p id={venueHintId} className="text-sm text-neutral-700">
+          <p id={venueHintId} className="text-sm text-muted-foreground">
             {club1 !== undefined
               ? t.fields.defaultVenue.replace("{address}", addressLabel(club1.address))
               : t.fields.defaultVenueNewClub}
@@ -245,7 +245,7 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
       </fieldset>
 
       {withCompensation && (
-        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.sections.travel}</legend>
           <div className="md:max-w-xs">
             <TextField

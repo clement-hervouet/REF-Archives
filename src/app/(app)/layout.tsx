@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <AdminNav />
           </Suspense>
           <form action={logout}>
-            <button type="submit" className="min-h-11 rounded-md border border-neutral-400 px-4">
+            <button type="submit" className="min-h-11 rounded-md border border-input px-4">
               {fr.auth.logout}
             </button>
           </form>

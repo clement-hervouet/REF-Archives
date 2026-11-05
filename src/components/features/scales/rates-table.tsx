@@ -33,7 +33,7 @@ export function RatesTable({
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">{t.table.caption.replace("{name}", scaleName)}</caption>
         <thead>
-          <tr className="border-b border-neutral-400">
+          <tr className="border-b border-input">
             <th scope="col" className="py-2 pr-2 md:pr-3 font-medium">
               {t.table.effectiveFrom}
             </th>
@@ -55,19 +55,19 @@ export function RatesTable({
             const date = formatIsoDate(rate.effectiveFrom);
             const isCurrent = rate.id === currentRateId;
             return (
-              <tr key={rate.id} className="border-b border-neutral-200 align-top">
+              <tr key={rate.id} className="border-b border-border align-top">
                 <td className="py-2 pr-2 md:pr-3">
                   <span className="whitespace-nowrap">{date}</span>
                   {/* Badges sous la date sur mobile, à côté sur grand écran : pas de débordement à 375 px. */}
                   {(isCurrent || (showUsage && rate.inUse)) && (
                     <span className="mt-1 flex flex-wrap gap-1 md:mt-0 md:ml-2 md:inline-flex">
                       {isCurrent && (
-                        <span className="rounded bg-neutral-900 px-1.5 py-0.5 text-xs font-medium text-white">
+                        <span className="rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
                           {t.table.current}
                         </span>
                       )}
                       {showUsage && rate.inUse && (
-                        <span className="rounded border border-neutral-400 px-1.5 py-0.5 text-xs">
+                        <span className="rounded border border-input px-1.5 py-0.5 text-xs">
                           {t.table.inUse}
                         </span>
                       )}

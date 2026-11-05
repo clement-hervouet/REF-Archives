@@ -32,12 +32,12 @@ export default async function ScalesPage() {
     <div className="flex flex-col gap-10">
       <section className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">{t.common.title}</h2>
-        <p className="max-w-2xl text-neutral-700">{t.common.intro}</p>
+        <p className="max-w-2xl text-muted-foreground">{t.common.intro}</p>
         {/* Lecture seule : aucune action, et l'usage par d'autres comptes n'est jamais affiché. */}
         {common.map((scale) => (
           <ScaleCard key={scale.id} scale={scale} actions={{}} emptyText={t.common.empty} />
@@ -61,7 +61,7 @@ export default async function ScalesPage() {
             }}
           />
         ))}
-        <div className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4">
+        <div className="flex flex-col gap-3 rounded-md border border-border p-4">
           <h3 className="font-semibold">{t.create.title}</h3>
           <CreateScaleForm action={createScaleAction} />
         </div>
@@ -69,7 +69,7 @@ export default async function ScalesPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">{t.defaults.title}</h2>
-        <p className="max-w-2xl text-neutral-700">{t.defaults.intro}</p>
+        <p className="max-w-2xl text-muted-foreground">{t.defaults.intro}</p>
         {mine.length === 0 ? (
           <p>{t.defaults.needScale}</p>
         ) : (

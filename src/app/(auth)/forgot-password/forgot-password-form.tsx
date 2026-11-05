@@ -7,7 +7,7 @@ import { requestPasswordResetAction } from "./actions";
 import type { ForgotPasswordFormState } from "./actions";
 
 const t = fr.forgotPassword;
-const FIELD_CLASS = "min-h-11 w-full rounded-md border border-neutral-400 px-3 py-2";
+const FIELD_CLASS = "min-h-11 w-full rounded-md border border-input px-3 py-2";
 const LINK_CLASS = "inline-flex min-h-11 items-center self-start text-sm underline";
 
 function errorMessage(state: ForgotPasswordFormState): string | null {
@@ -46,9 +46,13 @@ export function ForgotPasswordForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <p className="text-sm text-neutral-700">{t.intro}</p>
+      <p className="text-sm text-muted-foreground">{t.intro}</p>
       {message !== null && (
-        <p id="forgot-error" role="alert" className="text-sm font-medium text-red-700">
+        <p
+          id="forgot-error"
+          role="alert"
+          className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+        >
           {message}
         </p>
       )}
@@ -70,7 +74,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-11 rounded-md bg-neutral-900 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="min-h-11 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
       >
         {isPending ? t.submitting : t.submit}
       </button>

@@ -19,7 +19,7 @@ function errorMessage(state: LoginFormState): string | null {
   }
 }
 
-const FIELD_CLASS = "min-h-11 w-full rounded-md border border-neutral-400 px-3 py-2";
+const FIELD_CLASS = "min-h-11 w-full rounded-md border border-input px-3 py-2";
 
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, { status: "idle", email: "" });
@@ -28,7 +28,11 @@ export function LoginForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {message !== null && (
-        <p id="login-error" role="alert" className="text-sm font-medium text-red-700">
+        <p
+          id="login-error"
+          role="alert"
+          className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+        >
           {message}
         </p>
       )}
@@ -64,7 +68,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-11 rounded-md bg-neutral-900 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="min-h-11 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
       >
         {isPending ? fr.auth.login.submitting : fr.auth.login.submit}
       </button>

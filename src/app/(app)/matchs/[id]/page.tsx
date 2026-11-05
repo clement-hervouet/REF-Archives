@@ -26,7 +26,7 @@ import {
 
 const t = fr.games;
 
-const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4";
+const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-input px-4";
 
 // Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
 // avant le typecheck, sur un clone sans `.next/types`.
@@ -59,7 +59,7 @@ export default async function GamePage(props: GamePageProps) {
         <h1 className="text-2xl font-semibold break-words">
           {t.detail.title.replace("{team1}", game.team1Name).replace("{team2}", game.team2Name)}
         </h1>
-        <p className="text-neutral-700">
+        <p className="text-muted-foreground">
           {t.detail.when
             .replace("{date}", formatIsoDate(toParisIsoDate(game.startsAt)))
             .replace("{time}", toParisTimeOfDay(game.startsAt))}
@@ -80,7 +80,7 @@ export default async function GamePage(props: GamePageProps) {
           )}
         </div>
         {game.compensationId === null && (
-          <p className="text-sm text-neutral-700">{t.detail.noCompensation}</p>
+          <p className="text-sm text-muted-foreground">{t.detail.noCompensation}</p>
         )}
       </section>
 
@@ -94,7 +94,7 @@ export default async function GamePage(props: GamePageProps) {
         />
       </section>
 
-      <section className="flex flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <section className="flex flex-col gap-4 rounded-md border border-border p-4">
         <h2 className="text-lg font-semibold">{t.note.legend}</h2>
         {/* Clé : une note supprimée (ou recréée) repart de valeurs neuves. */}
         <NoteForm

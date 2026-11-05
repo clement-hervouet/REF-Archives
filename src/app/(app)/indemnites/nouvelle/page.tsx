@@ -20,7 +20,7 @@ export default async function NewCompensationPage() {
           {t.edit.back}
         </Link>
         <h1 className="text-2xl font-semibold">{t.new.title}</h1>
-        <p className="text-neutral-700">{t.new.intro}</p>
+        <p className="text-muted-foreground">{t.new.intro}</p>
       </section>
       <CompensationForm action={createCompensationAction} {...data} />
     </div>

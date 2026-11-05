@@ -43,12 +43,12 @@ export function SelectField({ id, name, label, value, onChange, error, hint, chi
         {children}
       </select>
       {hint !== undefined && (
-        <p id={hintId} className="text-sm text-neutral-700">
+        <p id={hintId} className="text-sm text-muted-foreground">
           {hint}
         </p>
       )}
       {error !== null && (
-        <p id={errorId} className="text-sm font-medium text-red-700">
+        <p id={errorId} className="text-sm font-medium text-destructive">
           {error}
         </p>
       )}

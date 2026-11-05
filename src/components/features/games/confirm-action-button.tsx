@@ -59,11 +59,14 @@ export function ConfirmActionButton({
       <div className="flex flex-col gap-2">
         {message !== undefined &&
           (success ? (
-            <p role="status" className="text-sm font-medium text-green-800">
+            <p role="status" className="border-l-4 border-success pl-3 text-sm font-medium">
               {message}
             </p>
           ) : (
-            <p role="alert" className="text-sm font-medium text-red-700">
+            <p
+              role="alert"
+              className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+            >
               {message}
             </p>
           ))}
@@ -82,14 +85,17 @@ export function ConfirmActionButton({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-md border border-red-700 p-3">
+    <form
+      action={formAction}
+      className="flex flex-col gap-3 rounded-md border border-destructive p-3"
+    >
       <input type="hidden" name={hidden.name} value={hidden.value} />
       <p className="text-sm">{labels.warning}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="min-h-11 rounded-md bg-red-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
         >
           {labels.confirm}
         </button>

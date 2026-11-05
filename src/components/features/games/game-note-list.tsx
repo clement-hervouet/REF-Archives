@@ -31,8 +31,8 @@ export function GameNoteList({ items }: { items: readonly GameNoteListItem[] }) 
         ].filter((fact) => fact !== null);
         return (
           <li key={item.gameId}>
-            <article className="flex flex-col gap-2 rounded-md border border-neutral-300 p-4">
-              <p className="text-sm text-neutral-700">
+            <article className="flex flex-col gap-2 rounded-md border border-border p-4">
+              <p className="text-sm text-muted-foreground">
                 {t.when.replace("{date}", date).replace("{time}", toParisTimeOfDay(item.startsAt))}
                 {" · "}
                 {divisionLabel(item.division)}
@@ -43,13 +43,13 @@ export function GameNoteList({ items }: { items: readonly GameNoteListItem[] }) 
               {facts.length > 0 && (
                 <ul className="flex flex-wrap gap-2 text-sm">
                   {facts.map((fact) => (
-                    <li key={fact} className="rounded-md bg-neutral-100 px-2 py-1">
+                    <li key={fact} className="rounded-md bg-muted px-2 py-1">
                       {fact}
                     </li>
                   ))}
                 </ul>
               )}
-              {!item.hasNote && <p className="text-sm text-neutral-700">{t.noNote}</p>}
+              {!item.hasNote && <p className="text-sm text-muted-foreground">{t.noNote}</p>}
               {item.excerpt !== null && (
                 <p className="text-sm break-words whitespace-pre-line">
                   {item.excerptTruncated ? `${item.excerpt}…` : item.excerpt}
@@ -58,7 +58,7 @@ export function GameNoteList({ items }: { items: readonly GameNoteListItem[] }) 
               <Link
                 href={gamePath(item.gameId)}
                 aria-label={t.openLabel.replace("{date}", date)}
-                className="inline-flex min-h-11 items-center self-start rounded-md border border-neutral-400 px-4"
+                className="inline-flex min-h-11 items-center self-start rounded-md border border-input px-4"
               >
                 {t.open}
               </Link>

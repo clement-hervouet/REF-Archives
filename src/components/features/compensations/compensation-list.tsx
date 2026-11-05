@@ -35,9 +35,9 @@ export function CompensationList({ items, deleteAction }: Props) {
         const date = formatIsoDate(toParisIsoDate(item.startsAt));
         return (
           <li key={item.id}>
-            <article className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4 md:flex-row md:items-start md:justify-between">
+            <article className="flex flex-col gap-3 rounded-md border border-border p-4 md:flex-row md:items-start md:justify-between">
               <div className="flex min-w-0 flex-col gap-1">
-                <p className="text-sm text-neutral-700">
+                <p className="text-sm text-muted-foreground">
                   {t.matchOn
                     .replace("{date}", date)
                     .replace("{time}", toParisTimeOfDay(item.startsAt))}
@@ -50,10 +50,10 @@ export function CompensationList({ items, deleteAction }: Props) {
                     .replace("{division}", divisionLabel(item.division))
                     .replace("{address}", addressLabel(item.address))}
                 </p>
-                <p className="text-sm text-neutral-700">
+                <p className="text-sm text-muted-foreground">
                   {t.scale.replace("{scale}", item.scaleName)}
                 </p>
-                <p className="text-sm text-neutral-700">
+                <p className="text-sm text-muted-foreground">
                   {t.amounts
                     .replace("{game}", formatCents(item.amount.gameCents))
                     .replace("{mileage}", formatCents(item.amount.mileageCents))
@@ -71,7 +71,7 @@ export function CompensationList({ items, deleteAction }: Props) {
                     href={matchExportPath(item.id)}
                     download
                     aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
-                    className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                    className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
                   >
                     {fr.calendar.export.label}
                   </a>
@@ -80,7 +80,7 @@ export function CompensationList({ items, deleteAction }: Props) {
                     <Link
                       href={completeGamePath(item.id)}
                       aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
-                      className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                      className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
                     >
                       {fr.games.completeMatch}
                     </Link>
@@ -88,7 +88,7 @@ export function CompensationList({ items, deleteAction }: Props) {
                     <Link
                       href={gamePath(item.gameId)}
                       aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
-                      className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                      className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
                     >
                       {fr.games.viewMatch}
                     </Link>
@@ -96,7 +96,7 @@ export function CompensationList({ items, deleteAction }: Props) {
                   <Link
                     href={`/indemnites/${item.id}/modifier`}
                     aria-label={t.editLabel.replace("{date}", date)}
-                    className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                    className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
                   >
                     {t.edit}
                   </Link>

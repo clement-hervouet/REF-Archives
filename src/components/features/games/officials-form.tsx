@@ -79,9 +79,9 @@ type OfficialsFieldsetProps = {
 /** Les quatre places, sans `<form>` : aussi utilisé par le formulaire de match sans indemnité. */
 export function OfficialsFieldset({ colleagues, current, state }: OfficialsFieldsetProps) {
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
       <legend className="px-1 font-semibold">{t.officials.legend}</legend>
-      <p className="text-sm text-neutral-700">{t.officials.intro}</p>
+      <p className="text-sm text-muted-foreground">{t.officials.intro}</p>
       <div className="grid gap-6 md:grid-cols-2">
         {OFFICIAL_SLOTS.map((slot) => (
           <SlotFields
@@ -141,7 +141,7 @@ function SlotFields({ slot, colleagues, current, error }: SlotFieldsProps) {
         <option value={PERSON_NEW}>{t.officials.newColleague}</option>
       </SelectField>
       {person === PERSON_NEW && (
-        <div className="flex flex-col gap-3 border-l-2 border-neutral-300 pl-3">
+        <div className="flex flex-col gap-3 border-l-2 border-border pl-3">
           <TextField
             id={`${id}-lastname`}
             name={officialFieldName(slot, "Lastname")}
@@ -169,7 +169,7 @@ function SlotFields({ slot, colleagues, current, error }: SlotFieldsProps) {
             />
             <span className="flex flex-col">
               <span>{t.officials.hasAccount}</span>
-              <span id={`${id}-has-account-hint`} className="text-sm text-neutral-700">
+              <span id={`${id}-has-account-hint`} className="text-sm text-muted-foreground">
                 {t.officials.hasAccountHint}
               </span>
             </span>

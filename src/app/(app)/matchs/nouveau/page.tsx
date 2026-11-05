@@ -30,7 +30,7 @@ export default async function NewGamePage() {
           {t.back}
         </Link>
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
       </section>
       <GameForm
         mode="create"

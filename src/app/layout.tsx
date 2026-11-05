@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { cookies } from "next/headers";
+import type { ReactNode } from "react";
 import { fr } from "@/i18n/fr";
+import { THEME_COOKIE, themeAttributeFromCookie } from "@/lib/theme";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Une seule famille, Archivo variable en graisse et en largeur (licence OFL, voir
+// fonts/OFL-Archivo.txt) : la largeur resserrée sert aux titres (globals.css). Fichier
+// versionné dans le dépôt : le build ne dépend d'aucun service extérieur, et la police est
+// servie par l'application elle-même (`font-src 'self'` dans la CSP). Sous-ensemble latin :
+// français complet (accents, œ, €).
+const archivo = localFont({
+  src: "./fonts/archivo-latin-wdth-normal.woff2",
+  variable: "--font-archivo",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  declarations: [{ prop: "font-stretch", value: "62% 125%" }],
 });
 
 export const metadata: Metadata = {
@@ -18,10 +25,13 @@ export const metadata: Metadata = {
   description: fr.app.tagline,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Thème choisi dans les paramètres (cookie) ; sans choix, le CSS suit le système.
+  const theme = themeAttributeFromCookie((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
-    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="fr" data-theme={theme} className={`${archivo.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

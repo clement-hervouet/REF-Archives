@@ -59,7 +59,7 @@ export default async function CompleteGamePage(props: CompleteGamePageProps) {
             .replace("{date}", formatIsoDate(toParisIsoDate(compensation.startsAt)))
             .replace("{time}", toParisTimeOfDay(compensation.startsAt))}
         </p>
-        <p className="text-neutral-700">{t.complete.intro}</p>
+        <p className="text-muted-foreground">{t.complete.intro}</p>
       </section>
       <OfficialsForm
         action={createGameAction}

@@ -29,7 +29,7 @@ async function ResetNotice({ searchParams }: LoginPageProps) {
     return null;
   }
   return (
-    <p role="status" className="rounded-md border border-neutral-400 p-3 text-sm">
+    <p role="status" className="rounded-md border border-input p-3 text-sm">
       {fr.auth.login.passwordResetDone}
     </p>
   );

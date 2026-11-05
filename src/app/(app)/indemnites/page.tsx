@@ -53,7 +53,7 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
       <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-2xl font-semibold">{t.list.title}</h1>
-          <p className="text-neutral-700">{t.list.intro}</p>
+          <p className="text-muted-foreground">{t.list.intro}</p>
         </div>
         <Link
           href="/indemnites/nouvelle"

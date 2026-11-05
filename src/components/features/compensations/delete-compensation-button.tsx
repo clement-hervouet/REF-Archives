@@ -28,7 +28,10 @@ export function DeleteCompensationButton({ compensationId, dateLabel, action }: 
     return (
       <div className="flex flex-col gap-2">
         {state.status === "not_found" && (
-          <p role="alert" className="text-sm font-medium text-red-700">
+          <p
+            role="alert"
+            className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+          >
             {t.errors.compensationNotFound}
           </p>
         )}
@@ -47,14 +50,17 @@ export function DeleteCompensationButton({ compensationId, dateLabel, action }: 
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-md border border-red-700 p-3">
+    <form
+      action={formAction}
+      className="flex flex-col gap-3 rounded-md border border-destructive p-3"
+    >
       <input type="hidden" name="compensationId" value={compensationId} />
       <p className="text-sm">{t.delete.warning}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="min-h-11 rounded-md bg-red-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
         >
           {t.delete.confirm}
         </button>

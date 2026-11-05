@@ -17,7 +17,7 @@ import type { UpcomingMatchRow } from "@/server/db/upcoming-matches";
 
 const t = fr.reminders.upcoming;
 
-const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4";
+const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-input px-4";
 
 export type UpcomingMatch = UpcomingMatchRow;
 
@@ -30,7 +30,7 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
         const officials = officialsSummary(match.officials);
         return (
           <li key={match.id}>
-            <article className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4 md:flex-row md:items-start md:justify-between">
+            <article className="flex flex-col gap-3 rounded-md border border-border p-4 md:flex-row md:items-start md:justify-between">
               <div className="flex min-w-0 flex-col gap-1">
                 <p className="text-sm font-medium first-letter:uppercase">
                   {formatWeekdayDateTime(match.startsAt)}
@@ -38,7 +38,7 @@ export function UpcomingMatchList({ matches }: { matches: readonly UpcomingMatch
                 <h3 className="font-semibold break-words">
                   {t.teams.replace("{team1}", match.team1Name).replace("{team2}", match.team2Name)}
                 </h3>
-                <p className="text-sm text-neutral-700">{divisionLabel(match.division)}</p>
+                <p className="text-sm text-muted-foreground">{divisionLabel(match.division)}</p>
                 <p className="text-sm break-words">{address}</p>
                 {officials !== null && (
                   <p className="text-sm break-words">
