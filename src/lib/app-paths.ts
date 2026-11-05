@@ -18,3 +18,19 @@ export function calendarFeedPath(token: string): string {
 export function matchExportPath(compensationId: string): string {
   return `/indemnites/${compensationId}/ics`;
 }
+
+/** Page « Mes collègues » : fiches nom seul (bloc 9). */
+export const COLLEAGUES_PATH = "/collegues";
+
+/** Fiche d'un match complet (bloc 9). */
+export function gamePath(gameId: string): string {
+  return `/matchs/${gameId}`;
+}
+
+/** Création du match complet d'une indemnité (« Compléter le match », bloc 9). */
+export function completeGamePath(compensationId: string): string {
+  return `/indemnites/${compensationId}/match`;
+}
+
+/** Page « Notes de match » : matchs notés, filtrables (bloc 9). */
+export const GAME_NOTES_PATH = "/notes";

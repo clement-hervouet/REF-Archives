@@ -122,6 +122,55 @@ export async function linkCompensationToGame(
   await db.query(LINK_COMPENSATION_SQL, [input.compensationId, input.userId, input.gameId]);
 }
 
+const FIND_COMPENSATION_FOR_GAME_SQL = `SELECT c.id, c.starts_at, c.game_id,
+  club1.name AS team1_name, club2.name AS team2_name
+FROM compensation c
+JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
+JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
+JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
+JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
+
+const compensationForGameRowSchema = z.object({
+  id: z.uuid(),
+  starts_at: z.date(),
+  game_id: z.uuid().nullable(),
+  team1_name: z.string(),
+  team2_name: z.string(),
+});
+
+/** Indemnité vue depuis la page « Compléter le match ». */
+export type CompensationForGame = {
+  id: string;
+  startsAt: Date;
+  gameId: string | null;
+  team1Name: string;
+  team2Name: string;
+};
+
+/** Indemnité active de l'utilisateur et son match lié ; `null` si introuvable ou supprimée. */
+export async function findCompensationForGame(
+  db: Queryable,
+  input: { compensationId: string; userId: string },
+): Promise<CompensationForGame | null> {
+  const result = await db.query(FIND_COMPENSATION_FOR_GAME_SQL, [
+    input.compensationId,
+    input.userId,
+  ]);
+  const raw = result.rows[0];
+  if (raw === undefined) {
+    return null;
+  }
+  const row = compensationForGameRowSchema.parse(raw);
+  return {
+    id: row.id,
+    startsAt: row.starts_at,
+    gameId: row.game_id,
+    team1Name: row.team1_name,
+    team2Name: row.team2_name,
+  };
+}
+
 // ─── Officiels et synchronisation ──────────────────────────────────────────
 
 const LOCK_GAME_SQL = `SELECT id FROM game

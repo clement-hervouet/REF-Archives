@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "./fake-db";
 import {
   MAX_GAMES_PER_USER,
+  findCompensationForGame,
   findGame,
   insertGameFromCompensation,
   linkCompensationToGame,
@@ -206,5 +207,37 @@ describe("findGame", () => {
   it("null si introuvable, supprimé ou d'un autre utilisateur", async () => {
     const { db } = makeFakeDb();
     expect(await findGame(db, { gameId: GAME_ID, userId: USER_ID })).toBeNull();
+  });
+});
+
+describe("findCompensationForGame", () => {
+  it("renvoie l'indemnité de l'utilisateur et son match lié", async () => {
+    const startsAt = new Date("2026-11-14T18:00:00Z");
+    const { db, query } = makeFakeDb([
+      {
+        id: COMPENSATION_ID,
+        starts_at: startsAt,
+        game_id: null,
+        team1_name: "Club Alpha",
+        team2_name: "Club Beta",
+      },
+    ]);
+    expect(
+      await findCompensationForGame(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
+    ).toEqual({
+      id: COMPENSATION_ID,
+      startsAt,
+      gameId: null,
+      team1Name: "Club Alpha",
+      team2Name: "Club Beta",
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+  });
+
+  it("null si introuvable", async () => {
+    const { db } = makeFakeDb();
+    expect(
+      await findCompensationForGame(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
+    ).toBeNull();
   });
 });

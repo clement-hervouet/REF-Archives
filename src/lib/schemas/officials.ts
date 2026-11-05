@@ -10,13 +10,12 @@
  * La case « a un compte » est informative : elle ne crée aucun lien entre comptes (§6.5).
  */
 import { z } from "zod";
+import { OFFICIAL_SLOTS, PERSON_NAME_MAX } from "@/lib/game-form-fields";
+import type { OfficialSlot } from "@/lib/game-form-fields";
 
-/** Places dans l'ordre officiel, qui est aussi l'ordre d'affichage. */
-export const OFFICIAL_SLOTS = ["referee1", "referee2", "referee3", "observer"] as const;
-export type OfficialSlot = (typeof OFFICIAL_SLOTS)[number];
-
-/** Longueur maximale d'un prénom ou d'un nom de collègue. */
-export const PERSON_NAME_MAX = 100;
+// Constantes sans Zod, aussi utilisées côté client : définies dans `game-form-fields.ts`.
+export { OFFICIAL_SLOTS, PERSON_NAME_MAX };
+export type { OfficialSlot };
 
 /** Aucun caractère de contrôle (sauts de ligne, tabulations, NUL…). */
 const NO_CONTROL_CHARS = /^[^\p{Cc}]*$/u;

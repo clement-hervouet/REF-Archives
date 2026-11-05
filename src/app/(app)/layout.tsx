@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { fr } from "@/i18n/fr";
-import { SETTINGS_PATH, UPCOMING_PATH } from "@/lib/app-paths";
+import { COLLEAGUES_PATH, GAME_NOTES_PATH, SETTINGS_PATH, UPCOMING_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { logout } from "./actions";
 import { AdminNav } from "./admin-nav";
@@ -36,6 +36,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <Link href="/baremes" className="inline-flex min-h-11 items-center px-3 underline">
             {fr.nav.scales}
+          </Link>
+          <Link href={GAME_NOTES_PATH} className="inline-flex min-h-11 items-center px-3 underline">
+            {fr.nav.gameNotes}
+          </Link>
+          <Link href={COLLEAGUES_PATH} className="inline-flex min-h-11 items-center px-3 underline">
+            {fr.nav.colleagues}
           </Link>
           <Link href={SETTINGS_PATH} className="inline-flex min-h-11 items-center px-3 underline">
             {fr.nav.settings}

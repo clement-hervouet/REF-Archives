@@ -7,16 +7,24 @@
  * (§6.4 A10). La validation est purement syntaxique (`URL`), sans aucune requête réseau.
  */
 import { z } from "zod";
+import {
+  CLIP_URL_MAX,
+  MAX_CLIPS_PER_NOTE,
+  NOTE_BODY_MAX,
+  NOTE_LEVEL_MAX,
+  NOTE_LEVEL_MIN,
+  NOTE_LEVELS,
+} from "@/lib/game-form-fields";
 
-/** Échelle de la confiance et du stress (§12, tranché au bloc 9). */
-export const NOTE_LEVEL_MIN = 1;
-export const NOTE_LEVEL_MAX = 5;
-export const NOTE_LEVELS = [1, 2, 3, 4, 5] as const;
-
-/** Bornes alignées sur la migration 013 (`note.body`, `note_clip`). */
-export const NOTE_BODY_MAX = 4096;
-export const MAX_CLIPS_PER_NOTE = 10;
-export const CLIP_URL_MAX = 2048;
+// Constantes sans Zod, aussi utilisées côté client : définies dans `game-form-fields.ts`.
+export {
+  CLIP_URL_MAX,
+  MAX_CLIPS_PER_NOTE,
+  NOTE_BODY_MAX,
+  NOTE_LEVEL_MAX,
+  NOTE_LEVEL_MIN,
+  NOTE_LEVELS,
+};
 
 const CONTROL_CHAR = /\p{Cc}/u;
 
