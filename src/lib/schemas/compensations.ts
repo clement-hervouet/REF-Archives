@@ -81,7 +81,8 @@ export const venueChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("new"), address: newAddressSchema }),
 ]);
 
-const compensationFieldsSchema = z.object({
+/** Informations d'un match, communes à l'indemnité et au match complet (bloc 9). */
+const matchFieldsShape = {
   date: z
     .string()
     .trim()
@@ -92,59 +93,84 @@ const compensationFieldsSchema = z.object({
   team1: teamChoiceSchema,
   team2: teamChoiceSchema,
   venue: venueChoiceSchema,
+};
+
+const compensationFieldsSchema = z.object({
+  ...matchFieldsShape,
   scaleId: z.uuid(),
   oneWayDistance: oneWayDistanceSchema,
 });
+
+const matchFieldsSchema = z.object(matchFieldsShape);
+
+type MatchFieldsValue = z.output<typeof matchFieldsSchema>;
+
+/** Règles croisées : deux clubs différents, heure qui existe ce jour-là à Paris. */
+function refineMatchFields(value: MatchFieldsValue, ctx: z.RefinementCtx): void {
+  if (
+    value.team1.kind === "existing" &&
+    value.team2.kind === "existing" &&
+    value.team1.clubId === value.team2.clubId
+  ) {
+    ctx.addIssue({ code: "custom", path: ["team2"], message: "same_club" });
+  }
+  // Vérifiée ici aussi (et pas seulement dans le transform, que Zod saute dès qu'une
+  // autre erreur existe) : toutes les erreurs remontent en un seul envoi. Seulement si
+  // la date et l'heure sont valides séparément, sinon leurs propres erreurs suffisent.
+  if (!isIsoDate(value.date) || !isTimeOfDay(value.time)) {
+    return;
+  }
+  try {
+    parisLocalToUtc(value.date, value.time);
+  } catch (error) {
+    if (!(error instanceof ValidationError)) {
+      throw error;
+    }
+    ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
+  }
+}
+
+/** Informations du match validées : `startsAt` (instant UTC) remplace date et heure. */
+function toMatchInfo(value: MatchFieldsValue, ctx: z.RefinementCtx) {
+  let startsAt: Date;
+  try {
+    startsAt = parisLocalToUtc(value.date, value.time);
+  } catch (error) {
+    if (!(error instanceof ValidationError)) {
+      throw error;
+    }
+    ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
+    return z.NEVER;
+  }
+  return {
+    startsAt,
+    divisionId: value.divisionId,
+    team1: value.team1,
+    team2: value.team2,
+    venue: value.venue,
+  };
+}
 
 /**
  * Formulaire complet. Après validation : `startsAt` (instant UTC) et `distanceM` (mètres
  * aller-retour) remplacent la saisie brute.
  */
 export const compensationFormSchema = compensationFieldsSchema
-  .superRefine((value, ctx) => {
-    if (
-      value.team1.kind === "existing" &&
-      value.team2.kind === "existing" &&
-      value.team1.clubId === value.team2.clubId
-    ) {
-      ctx.addIssue({ code: "custom", path: ["team2"], message: "same_club" });
-    }
-    // Vérifiée ici aussi (et pas seulement dans le transform, que Zod saute dès qu'une
-    // autre erreur existe) : toutes les erreurs remontent en un seul envoi. Seulement si
-    // la date et l'heure sont valides séparément, sinon leurs propres erreurs suffisent.
-    if (!isIsoDate(value.date) || !isTimeOfDay(value.time)) {
-      return;
-    }
-    try {
-      parisLocalToUtc(value.date, value.time);
-    } catch (error) {
-      if (!(error instanceof ValidationError)) {
-        throw error;
-      }
-      ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
-    }
-  })
+  .superRefine(refineMatchFields)
   .transform((value, ctx) => {
-    let startsAt: Date;
-    try {
-      startsAt = parisLocalToUtc(value.date, value.time);
-    } catch (error) {
-      if (!(error instanceof ValidationError)) {
-        throw error;
-      }
-      ctx.addIssue({ code: "custom", path: ["time"], message: error.message });
-      return z.NEVER;
-    }
-    return {
-      startsAt,
-      divisionId: value.divisionId,
-      team1: value.team1,
-      team2: value.team2,
-      venue: value.venue,
-      scaleId: value.scaleId,
-      distanceM: value.oneWayDistance,
-    };
+    const info = toMatchInfo(value, ctx);
+    return { ...info, scaleId: value.scaleId, distanceM: value.oneWayDistance };
   });
+
+/**
+ * Informations d'un match complet sans indemnité, ou modifiées depuis sa fiche (bloc 9) :
+ * mêmes champs et mêmes règles que l'indemnité, sans barème ni distance.
+ */
+export const matchInfoFormSchema = matchFieldsSchema
+  .superRefine(refineMatchFields)
+  .transform(toMatchInfo);
+
+export type MatchInfo = z.output<typeof matchInfoFormSchema>;
 
 export type CompensationFormInput = z.input<typeof compensationFormSchema>;
 export type CompensationForm = z.output<typeof compensationFormSchema>;

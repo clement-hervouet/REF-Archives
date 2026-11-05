@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { matchExportPath } from "@/lib/app-paths";
+import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
 import { formatCents, formatIsoDate } from "@/lib/format";
@@ -75,6 +75,24 @@ export function CompensationList({ items, deleteAction }: Props) {
                   >
                     {fr.calendar.export.label}
                   </a>
+                  {/* Bloc 9 : fiche du match complet, ou sa création depuis l'indemnité. */}
+                  {item.gameId === null ? (
+                    <Link
+                      href={completeGamePath(item.id)}
+                      aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                      className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                    >
+                      {fr.games.completeMatch}
+                    </Link>
+                  ) : (
+                    <Link
+                      href={gamePath(item.gameId)}
+                      aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                      className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4"
+                    >
+                      {fr.games.viewMatch}
+                    </Link>
+                  )}
                   <Link
                     href={`/indemnites/${item.id}/modifier`}
                     aria-label={t.editLabel.replace("{date}", date)}

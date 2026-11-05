@@ -249,6 +249,7 @@ describe("listCompensationsInRange", () => {
         postal_code: "59000",
         city: "Lille",
         scale_name: "Comité",
+        game_id: null,
       },
     ]);
     expect(await listCompensationsInRange(db, { userId: USER_ID, from, to })).toEqual([
@@ -263,6 +264,7 @@ describe("listCompensationsInRange", () => {
         team2Name: "Club Beta",
         address: { street: "Rue Nationale", number: "10", postalCode: "59000", city: "Lille" },
         scaleName: "Comité",
+        gameId: null,
       },
     ]);
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, from, to]);

@@ -7,6 +7,7 @@ const match: WeekendMatch = {
   team2Name: "ES Lens",
   division: { category: "Regional", type: "Feminin", level: "U15" },
   address: { street: "Rue du Stade", number: "2", postalCode: "62400", city: "Béthune" },
+  officials: [],
 };
 
 const input = {
@@ -22,6 +23,33 @@ describe("weekendMatchLine", () => {
     expect(line).toMatch(/^samedi 07\/11 à 20:30 : BC Béthune – ES Lens \(.+\), /);
     expect(line).toContain("U15");
     expect(line).toContain("2 Rue du Stade, 62400 Béthune");
+  });
+});
+
+describe("weekendMatchLine avec un match complet", () => {
+  it("ajoute les officiels dans l'ordre, « Moi » pour l'utilisateur", () => {
+    const line = weekendMatchLine({
+      ...match,
+      officials: [
+        { slot: "referee1", isSelf: false, firstname: "Alex", lastname: "Martin" },
+        { slot: "referee2", isSelf: true, firstname: null, lastname: null },
+      ],
+    });
+    expect(line).toMatch(/ — Officiels : Arbitre 1 : Alex Martin · Arbitre 2 : Moi$/);
+  });
+
+  it("échappe le nom d'un collègue dans le HTML", () => {
+    const message = buildWeekendRecapEmail({
+      ...input,
+      matches: [
+        {
+          ...match,
+          officials: [{ slot: "referee1", isSelf: false, firstname: null, lastname: "<b>x</b>" }],
+        },
+      ],
+    });
+    expect(message.html).not.toContain("<b>x</b>");
+    expect(message.html).toContain("&lt;b&gt;x&lt;/b&gt;");
   });
 });
 

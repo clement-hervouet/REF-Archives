@@ -32,6 +32,7 @@ const match: WeekendMatch = {
   team2Name: "ES Lens",
   division: { category: "Regional", type: "Feminin", level: "U15" },
   address: { street: "Rue du Stade", number: "2", postalCode: "62400", city: "Béthune" },
+  officials: [],
 };
 
 function makeDeps(overrides: Partial<RunRemindersDeps> = {}) {

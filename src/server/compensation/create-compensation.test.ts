@@ -323,6 +323,10 @@ describe("updateCompensation", () => {
       TEAM_2,
       ADDRESS_A,
     ]);
+    // Bloc 9 : le match complet lié reçoit les mêmes informations, dans la même transaction.
+    expect(query.mock.calls[7]?.[0]).toContain("UPDATE game g");
+    expect(query.mock.calls[7]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
+    expect(query).toHaveBeenCalledTimes(8);
   });
 
   it("refuse une indemnité introuvable, supprimée ou d'un autre utilisateur", async () => {
