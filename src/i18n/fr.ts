@@ -3,6 +3,11 @@ export const fr = {
     name: "REF-Archives",
     tagline: "Indemnités, disponibilités et notes d'arbitre.",
   },
+  notFound: {
+    title: "Page introuvable",
+    body: "Cette page n'existe pas, n'est plus disponible ou ne vous est pas accessible.",
+    back: "Retour à l'accueil",
+  },
   nav: {
     compensations: "Mes indemnités",
     invitations: "Invitations",
@@ -211,7 +216,7 @@ export const fr = {
       mileage: "Kilométrage (€)",
       total: "Total",
       show: "Voir {month}",
-      current: "affiché",
+      current: "affiché",  
     },
     edit: {
       title: "Modifier l'indemnité",
