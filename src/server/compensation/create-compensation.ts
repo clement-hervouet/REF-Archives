@@ -1,7 +1,8 @@
 /**
  * Enregistrement d'une indemnité autonome (bloc 6) : création et modification, chacune
  * en une seule transaction. Clubs et adresses créés à la volée, équipes retrouvées ou
- * créées, ligne de barème en vigueur à la date du match, puis l'indemnité.
+ * créées, ligne de barème en vigueur à la date du match, puis l'indemnité. Une
+ * modification est recopiée sur le match complet lié, s'il existe (bloc 9, §3.11).
  *
  * Ni Next.js ni authentification ici : la Server Action vérifie l'utilisateur et valide
  * le formulaire (`compensationFormSchema`) AVANT d'appeler ce service. Tout refus annule
@@ -23,6 +24,7 @@ import {
   updateCompensation as updateCompensationRow,
 } from "../db/compensations";
 import type { ApplicableRate, LockedClub, NewCompensation } from "../db/compensations";
+import { syncGameFromCompensation } from "../db/games";
 import type { Queryable } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
@@ -196,7 +198,8 @@ export async function createCompensation(
 
 /**
  * Remplace les informations d'une indemnité de `userId`. La ligne de barème est
- * recalculée : changer la date du match peut changer le montant.
+ * recalculée : changer la date du match peut changer le montant. Le match complet lié
+ * reçoit les mêmes informations dans la même transaction (jamais deux versions du match).
  */
 export async function updateCompensation(
   deps: CompensationDeps,
@@ -211,6 +214,7 @@ export async function updateCompensation(
     }
     const { rate, row } = await resolveCompensation(db, userId, form);
     await updateCompensationRow(db, { ...row, compensationId, userId });
+    await syncGameFromCompensation(db, { compensationId, userId });
     return { status: "updated", amount: computeCompensation(rate, form.distanceM) };
   });
 }
