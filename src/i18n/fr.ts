@@ -189,7 +189,9 @@ export const fr = {
     title: "Mes barèmes",
     intro:
       "Un barème fixe l'indemnité de match et le taux kilométrique à partir d'une date. Pour changer un montant, ajoutez une ligne avec une nouvelle date : les indemnités déjà saisies gardent l'ancienne.",
-    current: "En vigueur : {amount} · {rate}",
+    since: "En vigueur depuis le {date}",
+    figures: { match: "Match", rate: "Taux km" },
+    history: "Historique",
     noCurrent: "Aucune ligne en vigueur aujourd'hui.",
     common: {
       title: "Barème commun",
@@ -260,7 +262,9 @@ export const fr = {
       submit: "Enregistrer",
       submitting: "…",
       saved: "Enregistré",
-      customized: "{count} niveau(x) personnalisé(s)",
+      customizedNone: "Barème commun partout",
+      customizedOne: "1 niveau personnalisé",
+      customizedMany: "{count} niveaux personnalisés",
     },
     divisions: {
       category: {

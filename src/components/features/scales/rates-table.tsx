@@ -33,14 +33,14 @@ export function RatesTable({
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">{t.table.caption.replace("{name}", scaleName)}</caption>
         <thead>
-          <tr className="border-b border-input">
+          <tr className="border-b border-border text-muted-foreground">
             <th scope="col" className="py-2 pr-2 md:pr-3 font-medium">
               {t.table.effectiveFrom}
             </th>
             <th scope="col" className="py-2 pr-2 md:pr-3 font-medium">
               {t.table.gameAmount}
             </th>
-            <th scope="col" className="py-2 pr-2 md:pr-3 font-medium">
+            <th scope="col" className="py-2 pr-2 font-medium md:pr-3">
               {t.table.ratePerKm}
             </th>
             {deleteAction !== undefined && (
@@ -55,7 +55,7 @@ export function RatesTable({
             const date = formatIsoDate(rate.effectiveFrom);
             const isCurrent = rate.id === currentRateId;
             return (
-              <tr key={rate.id} className="border-b border-border align-top">
+              <tr key={rate.id} className="border-b border-border align-top last:border-b-0">
                 <td className="py-2 pr-2 md:pr-3">
                   <span className="whitespace-nowrap">{date}</span>
                   {/* Badges sous la date sur mobile, à côté sur grand écran : pas de débordement à 375 px. */}
@@ -74,12 +74,14 @@ export function RatesTable({
                     </span>
                   )}
                 </td>
-                <td className="py-2 pr-2 md:pr-3 whitespace-nowrap">
+                <td className="py-2 pr-2 whitespace-nowrap tabular-nums md:pr-3">
                   {formatCents(rate.gameAmountCents)}
                 </td>
-                <td className="py-2 pr-2 md:pr-3">{formatCentsPerKm(rate.centsPerKm)}</td>
+                <td className="py-2 pr-2 whitespace-nowrap md:pr-3">
+                  {formatCentsPerKm(rate.centsPerKm)}
+                </td>
                 {deleteAction !== undefined && (
-                  <td className="py-1 text-right">
+                  <td className="w-11 py-0.5 text-right">
                     <DeleteRateButton rateId={rate.id} dateLabel={date} action={deleteAction} />
                   </td>
                 )}

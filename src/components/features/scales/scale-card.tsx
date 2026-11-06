@@ -1,11 +1,13 @@
 /**
- * Carte d'un barème : ligne en vigueur, historique et actions disponibles. Composant
- * serveur ; chaque action absente masque le formulaire correspondant (lecture seule).
- * Masquer un formulaire n'est qu'un confort : les droits sont vérifiés par l'action.
+ * Carte d'un barème (bloc 10) : nom et date d'effet de la ligne en vigueur, ses deux
+ * montants mis en avant, l'historique, puis une rangée d'actions compactes (ajouter une
+ * ligne, renommer, supprimer). Composant serveur ; chaque action absente masque son
+ * formulaire (lecture seule). Masquer n'est qu'un confort : l'action vérifie les droits.
  */
+import { Disclosure } from "@/components/features/common/disclosure";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
-import { formatCents, formatCentsPerKm } from "@/lib/format";
+import { formatCents, formatCentsPerKm, formatIsoDate } from "@/lib/format";
 import type { ManagedScale } from "@/server/db/scales";
 import type {
   AddRateState,
@@ -36,57 +38,83 @@ type Props = {
   showUsage?: boolean;
 };
 
-const DETAILS_CLASS = "rounded-md border border-border p-3";
-const SUMMARY_CLASS = "flex min-h-11 cursor-pointer items-center font-medium";
+function Figure({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-xl font-semibold whitespace-nowrap tabular-nums">{value}</dd>
+    </div>
+  );
+}
 
 export function ScaleCard({ scale, actions, emptyText, showUsage = false }: Props) {
   const current = findEffectiveRate(scale.rates, toParisIsoDate(new Date()));
+  const hasActions =
+    actions.addRate !== undefined ||
+    actions.rename !== undefined ||
+    actions.deleteScale !== undefined;
 
   return (
-    <article className="flex flex-col gap-4 rounded-md border border-input p-3 md:p-4">
-      <header className="flex flex-col gap-1">
-        <h3 className="text-lg font-semibold break-words">{scale.name}</h3>
-        <p className="text-sm text-muted-foreground">
-          {current === null
-            ? t.noCurrent
-            : t.current
-                .replace("{amount}", formatCents(current.gameAmountCents))
-                .replace("{rate}", formatCentsPerKm(current.centsPerKm))}
-        </p>
+    <article className="flex flex-col gap-4 rounded-md border border-border p-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h3 className="text-lg font-semibold break-words">{scale.name}</h3>
+          <p className="text-sm text-muted-foreground">
+            {current === null
+              ? t.noCurrent
+              : t.since.replace("{date}", formatIsoDate(current.effectiveFrom))}
+          </p>
+        </div>
+        {current !== null && (
+          <dl className="flex gap-6">
+            <Figure label={t.figures.match} value={formatCents(current.gameAmountCents)} />
+            <Figure label={t.figures.rate} value={formatCentsPerKm(current.centsPerKm)} />
+          </dl>
+        )}
       </header>
 
       {scale.rates.length === 0 ? (
         <p>{emptyText}</p>
       ) : (
-        <RatesTable
-          scaleName={scale.name}
-          rates={scale.rates}
-          currentRateId={current?.id ?? null}
-          showUsage={showUsage}
-          {...(actions.deleteRate !== undefined ? { deleteAction: actions.deleteRate } : {})}
-        />
+        <div className="flex flex-col gap-1">
+          <h4 className="text-sm font-medium text-muted-foreground">{t.history}</h4>
+          <RatesTable
+            scaleName={scale.name}
+            rates={scale.rates}
+            currentRateId={current?.id ?? null}
+            showUsage={showUsage}
+            {...(actions.deleteRate !== undefined ? { deleteAction: actions.deleteRate } : {})}
+          />
+        </div>
       )}
 
-      {actions.addRate !== undefined && (
-        <details className={DETAILS_CLASS} open={scale.rates.length === 0}>
-          <summary className={SUMMARY_CLASS}>{t.addRate.title}</summary>
-          <div className="pt-3">
-            <AddRateForm scaleId={scale.id} action={actions.addRate} />
-          </div>
-        </details>
-      )}
-
-      {actions.rename !== undefined && (
-        <details className={DETAILS_CLASS}>
-          <summary className={SUMMARY_CLASS}>{t.rename.title}</summary>
-          <div className="pt-3">
-            <RenameScaleForm scaleId={scale.id} currentName={scale.name} action={actions.rename} />
-          </div>
-        </details>
-      )}
-
-      {actions.deleteScale !== undefined && (
-        <DeleteScaleButton scaleId={scale.id} action={actions.deleteScale} />
+      {hasActions && (
+        // Un panneau ouvert prend toute la ligne ; les autres boutons passent en dessous.
+        <div className="flex flex-wrap items-start gap-2">
+          {actions.addRate !== undefined && (
+            <Disclosure
+              summary={t.addRate.title}
+              open={scale.rates.length === 0}
+              className="open:basis-full"
+            >
+              <AddRateForm scaleId={scale.id} action={actions.addRate} />
+            </Disclosure>
+          )}
+          {actions.rename !== undefined && (
+            <Disclosure summary={t.rename.title} className="open:basis-full">
+              <RenameScaleForm
+                scaleId={scale.id}
+                currentName={scale.name}
+                action={actions.rename}
+              />
+            </Disclosure>
+          )}
+          {actions.deleteScale !== undefined && (
+            <div className="sm:ml-auto has-[form]:basis-full has-[form]:sm:ml-0">
+              <DeleteScaleButton scaleId={scale.id} action={actions.deleteScale} />
+            </div>
+          )}
+        </div>
       )}
     </article>
   );

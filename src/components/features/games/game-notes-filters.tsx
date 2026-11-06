@@ -4,8 +4,8 @@
  * (`parseGameNotesFilters`). Repliés dans un `<details>` (bloc 10), ouverts d'office quand
  * un filtre est actif ; le résumé affiche leur nombre.
  */
-import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { Disclosure } from "@/components/features/common/disclosure";
 import {
   FIELD_CLASS,
   PRIMARY_BUTTON_CLASS,
@@ -46,20 +46,8 @@ function summaryLabel(count: number): string {
 export function GameNotesFilters({ filters, clubs }: Props) {
   const active = activeFilterCount(filters);
   return (
-    <details open={active > 0} className="group flex flex-col">
-      {/* Bouton à la taille de son texte ; le panneau, lui, prend toute la largeur. */}
-      <summary className="inline-flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-md border border-input px-4 font-medium select-none hover:bg-accent [&::-webkit-details-marker]:hidden">
-        {summaryLabel(active)}
-        <ChevronDown
-          aria-hidden="true"
-          className="size-4 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-        />
-      </summary>
-      <form
-        method="get"
-        action={GAME_NOTES_PATH}
-        className="mt-3 flex flex-col gap-4 rounded-md border border-border p-4"
-      >
+    <Disclosure summary={summaryLabel(active)} open={active > 0}>
+      <form method="get" action={GAME_NOTES_PATH} className="flex flex-col gap-4">
         <fieldset className="flex min-w-0 flex-col gap-4">
           <legend className="sr-only">{t.legend}</legend>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -159,6 +147,6 @@ export function GameNotesFilters({ filters, clubs }: Props) {
           </div>
         </fieldset>
       </form>
-    </details>
+    </Disclosure>
   );
 }
