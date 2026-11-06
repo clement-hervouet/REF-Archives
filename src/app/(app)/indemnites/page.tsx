@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { CompensationList } from "@/components/features/compensations/compensation-list";
 import { MonthlyTotalsTable } from "@/components/features/compensations/monthly-totals-table";
-import { PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import {
+  PRIMARY_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+} from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
+import { UNPAID_PATH } from "@/lib/app-paths";
 import { currentParisMonth, formatMonth, isMonth, parisMonthRange } from "@/lib/months";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { computeCompensation } from "@/server/compensation/amount";
 import { computeMonthlyTotals } from "@/server/compensation/monthly-totals";
 import { listCompensationAmounts, listCompensationsInRange } from "@/server/db/compensations";
+import { listUnpaidPlayedCompensations } from "@/server/db/payments";
 import { getDb } from "@/server/db/pool";
-import { deleteCompensationAction } from "./actions";
+import { clearPaymentAction, deleteCompensationAction } from "./actions";
 
 const t = fr.compensations;
 
@@ -29,7 +34,11 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
   const user = await requireUserOrRedirect();
   const db = getDb();
 
-  const amounts = await listCompensationAmounts(db, user.id);
+  const now = new Date();
+  const [amounts, unpaid] = await Promise.all([
+    listCompensationAmounts(db, user.id),
+    listUnpaidPlayedCompensations(db, { userId: user.id, before: now }),
+  ]);
   const totals = computeMonthlyTotals(
     amounts.map((row) => ({
       startsAt: row.startsAt,
@@ -38,9 +47,7 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
   );
   // Mois demandé, sinon le plus récent qui a des indemnités, sinon le mois en cours.
   const month =
-    monthParam((await props.searchParams).mois) ??
-    totals[0]?.month ??
-    currentParisMonth(new Date());
+    monthParam((await props.searchParams).mois) ?? totals[0]?.month ?? currentParisMonth(now);
   const { from, to } = parisMonthRange(month);
   const items = (await listCompensationsInRange(db, { userId: user.id, from, to })).map((item) => ({
     ...item,
@@ -55,12 +62,22 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
           <h1 className="text-2xl font-semibold">{t.list.title}</h1>
           <p className="text-muted-foreground">{t.list.intro}</p>
         </div>
-        <Link
-          href="/indemnites/nouvelle"
-          className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center self-start`}
-        >
-          {t.list.create}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {unpaid.length > 0 && (
+            <Link
+              href={UNPAID_PATH}
+              className={`${SECONDARY_BUTTON_CLASS} inline-flex items-center`}
+            >
+              {t.list.unpaidLink.replace("{count}", String(unpaid.length))}
+            </Link>
+          )}
+          <Link
+            href="/indemnites/nouvelle"
+            className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center`}
+          >
+            {t.list.create}
+          </Link>
+        </div>
       </section>
 
       {totals.length === 0 ? (
@@ -79,7 +96,12 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
             {items.length === 0 ? (
               <p>{t.list.emptyMonth.replace("{month}", monthLabel)}</p>
             ) : (
-              <CompensationList items={items} deleteAction={deleteCompensationAction} />
+              <CompensationList
+                items={items}
+                deleteAction={deleteCompensationAction}
+                clearPaymentAction={clearPaymentAction}
+                now={now}
+              />
             )}
           </section>
         </>

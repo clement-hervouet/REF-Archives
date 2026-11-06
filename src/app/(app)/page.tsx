@@ -1,68 +1,54 @@
-import Link from "next/link";
+import { AvailabilityReminderCard } from "@/components/features/home/availability-reminder-card";
+import { UnpaidSummaryCard } from "@/components/features/home/unpaid-summary-card";
+import { WeekendSummary } from "@/components/features/home/weekend-summary";
 import { fr } from "@/i18n/fr";
-import { SETTINGS_PATH, UPCOMING_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
-import { formatShortDate } from "@/lib/weeks";
 import { requireUserOrRedirect } from "@/server/auth/session";
-import { listCompensationsInRange } from "@/server/db/compensations";
+import { summarizeUnpaid } from "@/server/compensation/payments";
+import { listUnpaidPlayedCompensations } from "@/server/db/payments";
 import { getDb } from "@/server/db/pool";
-import { getReminderSettings } from "@/server/db/reminders";
-import { availabilityTargetSaturday } from "@/server/reminders/schedule";
+import { getAvailabilityAckWeek, getReminderSettings } from "@/server/db/reminders";
+import { listUpcomingMatches } from "@/server/db/upcoming-matches";
+import { availabilityReminderState } from "@/server/home/availability-reminder";
 import { upcomingRanges } from "@/server/reminders/upcoming";
+import { acknowledgeAvailabilityAction, undoAvailabilityAcknowledgementAction } from "./actions";
 
-const t = fr.reminders.home;
-
-function weekendCountLabel(count: number): string {
-  if (count === 0) return t.weekendNone;
-  if (count === 1) return t.weekendOne;
-  return t.weekendMany.replace("{count}", String(count));
-}
-
+/**
+ * Accueil (bloc 10) : rappel des indisponibilités de la semaine, matchs du weekend et
+ * indemnités jouées en attente de paiement.
+ */
 export default async function HomePage() {
-  // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
+  // Chaque page vérifie elle-même (§6.2) ; requêtes filtrées par l'utilisateur de la session.
   const user = await requireUserOrRedirect();
   const db = getDb();
-  const today = toParisIsoDate(new Date());
-  const [settings, weekendMatches] = await Promise.all([
+  const now = new Date();
+  const today = toParisIsoDate(now);
+  const ranges = upcomingRanges(today);
+  const [settings, ackWeek, weekendMatches, unpaid] = await Promise.all([
     getReminderSettings(db, user.id),
-    listCompensationsInRange(db, { userId: user.id, ...upcomingRanges(today).weekend }),
+    getAvailabilityAckWeek(db, user.id),
+    listUpcomingMatches(db, { userId: user.id, ...ranges.weekend }),
+    listUnpaidPlayedCompensations(db, { userId: user.id, before: now }),
   ]);
-  // Rappel visible dans l'application (§5.2) : le même weekend que l'email de la semaine.
-  const reminderSaturday =
-    settings?.availabilityReminderEnabled === true
-      ? availabilityTargetSaturday(today, settings.availabilityReminderWeeks)
-      : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-semibold">{t.greeting.replace("{firstname}", user.firstname)}</h1>
+    <div className="flex flex-col gap-8">
+      <h1 className="text-3xl font-semibold">
+        {fr.reminders.home.greeting.replace("{firstname}", user.firstname)}
+      </h1>
 
-      {reminderSaturday !== null && (
-        <section
-          aria-labelledby="home-availability"
-          className="flex flex-col gap-2 rounded-md border border-warning bg-warning/15 p-4"
-        >
-          <p id="home-availability" className="font-medium">
-            {t.availability.replace("{date}", formatShortDate(reminderSaturday))}
-          </p>
-          <Link
-            href={SETTINGS_PATH}
-            className="inline-flex min-h-11 items-center self-start underline"
-          >
-            {t.settingsLink}
-          </Link>
-        </section>
+      {settings !== null && (
+        <AvailabilityReminderCard
+          state={availabilityReminderState(settings, ackWeek, today)}
+          acknowledgeAction={acknowledgeAvailabilityAction}
+          undoAction={undoAvailabilityAcknowledgementAction}
+        />
       )}
 
-      <section className="flex flex-col gap-2 rounded-md border border-border p-4">
-        <p className="font-medium">{weekendCountLabel(weekendMatches.length)}</p>
-        <Link
-          href={UPCOMING_PATH}
-          className="inline-flex min-h-11 items-center self-start underline"
-        >
-          {t.seeUpcoming}
-        </Link>
-      </section>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <WeekendSummary saturday={ranges.saturday} matches={weekendMatches} />
+        <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} />
+      </div>
     </div>
   );
 }

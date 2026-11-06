@@ -12,9 +12,11 @@ import { formatCents, formatIsoDate } from "@/lib/format";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import type { CompensationAmount } from "@/server/compensation/amount";
 import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
+import type { ClearPaymentState } from "@/server/compensation/payments";
 import type { CompensationListItem } from "@/server/db/compensations";
 import { addressLabel } from "./address-label";
 import { DeleteCompensationButton } from "./delete-compensation-button";
+import { PaymentStatus } from "./payment-status";
 
 const t = fr.compensations.list;
 
@@ -26,9 +28,15 @@ type Props = {
     previous: DeleteCompensationState,
     formData: FormData,
   ) => Promise<DeleteCompensationState>;
+  clearPaymentAction: (
+    previous: ClearPaymentState,
+    formData: FormData,
+  ) => Promise<ClearPaymentState>;
+  /** Instant de référence : un match commencé avant est « joué » (paiement dû). */
+  now: Date;
 };
 
-export function CompensationList({ items, deleteAction }: Props) {
+export function CompensationList({ items, deleteAction, clearPaymentAction, now }: Props) {
   return (
     <ul className="flex flex-col gap-3">
       {items.map((item) => {
@@ -65,6 +73,13 @@ export function CompensationList({ items, deleteAction }: Props) {
                   <span className="sr-only">{t.total} : </span>
                   {formatCents(item.amount.totalCents)}
                 </p>
+                <PaymentStatus
+                  compensationId={item.id}
+                  paidOn={item.paidOn}
+                  played={item.startsAt.getTime() < now.getTime()}
+                  dateLabel={date}
+                  clearAction={clearPaymentAction}
+                />
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
                   <a

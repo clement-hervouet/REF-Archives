@@ -293,6 +293,8 @@ export type CompensationListItem = CompensationAmountRow & {
   scaleName: string;
   /** Match complet lié (bloc 9), s'il existe. */
   gameId: string | null;
+  /** Jour du paiement `AAAA-MM-JJ` (bloc 10), ou `null` s'il n'est pas encore payé. */
+  paidOn: string | null;
 };
 
 /** Valeurs d'une indemnité pour préremplir le formulaire de modification. */
@@ -316,7 +318,9 @@ FROM compensation c
 JOIN scale_rate r ON r.id = c.scale_rate_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 
-const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.game_id,
+// `paid_on::text` : une colonne `date` lue telle quelle deviendrait un Date JavaScript à
+// minuit dans le fuseau du serveur, et pourrait changer de jour.
+const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.game_id, c.paid_on::text AS paid_on,
   d.division, d.type, d.level,
   club1.name AS team1_name, club2.name AS team2_name,
   a.street, a.number, a.postal_code, a.city,
@@ -363,6 +367,7 @@ const listItemRowSchema = amountRowSchema.extend({
   city: z.string(),
   scale_name: z.string(),
   game_id: z.uuid().nullable(),
+  paid_on: z.string().nullable(),
 });
 
 const editRowSchema = z.object({
@@ -417,6 +422,7 @@ export async function listCompensationsInRange(
       },
       scaleName: row.scale_name,
       gameId: row.game_id,
+      paidOn: row.paid_on,
     };
   });
 }

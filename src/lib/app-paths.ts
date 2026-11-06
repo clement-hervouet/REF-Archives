@@ -37,3 +37,6 @@ export const GAME_NOTES_PATH = "/notes";
 
 /** Page « Compléter mon profil » : nom et prénom obligatoires avant tout le reste (bloc 10). */
 export const COMPLETE_PROFILE_PATH = "/completer-profil";
+
+/** Page « À rembourser » : indemnités jouées non payées, validation des paiements (bloc 10). */
+export const UNPAID_PATH = "/indemnites/a-rembourser";
