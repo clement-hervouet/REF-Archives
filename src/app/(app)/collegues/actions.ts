@@ -18,6 +18,9 @@ function revalidateColleagues(): void {
   revalidatePath("/collegues");
   // Les noms apparaissent aussi sur les fiches de match.
   revalidatePath("/matchs/[id]", "page");
+  // Un club créé ici est proposé aussi dans les formulaires d'indemnité et de match.
+  revalidatePath("/indemnites", "layout");
+  revalidatePath("/matchs", "layout");
 }
 
 export async function createColleagueAction(

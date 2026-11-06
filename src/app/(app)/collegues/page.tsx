@@ -1,8 +1,12 @@
+import { Disclosure } from "@/components/features/common/disclosure";
+import { ColleagueCard } from "@/components/features/games/colleague-card";
+import { ColleagueDirectory } from "@/components/features/games/colleague-directory";
 import { ColleagueForm } from "@/components/features/games/colleague-form";
-import { ConfirmActionButton } from "@/components/features/games/confirm-action-button";
+import { colleagueSearchText } from "@/components/features/games/colleague-search";
 import { personLabel } from "@/components/features/games/person-label";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
+import { listClubs } from "@/server/db/clubs";
 import { listColleagues } from "@/server/db/persons";
 import { getDb } from "@/server/db/pool";
 import { createColleagueAction, deleteColleagueAction, updateColleagueAction } from "./actions";
@@ -12,71 +16,58 @@ const t = fr.colleagues;
 export default async function ColleaguesPage() {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
   const user = await requireUserOrRedirect();
-  const colleagues = await listColleagues(getDb(), user.id);
+  const db = getDb();
+  const [colleagues, clubList] = await Promise.all([
+    listColleagues(db, user.id),
+    listClubs(db, user.id),
+  ]);
+  const clubs = clubList.map((club) => ({
+    id: club.id,
+    name: club.name,
+    city: club.address.city,
+  }));
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <section className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-md border border-border p-4">
-        <h2 className="text-lg font-semibold">{t.add.legend}</h2>
+      {/* Ouvert d'office tant qu'il n'y a aucun collègue. */}
+      <Disclosure summary={t.add.legend} open={colleagues.length === 0}>
         <ColleagueForm
           action={createColleagueAction}
+          clubs={clubs}
           labels={{ submit: t.add.submit, submitting: t.add.submitting }}
         />
-      </section>
+      </Disclosure>
 
       {colleagues.length === 0 ? (
-        <p>{t.empty}</p>
+        <p className="text-muted-foreground">{t.empty}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {colleagues.map((colleague) => {
+        <ColleagueDirectory
+          entries={colleagues.map((colleague) => {
             const name = personLabel(colleague);
-            return (
-              <li key={colleague.id}>
-                <article className="flex flex-col gap-3 rounded-md border border-border p-4">
-                  <h2 className="font-semibold break-words">
-                    {name}
-                    {colleague.hasAccount && (
-                      <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        ({fr.games.officials.hasAccountBadge})
-                      </span>
-                    )}
-                  </h2>
-                  <ColleagueForm
-                    action={updateColleagueAction}
-                    initialValues={{
-                      personId: colleague.id,
-                      lastname: colleague.lastname,
-                      firstname: colleague.firstname ?? "",
-                      hasAccount: colleague.hasAccount ? "on" : "",
-                    }}
-                    labels={{
-                      submit: t.edit.submit,
-                      submitting: t.edit.submitting,
-                      ariaLabel: t.edit.label.replace("{name}", name),
-                    }}
-                  />
-                  <ConfirmActionButton
-                    action={deleteColleagueAction}
-                    hidden={{ name: "personId", value: colleague.id }}
-                    labels={{
-                      submit: t.delete.submit,
-                      ariaLabel: t.delete.label.replace("{name}", name),
-                      warning: t.delete.warning,
-                      confirm: t.delete.confirm,
-                      cancel: t.delete.cancel,
-                    }}
-                    messages={{ in_use: t.delete.inUse, not_found: t.errors.notFound }}
-                  />
-                </article>
-              </li>
-            );
+            return {
+              id: colleague.id,
+              searchText: colleagueSearchText({
+                firstname: colleague.firstname,
+                lastname: colleague.lastname,
+                clubName: colleague.club?.name ?? null,
+              }),
+              card: (
+                <ColleagueCard
+                  colleague={colleague}
+                  name={name}
+                  clubs={clubs}
+                  updateAction={updateColleagueAction}
+                  deleteAction={deleteColleagueAction}
+                />
+              ),
+            };
           })}
-        </ul>
+        />
       )}
     </div>
   );

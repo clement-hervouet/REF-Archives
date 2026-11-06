@@ -10,6 +10,9 @@ export const PRIMARY_BUTTON_CLASS =
   "min-h-11 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60";
 export const SECONDARY_BUTTON_CLASS =
   "min-h-11 rounded-md border border-input px-4 disabled:opacity-60";
+/** Suppression en icône (bloc 10) : corbeille rouge dans une case rouge, 44 px. */
+export const DANGER_ICON_BUTTON_CLASS =
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-md border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive disabled:opacity-60";
 
 type TextFieldProps = {
   id: string;

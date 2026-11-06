@@ -650,6 +650,22 @@ export const fr = {
     intro:
       "Fiches nom seul, utilisées pour les officiels de vos matchs. Elles ne sont visibles que par vous.",
     empty: "Aucun collègue pour l'instant : ils s'ajoutent aussi depuis la fiche d'un match.",
+    search: {
+      label: "Rechercher un collègue",
+      placeholder: "Nom, prénom ou club",
+      countOne: "1 collègue",
+      countMany: "{count} collègues",
+      filtered: "{shown} sur {total}",
+      none: "Aucun collègue ne correspond à « {query} ».",
+    },
+    club: {
+      label: "Club (facultatif)",
+      none: "Aucun club",
+      hint: "Choisissez un de vos clubs, ou créez-en un.",
+      missing: "Sans club",
+      new: "Nouveau club…",
+      newLegend: "Nouveau club",
+    },
     add: {
       legend: "Ajouter un collègue",
       submit: "Ajouter",
@@ -661,6 +677,8 @@ export const fr = {
       submitting: "Enregistrement…",
       updated: "Collègue modifié.",
       label: "Modifier {name}",
+      formLabel: "Fiche de {name}",
+      cancel: "Annuler",
     },
     delete: {
       submit: "Supprimer",
@@ -675,6 +693,8 @@ export const fr = {
       invalid: "Saisissez un nom (et un prénom facultatif), 100 caractères maximum chacun.",
       notFound: "Ce collègue n'existe plus. Rechargez la page.",
       limit: "Vous avez atteint le nombre maximal de collègues.",
+      club: "Ce club n'existe plus. Rechargez la page.",
+      newClub: "Vérifiez les informations du nouveau club ci-dessous.",
     },
   },
   admin: {

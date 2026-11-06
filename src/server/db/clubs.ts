@@ -89,3 +89,14 @@ export async function listAddresses(db: Queryable, userId: string): Promise<Addr
     };
   });
 }
+
+const OWNED_CLUB_SQL = `SELECT id FROM club WHERE id = $1 AND user_id = $2`;
+
+/** Vrai si le club appartient à l'utilisateur. */
+export async function isOwnedClub(
+  db: Queryable,
+  input: { userId: string; clubId: string },
+): Promise<boolean> {
+  const result = await db.query(OWNED_CLUB_SQL, [input.clubId, input.userId]);
+  return result.rows.length > 0;
+}

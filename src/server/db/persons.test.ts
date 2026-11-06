@@ -15,6 +15,7 @@ const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const SELF_ID = "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e00";
 const PERSON_A = "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01";
 const PERSON_B = "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02";
+const CLUB_ID = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 
 const COLLEAGUE = { firstname: null, lastname: "Martin", hasAccount: true };
 
@@ -32,14 +33,35 @@ describe("ensureSelfPerson", () => {
 describe("listColleagues", () => {
   it("renvoie les collègues de l'utilisateur, sans la fiche « moi »", async () => {
     const { db, query } = makeFakeDb([
-      { id: PERSON_A, firstname: null, lastname: "Durand", has_account: false },
-      { id: PERSON_B, firstname: "Alex", lastname: "Martin", has_account: true },
+      {
+        id: PERSON_A,
+        firstname: null,
+        lastname: "Durand",
+        has_account: false,
+        club_id: null,
+        club_name: null,
+      },
+      {
+        id: PERSON_B,
+        firstname: "Alex",
+        lastname: "Martin",
+        has_account: true,
+        club_id: CLUB_ID,
+        club_name: "BC Rennes",
+      },
     ]);
     expect(await listColleagues(db, USER_ID)).toEqual([
-      { id: PERSON_A, firstname: null, lastname: "Durand", hasAccount: false },
-      { id: PERSON_B, firstname: "Alex", lastname: "Martin", hasAccount: true },
+      { id: PERSON_A, firstname: null, lastname: "Durand", hasAccount: false, club: null },
+      {
+        id: PERSON_B,
+        firstname: "Alex",
+        lastname: "Martin",
+        hasAccount: true,
+        club: { id: CLUB_ID, name: "BC Rennes" },
+      },
     ]);
-    expect(query.mock.calls[0]?.[0]).toContain("NOT is_self");
+    expect(query.mock.calls[0]?.[0]).toContain("c.user_id = p.user_id");
+    expect(query.mock.calls[0]?.[0]).toContain("NOT p.is_self");
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
   });
 });
@@ -73,6 +95,7 @@ describe("insertColleague", () => {
       "Martin",
       true,
       MAX_COLLEAGUES_PER_USER,
+      null,
     ]);
   });
 
@@ -86,16 +109,26 @@ describe("updateColleague", () => {
   it("modifie un collègue de l'utilisateur", async () => {
     const { db, query } = makeFakeDb([{ id: PERSON_A }]);
     expect(
-      await updateColleague(db, { userId: USER_ID, personId: PERSON_A, colleague: COLLEAGUE }),
+      await updateColleague(db, {
+        userId: USER_ID,
+        personId: PERSON_A,
+        colleague: COLLEAGUE,
+        clubId: CLUB_ID,
+      }),
     ).toBe(true);
     expect(query.mock.calls[0]?.[0]).toContain("NOT is_self");
-    expect(query.mock.calls[0]?.[1]).toEqual([PERSON_A, USER_ID, null, "Martin", true]);
+    expect(query.mock.calls[0]?.[1]).toEqual([PERSON_A, USER_ID, null, "Martin", true, CLUB_ID]);
   });
 
   it("faux si introuvable", async () => {
     const { db } = makeFakeDb();
     expect(
-      await updateColleague(db, { userId: USER_ID, personId: PERSON_A, colleague: COLLEAGUE }),
+      await updateColleague(db, {
+        userId: USER_ID,
+        personId: PERSON_A,
+        colleague: COLLEAGUE,
+        clubId: null,
+      }),
     ).toBe(false);
   });
 });

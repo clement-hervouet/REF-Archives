@@ -1,15 +1,28 @@
 /**
- * Formulaires de la page « Mes collègues » (bloc 9) : ajout, modification, suppression.
- * Ni Next.js ni authentification ici (§6.2) : le propriétaire vient de la session,
- * jamais du formulaire, et chaque requête filtre sur lui.
+ * Formulaires de la page « Mes collègues » (blocs 9 et 10) : ajout, modification,
+ * suppression. Ni Next.js ni authentification ici (§6.2) : le propriétaire vient de la
+ * session, jamais du formulaire, et chaque requête filtre sur lui.
  *
- * Champs HTML : `firstname`, `lastname`, `hasAccount` (case) ; `personId` (caché) pour
- * modifier ou supprimer.
+ * Champs HTML : `firstname`, `lastname`, `hasAccount` (case), `clubId` (vide = aucun club,
+ * identifiant d'un club de l'utilisateur, ou `new` avec `clubName`, `clubStreet`,
+ * `clubNumber`, `clubPostalCode`, `clubCity`, `clubCountry` pour le créer) ; `personId`
+ * (caché) pour modifier ou supprimer. Un nouveau club et le collègue sont écrits dans la
+ * même transaction : un refus (limite atteinte) n'en laisse rien, adresse comprise.
  */
 import { z } from "zod";
+import { NEW_CHOICE } from "@/lib/compensation-form-fields";
+import { teamChoiceSchema } from "@/lib/schemas/compensations";
 import { newColleagueSchema } from "@/lib/schemas/officials";
+import { isOwnedClub } from "../db/clubs";
+import { insertAddress, insertClub } from "../db/compensations";
+import type { NewAddress } from "../db/compensations";
 import { deleteColleague, insertColleague, updateColleague } from "../db/persons";
-import type { GameDeps } from "./rejection";
+import type { Queryable } from "../db/users";
+import { rejectGame, runRejectable } from "./rejection";
+import type { GameDeps, GameRejection } from "./rejection";
+
+/** Champ du nouveau club en erreur. */
+export type NewClubField = "name" | "street" | "number" | "postalCode" | "city" | "country";
 
 export type ColleagueFormState =
   | { status: "idle" }
@@ -17,7 +30,10 @@ export type ColleagueFormState =
   | { status: "created" }
   | { status: "updated" }
   | { status: "not_found" }
-  | { status: "limit_reached" };
+  | { status: "limit_reached" }
+  | { status: "club_not_found" }
+  | { status: "club_invalid"; fields: readonly NewClubField[] }
+  | { status: "club_limit" };
 
 export type DeleteColleagueState =
   { status: "idle" } | { status: "deleted" } | { status: "in_use" } | { status: "not_found" };
@@ -37,6 +53,108 @@ function parseColleague(formData: FormData) {
 
 const idSchema = z.uuid();
 
+type ClubChoice =
+  | { kind: "none" }
+  | { kind: "existing"; clubId: string }
+  | { kind: "new"; name: string; address: NewAddress };
+
+type ClubRead = { ok: true; choice: ClubChoice } | { ok: false; state: ColleagueFormState };
+
+const NEW_CLUB_FIELDS: readonly NewClubField[] = [
+  "name",
+  "street",
+  "number",
+  "postalCode",
+  "city",
+  "country",
+];
+
+function isNewClubField(value: unknown): value is NewClubField {
+  return NEW_CLUB_FIELDS.some((field) => field === value);
+}
+
+/** Champs du nouveau club refusés, dans l'ordre du formulaire. */
+function newClubErrors(error: z.ZodError): NewClubField[] {
+  const fields = new Set<NewClubField>();
+  for (const issue of error.issues) {
+    const [top, part] = issue.path;
+    const field = top === "address" ? part : top;
+    if (isNewClubField(field)) {
+      fields.add(field);
+    }
+  }
+  return NEW_CLUB_FIELDS.filter((field) => fields.has(field));
+}
+
+/** Club choisi : aucun, un club existant (identifiant valide) ou un nouveau club validé. */
+export function readClubChoice(formData: FormData): ClubRead {
+  const raw = text(formData, "clubId") ?? "";
+  if (raw === "") {
+    return { ok: true, choice: { kind: "none" } };
+  }
+  if (raw === NEW_CHOICE) {
+    // Mêmes règles que le nouveau club d'une indemnité (bloc 6).
+    const parsed = teamChoiceSchema.safeParse({
+      kind: "new",
+      name: text(formData, "clubName"),
+      address: {
+        street: text(formData, "clubStreet"),
+        number: text(formData, "clubNumber") ?? "",
+        postalCode: text(formData, "clubPostalCode"),
+        city: text(formData, "clubCity"),
+        country: text(formData, "clubCountry") ?? "",
+      },
+    });
+    if (!parsed.success) {
+      return { ok: false, state: { status: "club_invalid", fields: newClubErrors(parsed.error) } };
+    }
+    if (parsed.data.kind !== "new") {
+      return { ok: false, state: { status: "club_invalid", fields: [] } };
+    }
+    return {
+      ok: true,
+      choice: { kind: "new", name: parsed.data.name, address: parsed.data.address },
+    };
+  }
+  const clubId = idSchema.safeParse(raw);
+  return clubId.success
+    ? { ok: true, choice: { kind: "existing", clubId: clubId.data } }
+    : { ok: false, state: { status: "club_not_found" } };
+}
+
+/**
+ * Identifiant du club à enregistrer : `null` (aucun), le club existant s'il est à
+ * l'utilisateur (sinon `undefined`), ou le club créé avec son adresse.
+ */
+async function resolveClubId(
+  db: Queryable,
+  userId: string,
+  choice: ClubChoice,
+): Promise<string | null | undefined> {
+  switch (choice.kind) {
+    case "none":
+      return null;
+    case "existing":
+      return (await isOwnedClub(db, { userId, clubId: choice.clubId })) ? choice.clubId : undefined;
+    case "new": {
+      const addressId = await insertAddress(db, { userId, address: choice.address });
+      const clubId = await insertClub(db, { userId, name: choice.name, addressId });
+      return clubId ?? rejectGame({ status: "limit_reached", resource: "club" });
+    }
+  }
+}
+
+/** Traduit un refus levé dans la transaction (limite de clubs ou de collègues, introuvable). */
+function settle(result: ColleagueFormState | GameRejection): ColleagueFormState {
+  if ("resource" in result) {
+    return result.resource === "club" ? { status: "club_limit" } : { status: "limit_reached" };
+  }
+  if ("field" in result || "gameId" in result || result.status === "no_rate_at_date") {
+    return { status: "not_found" };
+  }
+  return result;
+}
+
 export async function handleCreateColleague(
   deps: GameDeps,
   userId: string,
@@ -46,10 +164,23 @@ export async function handleCreateColleague(
   if (!parsed.success) {
     return { status: "invalid" };
   }
-  const personId = await deps.transaction((db) =>
-    insertColleague(db, { userId, colleague: parsed.data }),
-  );
-  return personId === null ? { status: "limit_reached" } : { status: "created" };
+  const club = readClubChoice(formData);
+  if (!club.ok) {
+    return club.state;
+  }
+  const result = await runRejectable(deps, async (db): Promise<ColleagueFormState> => {
+    const clubId = await resolveClubId(db, userId, club.choice);
+    if (clubId === undefined) {
+      return { status: "club_not_found" };
+    }
+    const personId = await insertColleague(db, { userId, colleague: parsed.data, clubId });
+    if (personId === null) {
+      // Limite de collègues : annule aussi le club créé juste avant.
+      rejectGame({ status: "limit_reached", resource: "colleague" });
+    }
+    return { status: "created" };
+  });
+  return settle(result);
 }
 
 export async function handleUpdateColleague(
@@ -65,10 +196,28 @@ export async function handleUpdateColleague(
   if (!parsed.success) {
     return { status: "invalid" };
   }
-  const updated = await deps.transaction((db) =>
-    updateColleague(db, { userId, personId: personId.data, colleague: parsed.data }),
-  );
-  return updated ? { status: "updated" } : { status: "not_found" };
+  const club = readClubChoice(formData);
+  if (!club.ok) {
+    return club.state;
+  }
+  const result = await runRejectable(deps, async (db): Promise<ColleagueFormState> => {
+    const clubId = await resolveClubId(db, userId, club.choice);
+    if (clubId === undefined) {
+      return { status: "club_not_found" };
+    }
+    const updated = await updateColleague(db, {
+      userId,
+      personId: personId.data,
+      colleague: parsed.data,
+      clubId,
+    });
+    if (!updated) {
+      // Collègue introuvable : annule aussi le club créé juste avant.
+      rejectGame({ status: "not_found", field: "game" });
+    }
+    return { status: "updated" };
+  });
+  return settle(result);
 }
 
 export async function handleDeleteColleague(

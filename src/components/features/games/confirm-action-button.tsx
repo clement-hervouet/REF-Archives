@@ -4,9 +4,17 @@
  * Action destructive en deux temps (suppression d'un match, d'une note, d'un collègue) :
  * un premier clic demande une confirmation explicite. Les messages arrivent déjà traduits
  * et indexés par statut (props sérialisables, la page étant un Server Component).
+ *
+ * Variante `icon` (bloc 10) : une corbeille dans une case rouge. Ses éléments se placent directement
+ * dans la rangée du parent (`display: contents`) : le message et la confirmation y passent
+ * sur une ligne entière, en dessous.
  */
+import { Trash2 } from "lucide-react";
 import { useActionState, useState } from "react";
-import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import {
+  DANGER_ICON_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+} from "@/components/features/scales/form-parts";
 
 type Labels = {
   submit: string;
@@ -31,6 +39,7 @@ type Props = {
   /** Message affiché selon le statut renvoyé ; `successStatuses` les annonce en succès. */
   messages: Readonly<Record<string, string>>;
   successStatuses?: readonly string[];
+  variant?: "button" | "icon";
 };
 
 const IDLE = { status: "idle" } as const;
@@ -41,6 +50,7 @@ export function ConfirmActionButton({
   labels,
   messages,
   successStatuses = [],
+  variant = "button",
 }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
@@ -53,6 +63,37 @@ export function ConfirmActionButton({
   );
   const message = messages[state.status];
   const success = successStatuses.includes(state.status);
+  const icon = variant === "icon";
+
+  if (!confirming && icon) {
+    return (
+      <div className="contents">
+        <button
+          type="button"
+          aria-label={labels.ariaLabel ?? labels.submit}
+          title={labels.ariaLabel ?? labels.submit}
+          onClick={() => {
+            setConfirming(true);
+          }}
+          className={DANGER_ICON_BUTTON_CLASS}
+        >
+          <Trash2 aria-hidden="true" className="size-4" />
+        </button>
+        {message !== undefined && (
+          <p
+            role={success ? "status" : "alert"}
+            className={
+              success
+                ? "order-last basis-full border-l-4 border-success pl-3 text-sm font-medium"
+                : "order-last basis-full border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+            }
+          >
+            {message}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   if (!confirming) {
     return (
@@ -87,7 +128,7 @@ export function ConfirmActionButton({
   return (
     <form
       action={formAction}
-      className="flex flex-col gap-3 rounded-md border border-destructive p-3"
+      className={`flex flex-col gap-3 rounded-md border border-destructive p-3 ${icon ? "order-last basis-full" : ""}`}
     >
       <input type="hidden" name={hidden.name} value={hidden.value} />
       <p className="text-sm">{labels.warning}</p>
