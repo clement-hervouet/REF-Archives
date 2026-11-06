@@ -9,9 +9,8 @@ import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
-import { formatCents, formatIsoDate, matchDayParts } from "@/lib/format";
+import { formatCents, formatIsoDate } from "@/lib/format";
 import { payerLabel } from "@/lib/payers";
-import { toParisTimeOfDay } from "@/lib/paris-time";
 import { cn } from "@/lib/utils";
 import type { CompensationAmount } from "@/server/compensation/amount";
 import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
@@ -22,6 +21,7 @@ import { ActionsMenu } from "./actions-menu";
 import { addressLabel } from "./address-label";
 import { ClearPaymentItem } from "./clear-payment-item";
 import { DeleteCompensationButton } from "./delete-compensation-button";
+import { MatchDate } from "./match-date";
 import { MENU_ITEM_CLASS } from "./menu-styles";
 
 const t = fr.compensations.list;
@@ -63,20 +63,9 @@ function CompensationCard({
   clearPaymentAction,
 }: { item: CompensationWithAmount } & Omit<Props, "items">) {
   const date = formatIsoDate(toParisIsoDate(item.startsAt));
-  const time = toParisTimeOfDay(item.startsAt);
-  const day = matchDayParts(item.startsAt);
   return (
     <article className="relative grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
-      {/* Date : une ligne sur téléphone, une colonne sur ordinateur. */}
-      <p className="flex items-baseline gap-1.5 md:flex-col md:gap-0 md:border-r md:border-border md:pr-4">
-        <span className="font-semibold md:text-sm md:font-normal md:text-muted-foreground">
-          {day.weekday}
-        </span>
-        <span className="font-semibold tabular-nums [font-stretch:85%] md:text-2xl md:leading-tight">
-          {day.day}
-        </span>
-        <span className="ml-1 text-sm text-muted-foreground tabular-nums md:ml-0">{time}</span>
-      </p>
+      <MatchDate startsAt={item.startsAt} />
 
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="font-semibold break-words">

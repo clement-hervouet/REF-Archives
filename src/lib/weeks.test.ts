@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ValidationError } from "./errors";
 import {
   addDays,
+  daysBetween,
   formatShortDate,
   isoWeekday,
   mondayOf,
@@ -85,5 +86,19 @@ describe("parisWeekendRange", () => {
 describe("formatShortDate", () => {
   it("affiche jour et mois sur deux chiffres", () => {
     expect(formatShortDate("2026-12-05")).toBe("05/12");
+  });
+});
+
+describe("daysBetween", () => {
+  it("compte les jours calendaires, y compris en traversant un mois ou une année", () => {
+    expect(daysBetween("2026-11-06", "2026-11-06")).toBe(0);
+    expect(daysBetween("2026-11-06", "2026-11-08")).toBe(2);
+    expect(daysBetween("2026-12-31", "2027-01-01")).toBe(1);
+    expect(daysBetween("2026-11-08", "2026-11-06")).toBe(-2);
+  });
+
+  it("ignore les changements d'heure (dates sans heure)", () => {
+    expect(daysBetween("2026-10-24", "2026-10-26")).toBe(2);
+    expect(daysBetween("2027-03-27", "2027-03-29")).toBe(2);
   });
 });
