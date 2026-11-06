@@ -35,10 +35,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{fr.app.name}</h1>
-        <p>{fr.auth.signedInAs.replace("{email}", user.email)}</p>
-      </section>
+      <h1 className="text-3xl font-semibold">{t.greeting.replace("{firstname}", user.firstname)}</h1>
 
       {reminderSaturday !== null && (
         <section

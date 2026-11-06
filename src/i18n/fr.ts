@@ -9,6 +9,16 @@ export const fr = {
     back: "Retour à l'accueil",
   },
   nav: {
+    home: "Accueil",
+    mainLabel: "Navigation principale",
+    adminGroup: "Administration",
+    more: "Plus",
+    close: "Fermer le menu",
+    skip: "Aller au contenu",
+    short: {
+      compensations: "Indemnités",
+      gameNotes: "Notes",
+    },
     compensations: "Mes indemnités",
     invitations: "Invitations",
     scales: "Mes barèmes",
@@ -29,7 +39,6 @@ export const fr = {
       passwordResetDone: "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
     },
     logout: "Se déconnecter",
-    signedInAs: "Connecté en tant que {email}",
     errors: {
       // Volontairement identique que l'email existe ou non (§6.1).
       invalidCredentials: "Email ou mot de passe incorrect.",
@@ -578,6 +587,7 @@ export const fr = {
   },
   reminders: {
     home: {
+      greeting: "Bonjour {firstname}",
       availability: "Pensez à saisir vos indisponibilités du weekend du {date}.",
       weekendNone: "Aucun match prévu ce weekend.",
       weekendOne: "1 match prévu ce weekend.",
