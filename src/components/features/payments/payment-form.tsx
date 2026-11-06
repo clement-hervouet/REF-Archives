@@ -31,14 +31,23 @@ export type PayableItem = {
   totalCents: number;
 };
 
-type Props = {
+/** Indemnités d'un même organisme qui verse (bloc 10) : souvent payées en un seul virement. */
+export type PayableGroup = {
+  key: string;
+  label: string;
+  totalCents: number;
   items: readonly PayableItem[];
+};
+
+type Props = {
+  groups: readonly PayableGroup[];
   /** Jour de Paris côté serveur : valeur par défaut et maximum de la date. */
   today: string;
   action: (previous: MarkPaidState, formData: FormData) => Promise<MarkPaidState>;
 };
 
-export function PaymentForm({ items, today, action }: Props) {
+export function PaymentForm({ groups, today, action }: Props) {
+  const items = groups.flatMap((group) => group.items);
   const id = useId();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [paidOn, setPaidOn] = useState(today);
@@ -61,6 +70,21 @@ export function PaymentForm({ items, today, action }: Props) {
   const issues = state.status === "invalid" ? paymentIssueMessages(state.issues) : [];
   const dateId = `${id}-paid-on`;
   const summaryId = `${id}-summary`;
+
+  /** Coche ou décoche toutes les lignes d'un groupe. */
+  function toggleGroup(group: PayableGroup, checked: boolean) {
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const item of group.items) {
+        if (checked) {
+          next.add(item.id);
+        } else {
+          next.delete(item.id);
+        }
+      }
+      return next;
+    });
+  }
 
   function toggle(itemId: string, checked: boolean) {
     setSelected((current) => {
@@ -114,39 +138,78 @@ export function PaymentForm({ items, today, action }: Props) {
             </p>
           </div>
 
-          <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
-            {items.map((item) => {
-              const checked = selected.has(item.id);
+          <div className="flex flex-col gap-5">
+            {groups.map((group) => {
+              const groupSelected = group.items.every((item) => selected.has(item.id));
+              const headingId = `${id}-group-${group.key}`;
               return (
-                <li key={item.id}>
-                  <label
-                    className={`flex min-h-14 cursor-pointer items-start gap-3 px-4 py-3 ${checked ? "bg-accent" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      name="compensationId"
-                      value={item.id}
-                      checked={checked}
-                      onChange={(event) => {
-                        toggle(item.id, event.target.checked);
+                <section
+                  key={group.key}
+                  aria-labelledby={headingId}
+                  className="flex flex-col gap-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <div className="flex items-baseline gap-3">
+                      <h2 id={headingId} className="text-lg font-semibold">
+                        {group.label}
+                      </h2>
+                      <p className="tabular-nums text-muted-foreground">
+                        {formatCents(group.totalCents)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleGroup(group, !groupSelected);
                       }}
-                      className="mt-1 size-5 shrink-0 accent-primary"
-                    />
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-sm text-muted-foreground">{item.dateLabel}</span>
-                      <span className="font-semibold break-words">{item.teams}</span>
-                      <span className="text-sm break-words text-muted-foreground">
-                        {item.details}
-                      </span>
-                    </span>
-                    <span className="shrink-0 font-semibold tabular-nums">
-                      {formatCents(item.totalCents)}
-                    </span>
-                  </label>
-                </li>
+                      aria-label={(groupSelected ? t.selectGroupNone : t.selectGroupAll).replace(
+                        "{payer}",
+                        group.label,
+                      )}
+                      className="inline-flex min-h-11 items-center text-sm underline"
+                    >
+                      {groupSelected ? t.selectNone : t.selectAll}
+                    </button>
+                  </div>
+                  <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+                    {group.items.map((item) => {
+                      const checked = selected.has(item.id);
+                      return (
+                        <li key={item.id}>
+                          <label
+                            className={`flex min-h-14 cursor-pointer items-start gap-3 px-4 py-3 ${checked ? "bg-accent" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              name="compensationId"
+                              value={item.id}
+                              checked={checked}
+                              onChange={(event) => {
+                                toggle(item.id, event.target.checked);
+                              }}
+                              className="mt-1 size-5 shrink-0 accent-primary"
+                            />
+                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                              <span className="text-sm text-muted-foreground">
+                                {item.dateLabel}
+                              </span>
+                              <span className="font-semibold break-words">{item.teams}</span>
+                              <span className="text-sm break-words text-muted-foreground">
+                                {item.details}
+                              </span>
+                            </span>
+                            <span className="shrink-0 font-semibold tabular-nums">
+                              {formatCents(item.totalCents)}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
               );
             })}
-          </ul>
+          </div>
         </fieldset>
 
         <div className="flex flex-col gap-4 md:flex-row md:items-end">

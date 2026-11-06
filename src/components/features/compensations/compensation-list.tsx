@@ -1,6 +1,7 @@
 /**
- * Indemnités d'un mois, chacune avec son match, son barème et son montant détaillé.
- * Une liste de cartes plutôt qu'un tableau : lisible à 375 px comme sur grand écran.
+ * Indemnités d'un mois (blocs 6 et 10). Chaque carte : la date en colonne (comme une feuille
+ * de match), le match, le détail du montant, l'état du paiement, « Modifier » et le menu
+ * « Plus d'actions ». Une liste de cartes plutôt qu'un tableau : lisible à 375 px.
  */
 import Link from "next/link";
 import { divisionLabel } from "@/components/features/scales/division-label";
@@ -8,19 +9,27 @@ import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
-import { formatCents, formatIsoDate } from "@/lib/format";
+import { formatCents, formatIsoDate, matchDayParts } from "@/lib/format";
+import { payerLabel } from "@/lib/payers";
 import { toParisTimeOfDay } from "@/lib/paris-time";
+import { cn } from "@/lib/utils";
 import type { CompensationAmount } from "@/server/compensation/amount";
 import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
+import type { PaymentStatus } from "@/server/compensation/monthly-totals";
 import type { ClearPaymentState } from "@/server/compensation/payments";
 import type { CompensationListItem } from "@/server/db/compensations";
+import { ActionsMenu } from "./actions-menu";
 import { addressLabel } from "./address-label";
+import { ClearPaymentItem } from "./clear-payment-item";
 import { DeleteCompensationButton } from "./delete-compensation-button";
-import { PaymentStatus } from "./payment-status";
+import { MENU_ITEM_CLASS } from "./menu-styles";
 
 const t = fr.compensations.list;
 
-export type CompensationWithAmount = CompensationListItem & { amount: CompensationAmount };
+export type CompensationWithAmount = CompensationListItem & {
+  amount: CompensationAmount;
+  status: PaymentStatus;
+};
 
 type Props = {
   items: readonly CompensationWithAmount[];
@@ -32,100 +41,142 @@ type Props = {
     previous: ClearPaymentState,
     formData: FormData,
   ) => Promise<ClearPaymentState>;
-  /** Instant de référence : un match commencé avant est « joué » (paiement dû). */
-  now: Date;
 };
 
-export function CompensationList({ items, deleteAction, clearPaymentAction, now }: Props) {
+/** État du paiement en toutes lettres ; rien pour un match à venir (pas encore dû). */
+function PaymentBadge({ item }: { item: CompensationWithAmount }) {
+  if (item.status === "upcoming") {
+    return null;
+  }
+  return item.paidOn !== null ? (
+    <p className="rounded-sm border border-success px-2 py-0.5 text-sm font-medium">
+      {t.paidOn.replace("{date}", formatIsoDate(item.paidOn))}
+    </p>
+  ) : (
+    <p className="rounded-sm border border-warning px-2 py-0.5 text-sm">{t.pending}</p>
+  );
+}
+
+function CompensationCard({
+  item,
+  deleteAction,
+  clearPaymentAction,
+}: { item: CompensationWithAmount } & Omit<Props, "items">) {
+  const date = formatIsoDate(toParisIsoDate(item.startsAt));
+  const time = toParisTimeOfDay(item.startsAt);
+  const day = matchDayParts(item.startsAt);
+  return (
+    <article className="relative grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
+      {/* Date : une ligne sur téléphone, une colonne sur ordinateur. */}
+      <p className="flex items-baseline gap-1.5 md:flex-col md:gap-0 md:border-r md:border-border md:pr-4">
+        <span className="font-semibold md:text-sm md:font-normal md:text-muted-foreground">
+          {day.weekday}
+        </span>
+        <span className="font-semibold tabular-nums [font-stretch:85%] md:text-2xl md:leading-tight">
+          {day.day}
+        </span>
+        <span className="ml-1 text-sm text-muted-foreground tabular-nums md:ml-0">{time}</span>
+      </p>
+
+      <div className="flex min-w-0 flex-col gap-1">
+        <h3 className="font-semibold break-words">
+          {t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}
+        </h3>
+        <p className="text-sm break-words">
+          {t.details
+            .replace("{division}", divisionLabel(item.division))
+            .replace("{address}", addressLabel(item.address))}
+        </p>
+        <p className="text-sm font-medium">{t.payer.replace("{payer}", payerLabel(item.payer))}</p>
+        <p className="text-sm break-words text-muted-foreground">
+          {t.rateDetails
+            .replace("{scale}", item.scaleName)
+            .replace("{game}", formatCents(item.amount.gameCents))
+            .replace("{mileage}", formatCents(item.amount.mileageCents))
+            .replace("{distance}", formatRoundTripKm(item.distanceM))}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 md:items-end">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:flex-col md:items-end">
+          <p className="text-xl font-semibold tabular-nums [font-stretch:85%]">
+            <span className="sr-only">{t.total} : </span>
+            {formatCents(item.amount.totalCents)}
+          </p>
+          <PaymentBadge item={item} />
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <Link
+            href={`/indemnites/${item.id}/modifier`}
+            aria-label={t.editLabel.replace("{date}", date)}
+            className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
+          >
+            {t.edit}
+          </Link>
+          <ActionsMenu ariaLabel={t.moreActionsLabel.replace("{date}", date)}>
+            {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+            <a
+              href={matchExportPath(item.id)}
+              download
+              data-close-menu
+              aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
+              className={MENU_ITEM_CLASS}
+            >
+              {fr.calendar.export.label}
+            </a>
+            {item.gameId === null ? (
+              <Link
+                href={completeGamePath(item.id)}
+                data-close-menu
+                aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                className={MENU_ITEM_CLASS}
+              >
+                {fr.games.completeMatch}
+              </Link>
+            ) : (
+              <Link
+                href={gamePath(item.gameId)}
+                data-close-menu
+                aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                className={MENU_ITEM_CLASS}
+              >
+                {fr.games.viewMatch}
+              </Link>
+            )}
+            {item.paidOn !== null && (
+              <ClearPaymentItem
+                compensationId={item.id}
+                dateLabel={date}
+                action={clearPaymentAction}
+              />
+            )}
+            <div className="mt-0.5 border-t border-border pt-0.5">
+              <DeleteCompensationButton
+                compensationId={item.id}
+                dateLabel={date}
+                action={deleteAction}
+                triggerClassName={cn(MENU_ITEM_CLASS, "text-destructive")}
+              />
+            </div>
+          </ActionsMenu>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function CompensationList({ items, deleteAction, clearPaymentAction }: Props) {
   return (
     <ul className="flex flex-col gap-3">
-      {items.map((item) => {
-        const date = formatIsoDate(toParisIsoDate(item.startsAt));
-        return (
-          <li key={item.id}>
-            <article className="flex flex-col gap-3 rounded-md border border-border p-4 md:flex-row md:items-start md:justify-between">
-              <div className="flex min-w-0 flex-col gap-1">
-                <p className="text-sm text-muted-foreground">
-                  {t.matchOn
-                    .replace("{date}", date)
-                    .replace("{time}", toParisTimeOfDay(item.startsAt))}
-                </p>
-                <h3 className="font-semibold break-words">
-                  {t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}
-                </h3>
-                <p className="text-sm break-words">
-                  {t.details
-                    .replace("{division}", divisionLabel(item.division))
-                    .replace("{address}", addressLabel(item.address))}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t.scale.replace("{scale}", item.scaleName)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t.amounts
-                    .replace("{game}", formatCents(item.amount.gameCents))
-                    .replace("{mileage}", formatCents(item.amount.mileageCents))
-                    .replace("{distance}", formatRoundTripKm(item.distanceM))}
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 md:items-end">
-                <p className="text-lg font-semibold tabular-nums">
-                  <span className="sr-only">{t.total} : </span>
-                  {formatCents(item.amount.totalCents)}
-                </p>
-                <PaymentStatus
-                  compensationId={item.id}
-                  paidOn={item.paidOn}
-                  played={item.startsAt.getTime() < now.getTime()}
-                  dateLabel={date}
-                  clearAction={clearPaymentAction}
-                />
-                <div className="flex flex-wrap gap-2 md:justify-end">
-                  {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
-                  <a
-                    href={matchExportPath(item.id)}
-                    download
-                    aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
-                    className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
-                  >
-                    {fr.calendar.export.label}
-                  </a>
-                  {/* Bloc 9 : fiche du match complet, ou sa création depuis l'indemnité. */}
-                  {item.gameId === null ? (
-                    <Link
-                      href={completeGamePath(item.id)}
-                      aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
-                      className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
-                    >
-                      {fr.games.completeMatch}
-                    </Link>
-                  ) : (
-                    <Link
-                      href={gamePath(item.gameId)}
-                      aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
-                      className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
-                    >
-                      {fr.games.viewMatch}
-                    </Link>
-                  )}
-                  <Link
-                    href={`/indemnites/${item.id}/modifier`}
-                    aria-label={t.editLabel.replace("{date}", date)}
-                    className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
-                  >
-                    {t.edit}
-                  </Link>
-                  <DeleteCompensationButton
-                    compensationId={item.id}
-                    dateLabel={date}
-                    action={deleteAction}
-                  />
-                </div>
-              </div>
-            </article>
-          </li>
-        );
-      })}
+      {items.map((item) => (
+        <li key={item.id}>
+          <CompensationCard
+            item={item}
+            deleteAction={deleteAction}
+            clearPaymentAction={clearPaymentAction}
+          />
+        </li>
+      ))}
     </ul>
   );
 }

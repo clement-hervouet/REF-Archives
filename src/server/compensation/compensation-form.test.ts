@@ -56,11 +56,18 @@ describe("readCompensationFormData", () => {
       time: "19:00",
       divisionId: DIVISION_ID,
       scaleId: SCALE_ID,
+      payer: "",
       team1: { kind: "existing", clubId: CLUB_A },
       team2: { kind: "existing", clubId: CLUB_B },
       venue: { kind: "team1" },
       oneWayDistance: "23,5",
     });
+  });
+
+  it("lit l'organisme choisi (bloc 10)", () => {
+    expect(readCompensationFormData(form({ ...BASE, payer: "ligue-bretagne" })).payer).toBe(
+      "ligue-bretagne",
+    );
   });
 
   it("lit un nouveau club et une nouvelle adresse d'exception", () => {
@@ -302,6 +309,7 @@ describe("compensationFormValues", () => {
     team1AddressId: ADDRESS_A,
     scaleId: SCALE_ID,
     distanceM: 47_000,
+    payer: null,
   };
 
   it("préremplit le formulaire à l'heure de Paris, distance aller", () => {
@@ -311,10 +319,17 @@ describe("compensationFormValues", () => {
       time: "19:00",
       divisionId: DIVISION_ID,
       scaleId: SCALE_ID,
+      payer: "",
       team1Club: CLUB_A,
       team2Club: CLUB_B,
       oneWayDistance: "23,5",
     });
+  });
+
+  it("préremplit l'organisme choisi", () => {
+    expect(compensationFormValues({ ...compensation, payer: "federation" }).payer).toBe(
+      "federation",
+    );
   });
 
   it("coche l'exception quand l'adresse diffère de celle du club de l'équipe 1", () => {

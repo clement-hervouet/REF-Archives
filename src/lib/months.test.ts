@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "./errors";
-import { currentParisMonth, formatMonth, isMonth, nextMonth, parisMonthRange } from "./months";
+import {
+  currentParisMonth,
+  formatMonth,
+  formatShortMonth,
+  isMonth,
+  nextMonth,
+  parisMonthRange,
+  previousMonth,
+} from "./months";
 
 describe("isMonth", () => {
   it("accepte AAAA-MM", () => {
@@ -52,5 +60,23 @@ describe("formatMonth", () => {
   it("écrit le mois en français", () => {
     expect(formatMonth("2026-11")).toBe("novembre 2026");
     expect(formatMonth("2027-02")).toBe("février 2027");
+  });
+});
+
+describe("previousMonth", () => {
+  it("recule d'un mois, y compris au changement d'année", () => {
+    expect(previousMonth("2026-11")).toBe("2026-10");
+    expect(previousMonth("2027-01")).toBe("2026-12");
+  });
+
+  it("refuse un mois mal formé", () => {
+    expect(() => previousMonth("2026-13")).toThrow();
+  });
+});
+
+describe("formatShortMonth", () => {
+  it("abrège le mois", () => {
+    expect(formatShortMonth("2026-09")).toBe("sept. 2026");
+    expect(formatShortMonth("2026-05")).toBe("mai 2026");
   });
 });

@@ -7,6 +7,8 @@
  * proprement au lieu de laisser échouer une contrainte.
  */
 import { z } from "zod";
+import { effectivePayer } from "@/lib/payers";
+import type { Payer } from "@/lib/payers";
 import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
 import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
 import type { Queryable } from "./users";
@@ -45,6 +47,8 @@ export type NewCompensation = {
   team1Id: string;
   team2Id: string;
   addressId: string;
+  /** Organisme choisi explicitement (clé validée), ou `null` : déduit à l'affichage (bloc 10). */
+  payer: string | null;
 };
 
 const idRowSchema = z.object({ id: z.uuid() });
@@ -246,9 +250,11 @@ const INSERT_COMPENSATION_SQL = `WITH allowed AS (
 ),
 inserted AS (
   INSERT INTO compensation (
-    user_id, scale_rate_id, distance_m, starts_at, division_id, team1_id, team2_id, address_id
+    user_id, scale_rate_id, distance_m, starts_at, division_id, team1_id, team2_id, address_id,
+    payer
   )
-  SELECT $1::uuid, $2::uuid, $3::integer, $4::timestamptz, $5::uuid, $6::uuid, $7::uuid, $8::uuid
+  SELECT $1::uuid, $2::uuid, $3::integer, $4::timestamptz, $5::uuid, $6::uuid, $7::uuid, $8::uuid,
+    $10::varchar
   FROM allowed
   WHERE ok
   RETURNING id
@@ -270,6 +276,7 @@ export async function insertCompensation(
     input.team2Id,
     input.addressId,
     MAX_COMPENSATIONS_PER_USER,
+    input.payer,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
@@ -282,6 +289,10 @@ export type CompensationAmountRow = {
   distanceM: number;
   gameAmountCents: number;
   centsPerKm: string;
+  /** Jour du paiement `AAAA-MM-JJ` (bloc 10), ou `null` s'il n'est pas encore payé. */
+  paidOn: string | null;
+  /** Organisme qui verse l'indemnité (choix enregistré, sinon déduit), ou `null` si inconnu. */
+  payer: Payer | null;
 };
 
 export type CompensationListItem = CompensationAmountRow & {
@@ -293,8 +304,6 @@ export type CompensationListItem = CompensationAmountRow & {
   scaleName: string;
   /** Match complet lié (bloc 9), s'il existe. */
   gameId: string | null;
-  /** Jour du paiement `AAAA-MM-JJ` (bloc 10), ou `null` s'il n'est pas encore payé. */
-  paidOn: string | null;
 };
 
 /** Valeurs d'une indemnité pour préremplir le formulaire de modification. */
@@ -309,21 +318,28 @@ export type CompensationForEdit = {
   team1AddressId: string;
   scaleId: string;
   distanceM: number;
+  /** Organisme choisi explicitement (clé), ou `null` pour la déduction automatique. */
+  payer: string | null;
 };
 
 // Les jointures reprennent user_id : on ne lit jamais l'équipe, le club ou l'adresse d'un autre.
+// Niveau, code postal et pays : de quoi déduire l'organisme qui verse (bloc 10).
 const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, r.game_amount_cents,
-  r.cents_per_km::text AS cents_per_km
+  r.cents_per_km::text AS cents_per_km, c.paid_on::text AS paid_on,
+  c.payer AS payer_override, d.division, a.postal_code, a.country
 FROM compensation c
 JOIN scale_rate r ON r.id = c.scale_rate_id
+JOIN division d ON d.id = c.division_id
+JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 
 // `paid_on::text` : une colonne `date` lue telle quelle deviendrait un Date JavaScript à
 // minuit dans le fuseau du serveur, et pourrait changer de jour.
 const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.game_id, c.paid_on::text AS paid_on,
+  c.payer AS payer_override,
   d.division, d.type, d.level,
   club1.name AS team1_name, club2.name AS team2_name,
-  a.street, a.number, a.postal_code, a.city,
+  a.street, a.number, a.postal_code, a.city, a.country,
   s.name AS scale_name, r.game_amount_cents, r.cents_per_km::text AS cents_per_km
 FROM compensation c
 JOIN division d ON d.id = c.division_id
@@ -337,7 +353,7 @@ JOIN scale s ON s.id = r.scale_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
 ORDER BY c.starts_at, c.id`;
 
-const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m,
+const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m, c.payer,
   t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
   club1.address_id AS team1_address_id, r.scale_id
 FROM compensation c
@@ -352,22 +368,24 @@ const amountRowSchema = z.object({
   distance_m: z.number().int(),
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
+  paid_on: z.string().nullable(),
+  payer_override: z.string().nullable(),
+  division: divisionCategorySchema,
+  postal_code: z.string(),
+  country: z.string().nullable(),
 });
 
 const listItemRowSchema = amountRowSchema.extend({
   id: z.uuid(),
-  division: divisionCategorySchema,
   type: divisionTypeSchema,
   level: divisionLevelSchema,
   team1_name: z.string(),
   team2_name: z.string(),
   street: z.string(),
   number: z.string().nullable(),
-  postal_code: z.string(),
   city: z.string(),
   scale_name: z.string(),
   game_id: z.uuid().nullable(),
-  paid_on: z.string().nullable(),
 });
 
 const editRowSchema = z.object({
@@ -380,6 +398,7 @@ const editRowSchema = z.object({
   team2_club_id: z.uuid(),
   team1_address_id: z.uuid(),
   scale_id: z.uuid(),
+  payer: z.string().nullable(),
 });
 
 function toAmountRow(row: z.infer<typeof amountRowSchema>): CompensationAmountRow {
@@ -388,6 +407,13 @@ function toAmountRow(row: z.infer<typeof amountRowSchema>): CompensationAmountRo
     distanceM: row.distance_m,
     gameAmountCents: row.game_amount_cents,
     centsPerKm: row.cents_per_km,
+    paidOn: row.paid_on,
+    payer: effectivePayer({
+      override: row.payer_override,
+      category: row.division,
+      postalCode: row.postal_code,
+      country: row.country,
+    }),
   };
 }
 
@@ -422,7 +448,6 @@ export async function listCompensationsInRange(
       },
       scaleName: row.scale_name,
       gameId: row.game_id,
-      paidOn: row.paid_on,
     };
   });
 }
@@ -448,6 +473,7 @@ export async function findCompensationForEdit(
     team1AddressId: row.team1_address_id,
     scaleId: row.scale_id,
     distanceM: row.distance_m,
+    payer: row.payer,
   };
 }
 
@@ -459,7 +485,7 @@ FOR UPDATE`;
 
 const UPDATE_COMPENSATION_SQL = `UPDATE compensation
 SET scale_rate_id = $3, distance_m = $4, starts_at = $5, division_id = $6,
-  team1_id = $7, team2_id = $8, address_id = $9
+  team1_id = $7, team2_id = $8, address_id = $9, payer = $10
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
@@ -496,6 +522,7 @@ export async function updateCompensation(
     input.team1Id,
     input.team2Id,
     input.addressId,
+    input.payer,
   ]);
   return result.rows.length > 0;
 }

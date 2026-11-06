@@ -148,3 +148,26 @@ describe("compensationFormSchema", () => {
     expect(errorPaths({ divisionId: "' OR 1=1" })).toEqual(["divisionId"]);
   });
 });
+
+describe("compensationFormSchema : organisme qui verse (bloc 10)", () => {
+  it("vide ou absent : déduction automatique (null)", () => {
+    expect(compensationFormSchema.parse(input()).payer).toBeNull();
+    expect(compensationFormSchema.parse(input({ payer: "" })).payer).toBeNull();
+  });
+
+  it("garde une clé connue", () => {
+    expect(compensationFormSchema.parse(input({ payer: "cd-35" })).payer).toBe("cd-35");
+    expect(compensationFormSchema.parse(input({ payer: "ligue-bretagne" })).payer).toBe(
+      "ligue-bretagne",
+    );
+    expect(compensationFormSchema.parse(input({ payer: "federation" })).payer).toBe("federation");
+  });
+
+  it("refuse une clé inconnue ou forgée, sur le champ payer", () => {
+    for (const payer of ["cd-99", "ligue-atlantide", "lnb", "'; DROP TABLE x; --"]) {
+      const result = compensationFormSchema.safeParse(input({ payer }));
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.path).toEqual(["payer"]);
+    }
+  });
+});

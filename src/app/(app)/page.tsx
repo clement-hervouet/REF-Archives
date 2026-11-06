@@ -4,7 +4,7 @@ import { WeekendSummary } from "@/components/features/home/weekend-summary";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { requireUserOrRedirect } from "@/server/auth/session";
-import { summarizeUnpaid } from "@/server/compensation/payments";
+import { groupByPayer, summarizeUnpaid } from "@/server/compensation/payments";
 import { listUnpaidPlayedCompensations } from "@/server/db/payments";
 import { getDb } from "@/server/db/pool";
 import { getAvailabilityAckWeek, getReminderSettings } from "@/server/db/reminders";
@@ -47,7 +47,7 @@ export default async function HomePage() {
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <WeekendSummary saturday={ranges.saturday} matches={weekendMatches} />
-        <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} />
+        <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} byPayer={groupByPayer(unpaid)} />
       </div>
     </div>
   );

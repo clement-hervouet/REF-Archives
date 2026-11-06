@@ -13,6 +13,7 @@ import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
 import { ValidationError } from "@/lib/errors";
 import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
+import { parsePayerKey } from "@/lib/payers";
 
 /** Bornes raisonnables pour la date d'un match. */
 export const MATCH_DATE_MIN = "2000-01-01";
@@ -95,9 +96,22 @@ const matchFieldsShape = {
   venue: venueChoiceSchema,
 };
 
+/**
+ * Organisme qui verse (bloc 10) : vide = déduit automatiquement du niveau et de l'adresse
+ * (`null`), sinon une clé connue (`cd-35`, `ligue-bretagne`, `federation`).
+ */
+const payerChoiceSchema = z
+  .string()
+  .optional()
+  .transform((value) => (value === undefined || value === "" ? null : value))
+  .refine((value) => value === null || parsePayerKey(value) !== null, {
+    message: "invalid_payer",
+  });
+
 const compensationFieldsSchema = z.object({
   ...matchFieldsShape,
   scaleId: z.uuid(),
+  payer: payerChoiceSchema,
   oneWayDistance: oneWayDistanceSchema,
 });
 
@@ -159,7 +173,12 @@ export const compensationFormSchema = compensationFieldsSchema
   .superRefine(refineMatchFields)
   .transform((value, ctx) => {
     const info = toMatchInfo(value, ctx);
-    return { ...info, scaleId: value.scaleId, distanceM: value.oneWayDistance };
+    return {
+      ...info,
+      scaleId: value.scaleId,
+      payer: value.payer,
+      distanceM: value.oneWayDistance,
+    };
   });
 
 /**

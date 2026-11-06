@@ -8,12 +8,23 @@ import { fr } from "@/i18n/fr";
 import { UNPAID_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatCents, formatIsoDate } from "@/lib/format";
-import type { UnpaidSummary } from "@/server/compensation/payments";
+import type { PayerGroup, UnpaidSummary } from "@/server/compensation/payments";
 import type { UnpaidCompensation } from "@/server/db/payments";
 
 const t = fr.home.unpaid;
 
-export function UnpaidSummaryCard({ summary }: { summary: UnpaidSummary<UnpaidCompensation> }) {
+/** Au-delà, les organismes restants sont résumés en une ligne. */
+const MAX_PAYERS_SHOWN = 4;
+
+type Props = {
+  summary: UnpaidSummary<UnpaidCompensation>;
+  /** Ce qui reste dû, par organisme qui verse (bloc 10). */
+  byPayer: readonly PayerGroup<UnpaidCompensation>[];
+};
+
+export function UnpaidSummaryCard({ summary, byPayer }: Props) {
+  const shown = byPayer.slice(0, MAX_PAYERS_SHOWN);
+  const hidden = byPayer.length - shown.length;
   return (
     <section
       aria-labelledby="home-unpaid"
@@ -34,6 +45,19 @@ export function UnpaidSummaryCard({ summary }: { summary: UnpaidSummary<UnpaidCo
               ? t.countOne
               : t.countMany.replace("{count}", String(summary.count))}
           </p>
+          <ul className="flex flex-col gap-0.5 border-t border-border pt-2 text-sm">
+            {shown.map((group) => (
+              <li key={group.key} className="flex justify-between gap-3">
+                <span className="min-w-0 break-words">{group.label}</span>
+                <span className="font-medium tabular-nums">{formatCents(group.totalCents)}</span>
+              </li>
+            ))}
+            {hidden > 0 && (
+              <li className="text-muted-foreground">
+                {t.byPayerMore.replace("{count}", String(hidden))}
+              </li>
+            )}
+          </ul>
           <p className="text-sm break-words text-muted-foreground">
             {t.oldest
               .replace("{date}", formatIsoDate(toParisIsoDate(summary.oldest.startsAt)))

@@ -107,6 +107,8 @@ describe("createCompensation", () => {
       TEAM_2,
       ADDRESS_A,
       10_000,
+      // Organisme : déduction automatique (rien d'enregistré).
+      null,
     ]);
   });
 
@@ -322,6 +324,7 @@ describe("updateCompensation", () => {
       TEAM_1,
       TEAM_2,
       ADDRESS_A,
+      null,
     ]);
     // Bloc 9 : le match complet lié reçoit les mêmes informations, dans la même transaction.
     expect(query.mock.calls[7]?.[0]).toContain("UPDATE game g");
@@ -345,5 +348,11 @@ describe("updateCompensation", () => {
     expect(
       await updateCompensation(deps, USER_ID, COMPENSATION_ID, form({ date: "2025-12-31" })),
     ).toEqual({ status: "no_rate_at_date" });
+  });
+});
+
+describe("organisme choisi (bloc 10)", () => {
+  it("enregistre la clé choisie avec l'indemnité", () => {
+    expect(form({ payer: "cd-62" }).payer).toBe("cd-62");
   });
 });

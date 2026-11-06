@@ -3,6 +3,8 @@
  * sélection, annulation d'un paiement. Ni Next.js ni authentification : l'action fournit
  * l'utilisateur de la session et le jour de Paris (§6.2). Dépendances injectées.
  */
+import { payerKey, payerLabel, payerRank } from "@/lib/payers";
+import type { Payer } from "@/lib/payers";
 import { parseClearPaymentForm, parsePaymentForm } from "@/lib/schemas/payments";
 import type { PaymentIssue } from "@/lib/schemas/payments";
 import { computeCompensation } from "./amount";
@@ -26,6 +28,46 @@ export function summarizeUnpaid<T extends CompensationRate & { distanceM: number
     totalCents += computeCompensation(row, row.distanceM).totalCents;
   }
   return { count: rows.length, totalCents, oldest: rows[0] ?? null };
+}
+
+export type PayerGroup<T> = {
+  /** Clé stable (`cd-35`, `federation`, `unknown`). */
+  key: string;
+  /** « CD35 », « Ligue de Bretagne », « Fédération », « Organisme inconnu ». */
+  label: string;
+  rows: T[];
+  totalCents: number;
+};
+
+/**
+ * Regroupe des indemnités par organisme qui verse : comités, ligues, Fédération, inconnu ;
+ * l'ordre des lignes (par date) est conservé dans chaque groupe.
+ */
+export function groupByPayer<
+  T extends CompensationRate & { distanceM: number; payer: Payer | null },
+>(rows: readonly T[]): PayerGroup<T>[] {
+  const groups = new Map<string, PayerGroup<T> & { payer: Payer | null }>();
+  for (const row of rows) {
+    const key = row.payer === null ? "unknown" : payerKey(row.payer);
+    const group = groups.get(key) ?? {
+      key,
+      label: payerLabel(row.payer),
+      payer: row.payer,
+      rows: [],
+      totalCents: 0,
+    };
+    group.rows.push(row);
+    group.totalCents += computeCompensation(row, row.distanceM).totalCents;
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .sort((a, b) => payerRank(a.payer) - payerRank(b.payer) || a.label.localeCompare(b.label, "fr"))
+    .map(({ key, label, rows: groupRows, totalCents }) => ({
+      key,
+      label,
+      rows: groupRows,
+      totalCents,
+    }));
 }
 
 // ─── Validation d'une sélection ─────────────────────────────────────────────

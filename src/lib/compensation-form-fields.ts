@@ -17,6 +17,7 @@ export const COMPENSATION_FIELDS = [
   "time",
   "divisionId",
   "scaleId",
+  "payer",
   "team1",
   "team1.name",
   ...ADDRESS_PARTS.map((part) => `team1.${part}` as const),

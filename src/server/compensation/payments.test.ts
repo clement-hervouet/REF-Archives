@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { handleClearPayment, handleMarkPaid, summarizeUnpaid } from "./payments";
+import { groupByPayer, handleClearPayment, handleMarkPaid, summarizeUnpaid } from "./payments";
 import type { ClearPaymentDeps, MarkPaidDeps } from "./payments";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
@@ -98,5 +98,35 @@ describe("handleClearPayment", () => {
   it("signale une indemnité introuvable ou non payée", async () => {
     const { deps } = setup(false);
     expect(await handleClearPayment(deps, USER_ID, form([ID1]))).toEqual({ status: "not_found" });
+  });
+});
+
+describe("groupByPayer", () => {
+  const rate = { gameAmountCents: 3000, centsPerKm: "40.00", distanceM: 24_000 }; // 39,60 €
+  const cd35 = { kind: "committee", department: "35" } as const;
+  const bzh = { kind: "league", league: "bretagne" } as const;
+
+  it("regroupe par organisme, garde l'ordre des dates, additionne chaque groupe", () => {
+    const groups = groupByPayer([
+      { ...rate, id: "a", payer: bzh },
+      { ...rate, id: "b", payer: cd35 },
+      { ...rate, id: "c", payer: cd35 },
+      { ...rate, id: "d", payer: null },
+      { ...rate, id: "e", payer: { kind: "federation" } as const },
+    ]);
+    expect(
+      groups.map((group) => [group.label, group.rows.map((row) => row.id), group.totalCents]),
+    ).toEqual([
+      ["CD35", ["b", "c"], 7920],
+      ["Ligue de Bretagne", ["a"], 3960],
+      ["Fédération", ["e"], 3960],
+      ["Organisme inconnu", ["d"], 3960],
+    ]);
+    expect(groups[0]?.key).toBe("cd-35");
+    expect(groups[3]?.key).toBe("unknown");
+  });
+
+  it("renvoie une liste vide sans indemnité", () => {
+    expect(groupByPayer([])).toEqual([]);
   });
 });

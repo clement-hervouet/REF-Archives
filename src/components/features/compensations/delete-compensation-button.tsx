@@ -15,10 +15,17 @@ type Props = {
     previous: DeleteCompensationState,
     formData: FormData,
   ) => Promise<DeleteCompensationState>;
+  /** Classe du premier bouton (ex. élément de menu) ; bouton secondaire par défaut. */
+  triggerClassName?: string;
 };
 
 /** Suppression en deux temps : un premier clic demande une confirmation explicite. */
-export function DeleteCompensationButton({ compensationId, dateLabel, action }: Props) {
+export function DeleteCompensationButton({
+  compensationId,
+  dateLabel,
+  action,
+  triggerClassName = SECONDARY_BUTTON_CLASS,
+}: Props) {
   const [confirming, setConfirming] = useState(false);
   const [state, formAction, isPending] = useActionState<DeleteCompensationState, FormData>(action, {
     status: "idle",
@@ -41,7 +48,7 @@ export function DeleteCompensationButton({ compensationId, dateLabel, action }: 
           onClick={() => {
             setConfirming(true);
           }}
-          className={SECONDARY_BUTTON_CLASS}
+          className={triggerClassName}
         >
           {t.delete.submit}
         </button>

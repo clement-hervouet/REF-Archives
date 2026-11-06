@@ -5,7 +5,9 @@ import {
   formatCentsPerKm,
   formatDateTime,
   formatIsoDate,
+  formatMatchDay,
   formatWeekdayDateTime,
+  matchDayParts,
 } from "./format";
 
 /** Remplace les espaces insécables par des espaces simples, pour des attentes lisibles. */
@@ -92,5 +94,29 @@ describe("formatWeekdayDateTime", () => {
 
   it("refuse une date invalide", () => {
     expect(() => formatWeekdayDateTime(new Date("invalide"))).toThrow(ValidationError);
+  });
+});
+
+describe("formatMatchDay", () => {
+  it("affiche le jour court et la date de Paris", () => {
+    expect(formatMatchDay(new Date("2026-11-14T18:00:00Z"))).toBe("sam. 14/11");
+  });
+
+  it("prend le jour de Paris, pas celui d'UTC", () => {
+    // 31/10/2026 23:30 UTC = dimanche 01/11/2026 00:30 à Paris.
+    expect(formatMatchDay(new Date("2026-10-31T23:30:00Z"))).toBe("dim. 01/11");
+  });
+
+  it("refuse une date invalide", () => {
+    expect(() => formatMatchDay(new Date("invalide"))).toThrow();
+  });
+});
+
+describe("matchDayParts", () => {
+  it("sépare le jour court et la date", () => {
+    expect(matchDayParts(new Date("2026-11-14T18:00:00Z"))).toEqual({
+      weekday: "sam.",
+      day: "14/11",
+    });
   });
 });

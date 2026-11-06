@@ -7,6 +7,8 @@
  */
 import { z } from "zod";
 import { assertIsoDate } from "@/lib/dates";
+import { effectivePayer } from "@/lib/payers";
+import type { Payer } from "@/lib/payers";
 import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
 import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
 import type { Queryable } from "./users";
@@ -21,15 +23,19 @@ export type UnpaidCompensation = {
   distanceM: number;
   gameAmountCents: number;
   centsPerKm: string;
+  /** Organisme qui verse (choix enregistré, sinon déduit), ou `null` si inconnu. */
+  payer: Payer | null;
 };
 
 // Index partiel `compensation_unpaid_idx` (migration 015).
 const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m,
   d.division, d.type, d.level,
   club1.name AS team1_name, club2.name AS team2_name,
-  r.game_amount_cents, r.cents_per_km::text AS cents_per_km
+  r.game_amount_cents, r.cents_per_km::text AS cents_per_km,
+  c.payer AS payer_override, a.postal_code, a.country
 FROM compensation c
 JOIN division d ON d.id = c.division_id
+JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
 JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
 JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
 JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
@@ -60,6 +66,9 @@ const unpaidRowSchema = z.object({
   team2_name: z.string(),
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
+  payer_override: z.string().nullable(),
+  postal_code: z.string(),
+  country: z.string().nullable(),
 });
 
 /**
@@ -82,6 +91,12 @@ export async function listUnpaidPlayedCompensations(
       distanceM: row.distance_m,
       gameAmountCents: row.game_amount_cents,
       centsPerKm: row.cents_per_km,
+      payer: effectivePayer({
+        override: row.payer_override,
+        category: row.division,
+        postalCode: row.postal_code,
+        country: row.country,
+      }),
     };
   });
 }

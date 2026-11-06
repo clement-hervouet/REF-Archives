@@ -23,6 +23,7 @@ import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
 import { ClubFields } from "./club-fields";
 import { compensationStatusMessage, fieldError } from "./compensation-messages";
+import { PayerSelect } from "./payer-select";
 import { SelectField } from "./select-field";
 
 const t = fr.compensations;
@@ -166,6 +167,15 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
                 </option>
               ))}
             </SelectField>
+          )}
+          {withCompensation && (
+            <div className="md:col-span-2">
+              <PayerSelect
+                id={`${id}-payer`}
+                defaultValue={valueOf("payer")}
+                error={fieldError("payer", state)}
+              />
+            </div>
           )}
         </div>
       </fieldset>

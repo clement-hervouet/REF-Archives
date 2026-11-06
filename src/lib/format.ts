@@ -50,6 +50,37 @@ export function formatWeekdayDateTime(date: Date): string {
   return `${get("weekday")} ${get("day")}/${get("month")} à ${get("hour")}:${get("minute")}`;
 }
 
+const matchDayFormat = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Europe/Paris",
+});
+
+/**
+ * Jour court et date à Paris, séparés, ex. `{ weekday: "sam.", day: "14/11" }` (colonne
+ * de date des indemnités, bloc 10). Reconstruit à partir des parties de la locale.
+ */
+export function matchDayParts(date: Date): { weekday: string; day: string } {
+  if (Number.isNaN(date.getTime())) {
+    throw new ValidationError("invalid_date");
+  }
+  const parts = new Map<string, string>();
+  for (const part of matchDayFormat.formatToParts(date)) {
+    parts.set(part.type, part.value);
+  }
+  return {
+    weekday: parts.get("weekday") ?? "",
+    day: `${parts.get("day") ?? ""}/${parts.get("month") ?? ""}`,
+  };
+}
+
+/** Jour court et date à Paris, ex. « sam. 14/11 ». */
+export function formatMatchDay(date: Date): string {
+  const { weekday, day } = matchDayParts(date);
+  return `${weekday} ${day}`;
+}
+
 /** Date calendaire `AAAA-MM-JJ` (colonne `date`) affichée « JJ/MM/AAAA », sans fuseau. */
 export function formatIsoDate(isoDate: string): string {
   assertIsoDate(isoDate);

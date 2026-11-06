@@ -26,6 +26,9 @@ describe("listUnpaidPlayedCompensations", () => {
         team2_name: "Club Alpha",
         game_amount_cents: 3000,
         cents_per_km: "40.00",
+        payer_override: null,
+        postal_code: "62000",
+        country: null,
       },
     ]);
     expect(await listUnpaidPlayedCompensations(db, { userId: USER_ID, before })).toEqual([
@@ -38,6 +41,7 @@ describe("listUnpaidPlayedCompensations", () => {
         distanceM: 24_000,
         gameAmountCents: 3000,
         centsPerKm: "40.00",
+        payer: { kind: "league", league: "hauts-de-france" },
       },
     ]);
     const [sql, values] = query.mock.calls[0] ?? [];
@@ -46,6 +50,7 @@ describe("listUnpaidPlayedCompensations", () => {
     expect(sql).toContain("c.deleted_at IS NULL");
     expect(sql).toContain("c.starts_at < $2");
     expect(sql).toContain("club1.user_id = c.user_id");
+    expect(sql).toContain("a.user_id = c.user_id");
     expect(values).toEqual([USER_ID, before]);
   });
 

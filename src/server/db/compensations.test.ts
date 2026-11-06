@@ -190,6 +190,7 @@ describe("insertCompensation", () => {
     team1Id: TEAM_ID,
     team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
     addressId: ADDRESS_ID,
+    payer: "cd-35",
   };
 
   it("crée l'indemnité sous la limite", async () => {
@@ -205,6 +206,7 @@ describe("insertCompensation", () => {
       "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
       ADDRESS_ID,
       MAX_COMPENSATIONS_PER_USER,
+      "cd-35",
     ]);
   });
 
@@ -218,11 +220,30 @@ describe("listCompensationAmounts", () => {
   it("lit les montants des indemnités actives de l'utilisateur", async () => {
     const startsAt = new Date("2026-11-14T18:00:00Z");
     const { db, query } = makeFakeDb([
-      { starts_at: startsAt, distance_m: 47_000, game_amount_cents: 4800, cents_per_km: "42.50" },
+      {
+        starts_at: startsAt,
+        distance_m: 47_000,
+        game_amount_cents: 4800,
+        cents_per_km: "42.50",
+        paid_on: "2026-11-20",
+        payer_override: null,
+        division: "Regional",
+        postal_code: "35000",
+        country: null,
+      },
     ]);
     expect(await listCompensationAmounts(db, USER_ID)).toEqual([
-      { startsAt, distanceM: 47_000, gameAmountCents: 4800, centsPerKm: "42.50" },
+      {
+        startsAt,
+        distanceM: 47_000,
+        gameAmountCents: 4800,
+        centsPerKm: "42.50",
+        paidOn: "2026-11-20",
+        // Match régional en Ille-et-Vilaine, sans choix enregistré : la ligue de Bretagne.
+        payer: { kind: "league", league: "bretagne" },
+      },
     ]);
+    expect(query.mock.calls[0]?.[0]).toContain("paid_on::text");
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
   });
 });
@@ -251,6 +272,8 @@ describe("listCompensationsInRange", () => {
         scale_name: "Comité",
         game_id: null,
         paid_on: "2026-11-20",
+        payer_override: "federation",
+        country: null,
       },
     ]);
     expect(await listCompensationsInRange(db, { userId: USER_ID, from, to })).toEqual([
@@ -267,6 +290,8 @@ describe("listCompensationsInRange", () => {
         scaleName: "Comité",
         gameId: null,
         paidOn: "2026-11-20",
+        // Choix enregistré : il prime sur la déduction (régional à Lille → Hauts-de-France).
+        payer: { kind: "federation" },
       },
     ]);
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, from, to]);
@@ -288,6 +313,7 @@ describe("findCompensationForEdit", () => {
         team2_club_id: CLUB_B,
         team1_address_id: ADDRESS_ID,
         scale_id: SCALE_ID,
+        payer: null,
       },
     ]);
     expect(
@@ -302,6 +328,7 @@ describe("findCompensationForEdit", () => {
       team1AddressId: ADDRESS_ID,
       scaleId: SCALE_ID,
       distanceM: 47_000,
+      payer: null,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
   });
@@ -338,6 +365,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
         team1Id: TEAM_ID,
         team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
         addressId: ADDRESS_ID,
+        payer: null,
       }),
     ).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([
@@ -350,6 +378,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
       TEAM_ID,
       "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
       ADDRESS_ID,
+      null,
     ]);
   });
 
