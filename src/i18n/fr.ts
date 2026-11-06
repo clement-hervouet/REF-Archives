@@ -79,7 +79,9 @@ export const fr = {
     },
     settings: {
       title: "Mon compte",
-      email: "Adresse email : {email}",
+      description: "Votre prénom s'affiche sur l'accueil.",
+      emailLabel: "Adresse email",
+      emailHint: "Elle sert à vous connecter et à recevoir les emails de l'application.",
       submit: "Enregistrer",
       submitting: "Enregistrement…",
       saved: "Nom et prénom enregistrés.",
@@ -704,6 +706,10 @@ export const fr = {
         "Ce barème est proposé à tous les utilisateurs et s'applique par défaut à tous les niveaux. Pour changer un montant, ajoutez une ligne avec une nouvelle date : les indemnités déjà saisies gardent l'ancienne.",
       empty:
         "Aucune ligne pour l'instant : ajoutez la première pour que les utilisateurs puissent saisir des indemnités.",
+      sectionTitle: "Barème appliqué à tous",
+      sectionIntro:
+        "Les utilisateurs le voient en lecture seule dans Mes barèmes. Il s'applique à chaque niveau pour lequel ils n'ont pas choisi de barème personnel.",
+      missing: "Le barème commun est introuvable : vérifiez que les migrations sont appliquées.",
     },
     invitations: {
       title: "Invitations",

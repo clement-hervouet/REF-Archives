@@ -147,6 +147,19 @@
   }
 }
 
+/*
+ * Aperçus du choix de thème (Paramètres) : couleurs fixes, reprises des deux thèmes, qui ne
+ * suivent pas le thème actif (on montre l'autre thème tel qu'il sera).
+ */
+@theme {
+  --color-preview-light: #ffffff;
+  --color-preview-light-side: #08335b;
+  --color-preview-light-ink: #08335b;
+  --color-preview-dark: #061a2e;
+  --color-preview-dark-side: #04121f;
+  --color-preview-dark-ink: #e6edf4;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

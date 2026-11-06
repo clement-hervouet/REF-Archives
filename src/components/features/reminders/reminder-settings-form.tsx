@@ -43,7 +43,7 @@ export function ReminderSettingsForm({ settings, action }: Props) {
   const recapHintId = `${id}-recap-hint`;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <FormMessage message={reminderSettingsMessage(state.status)} />
       <form key={formKey} action={formAction} className="flex flex-col gap-6">
         <fieldset className="flex flex-col gap-3 rounded-md border border-border p-4">

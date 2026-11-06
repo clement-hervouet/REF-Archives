@@ -133,9 +133,8 @@ export function CalendarFeedSection({ activeSince, action }: Props) {
   const hasLink = activeSince !== null;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-4">
-      <p className="text-muted-foreground">{t.intro}</p>
-      <p className="text-sm text-muted-foreground">{t.content}</p>
+    // L'explication (`intro`, `content`) est dans l'en-tête de la section (bloc 10).
+    <div className="flex flex-col gap-4">
       <FormMessage message={calendarFeedMessage(state.status)} />
       {state.status === "created" && <CreatedLink url={state.url} webcalUrl={state.webcalUrl} />}
       <p className="font-medium">
