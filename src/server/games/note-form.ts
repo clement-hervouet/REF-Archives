@@ -2,16 +2,19 @@
  * Formulaire de note d'un match (bloc 9) : lecture du FormData, validation Zod, puis
  * service ; suppression. Ni Next.js ni authentification ici (§6.2).
  *
- * Champs HTML : `gameId` (caché), `confidence` et `stress` (boutons radio, vide = non
- * renseigné), `body`, `clips` (zone de texte, un lien par ligne).
+ * Champs HTML : `gameId` (caché), les échelles `confidence`, `stress`, `management` et
+ * `judgment` (boutons radio, vide = non renseigné), `body`, `clips` (zone de texte, un lien
+ * par ligne).
  */
 import { z } from "zod";
+import { NOTE_LEVEL_FIELDS } from "@/lib/game-form-fields";
+import type { NoteLevelField } from "@/lib/game-form-fields";
 import { noteFormSchema } from "@/lib/schemas/notes";
 import { softDeleteNote } from "../db/notes";
 import { saveGameNote } from "./manage-note";
 import type { GameDeps } from "./rejection";
 
-export type NoteField = "confidence" | "stress" | "body";
+export type NoteField = NoteLevelField | "body";
 
 export type NoteFormState =
   | { status: "idle" }
@@ -38,14 +41,13 @@ export function readNoteFormData(formData: FormData): Record<string, unknown> {
   const clips = text(formData, "clips");
   return {
     // Bouton radio : rien de coché = non renseigné.
-    confidence: text(formData, "confidence") ?? "",
-    stress: text(formData, "stress") ?? "",
+    ...Object.fromEntries(NOTE_LEVEL_FIELDS.map((field) => [field, text(formData, field) ?? ""])),
     body: text(formData, "body") ?? "",
     clips: clips === undefined ? [] : clips.split(/\r\n|\r|\n/),
   };
 }
 
-const NOTE_FIELDS: readonly NoteField[] = ["confidence", "stress", "body"];
+const NOTE_FIELDS: readonly NoteField[] = [...NOTE_LEVEL_FIELDS, "body"];
 
 function isNoteField(value: string): value is NoteField {
   return NOTE_FIELDS.some((field) => field === value);
@@ -118,19 +120,19 @@ export async function handleDeleteNote(
 
 /** Valeurs de départ du formulaire depuis la note enregistrée. */
 export function noteFormValues(
-  note: {
-    confidence: number | null;
-    stress: number | null;
-    body: string | null;
-    clips: string[];
-  } | null,
+  note: (Record<NoteLevelField, number | null> & { body: string | null; clips: string[] }) | null,
 ): Record<string, string> {
+  const levels = Object.fromEntries(
+    NOTE_LEVEL_FIELDS.map((field) => {
+      const value = note?.[field] ?? null;
+      return [field, value === null ? "" : String(value)];
+    }),
+  );
   if (note === null) {
-    return { confidence: "", stress: "", body: "", clips: "" };
+    return { ...levels, body: "", clips: "" };
   }
   return {
-    confidence: note.confidence === null ? "" : String(note.confidence),
-    stress: note.stress === null ? "" : String(note.stress),
+    ...levels,
     body: note.body ?? "",
     clips: note.clips.join("\n"),
   };

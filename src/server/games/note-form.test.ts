@@ -31,6 +31,8 @@ describe("readNoteFormData", () => {
     ).toEqual({
       confidence: "",
       stress: "",
+      management: "",
+      judgment: "",
       body: "RAS",
       clips: ["https://a.fr", "", "https://b.fr"],
     });
@@ -103,8 +105,29 @@ describe("handleDeleteNote", () => {
 describe("noteFormValues", () => {
   it("prépare les champs depuis la note enregistrée", () => {
     expect(
-      noteFormValues({ confidence: 4, stress: null, body: null, clips: ["https://a.fr/"] }),
-    ).toEqual({ confidence: "4", stress: "", body: "", clips: "https://a.fr/" });
-    expect(noteFormValues(null)).toEqual({ confidence: "", stress: "", body: "", clips: "" });
+      noteFormValues({
+        confidence: 4,
+        stress: null,
+        management: null,
+        judgment: 3,
+        body: null,
+        clips: ["https://a.fr/"],
+      }),
+    ).toEqual({
+      confidence: "4",
+      stress: "",
+      management: "",
+      judgment: "3",
+      body: "",
+      clips: "https://a.fr/",
+    });
+    expect(noteFormValues(null)).toEqual({
+      confidence: "",
+      stress: "",
+      management: "",
+      judgment: "",
+      body: "",
+      clips: "",
+    });
   });
 });

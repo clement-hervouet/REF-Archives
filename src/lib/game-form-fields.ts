@@ -24,8 +24,15 @@ export function officialFieldName(
   return `${slot}${part}`;
 }
 
-/** Échelle de la confiance et du stress (§12, tranché au bloc 9). */
+/** Échelle des niveaux de la note (§12, tranché au bloc 9). */
 export const NOTE_LEVELS = [1, 2, 3, 4, 5] as const;
+
+/**
+ * Échelles de la note, dans l'ordre d'affichage : confiance et stress (bloc 9), gestion du
+ * match et jugement (bloc 10, migration 017). Noms des champs HTML et des colonnes.
+ */
+export const NOTE_LEVEL_FIELDS = ["confidence", "stress", "management", "judgment"] as const;
+export type NoteLevelField = (typeof NOTE_LEVEL_FIELDS)[number];
 export const NOTE_LEVEL_MIN = 1;
 export const NOTE_LEVEL_MAX = 5;
 

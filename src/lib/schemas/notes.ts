@@ -107,6 +107,8 @@ export const noteClipsSchema = z
 const noteFieldsSchema = z.object({
   confidence: noteLevelSchema,
   stress: noteLevelSchema,
+  management: noteLevelSchema,
+  judgment: noteLevelSchema,
   body: noteBodySchema,
   clips: noteClipsSchema,
 });
@@ -116,6 +118,8 @@ export const noteFormSchema = noteFieldsSchema.superRefine((value, ctx) => {
   if (
     value.confidence === null &&
     value.stress === null &&
+    value.management === null &&
+    value.judgment === null &&
     value.body === null &&
     value.clips.length === 0
   ) {

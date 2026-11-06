@@ -10,7 +10,15 @@ import {
 } from "./notes";
 
 function input(overrides: Partial<NoteFormInput> = {}): NoteFormInput {
-  return { confidence: "", stress: "", body: "", clips: [], ...overrides };
+  return {
+    confidence: "",
+    stress: "",
+    management: "",
+    judgment: "",
+    body: "",
+    clips: [],
+    ...overrides,
+  };
 }
 
 /** Erreurs du formulaire sous la forme « chemin:code ». */
@@ -136,6 +144,8 @@ describe("noteFormSchema", () => {
   it("accepte une note avec un seul champ renseigné", () => {
     expect(formIssues({ confidence: "4" })).toEqual([]);
     expect(formIssues({ stress: "2" })).toEqual([]);
+    expect(formIssues({ management: "3" })).toEqual([]);
+    expect(formIssues({ judgment: "5" })).toEqual([]);
     expect(formIssues({ body: "RAS" })).toEqual([]);
     expect(formIssues({ clips: ["https://example.com/clip"] })).toEqual([]);
   });
@@ -143,9 +153,22 @@ describe("noteFormSchema", () => {
   it("renvoie la note nettoyée", () => {
     expect(
       noteFormSchema.parse(
-        input({ confidence: "4", stress: "", body: " RAS ", clips: ["", "https://ex.fr/c"] }),
+        input({
+          confidence: "4",
+          stress: "",
+          judgment: "2",
+          body: " RAS ",
+          clips: ["", "https://ex.fr/c"],
+        }),
       ),
-    ).toEqual({ confidence: 4, stress: null, body: "RAS", clips: ["https://ex.fr/c"] });
+    ).toEqual({
+      confidence: 4,
+      stress: null,
+      management: null,
+      judgment: 2,
+      body: "RAS",
+      clips: ["https://ex.fr/c"],
+    });
   });
 
   it("refuse une note vide", () => {
@@ -157,5 +180,12 @@ describe("noteFormSchema", () => {
     expect(formIssues({ body: "RAS", clips: ["data:text/html,x"] })).toEqual([
       "clips.0:clip_invalid",
     ]);
+  });
+});
+
+describe("noteFormSchema, gestion et jugement", () => {
+  it("refuse un niveau hors de 1 à 5", () => {
+    expect(noteFormSchema.safeParse(input({ management: "6" })).success).toBe(false);
+    expect(noteFormSchema.safeParse(input({ judgment: "0" })).success).toBe(false);
   });
 });

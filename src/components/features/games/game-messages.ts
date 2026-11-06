@@ -84,6 +84,8 @@ export function noteFieldError(field: NoteField | "clips", state: NoteFormState)
   switch (field) {
     case "confidence":
     case "stress":
+    case "management":
+    case "judgment":
       return state.fields.includes(field) ? t.errors.level : null;
     case "body":
       if (state.fields.includes("body")) {

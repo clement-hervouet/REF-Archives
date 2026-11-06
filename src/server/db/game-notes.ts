@@ -5,7 +5,7 @@
  * paramètres liés, jamais concaténés (§3.2).
  */
 import { z } from "zod";
-import type { OfficialSlot } from "@/lib/game-form-fields";
+import type { NoteLevelField, OfficialSlot } from "@/lib/game-form-fields";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
 import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
 import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
@@ -27,6 +27,8 @@ export type GameNoteListItem = {
   selfSlot: OfficialSlot | null;
   confidence: number | null;
   stress: number | null;
+  management: number | null;
+  judgment: number | null;
   /** Début du texte, `NOTE_EXCERPT_LENGTH` caractères au plus. */
   excerpt: string | null;
   excerptTruncated: boolean;
@@ -48,7 +50,7 @@ const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, d.division, d.type,
     WHEN g.observer_id = s.id THEN 'observer'
   END AS self_slot,
   n.id IS NOT NULL AS has_note,
-  n.confidence, n.stress,
+  n.confidence, n.stress, n.management, n.judgment,
   left(n.body, $7::integer) AS excerpt,
   coalesce(char_length(n.body) > $7::integer, false) AS excerpt_truncated,
   (SELECT count(*) FROM note_clip c WHERE c.note_id = n.id AND c.user_id = n.user_id)::integer
@@ -81,6 +83,8 @@ const rowSchema = z.object({
   self_slot: z.enum(["referee1", "referee2", "referee3", "observer"]).nullable(),
   confidence: z.number().int().nullable(),
   stress: z.number().int().nullable(),
+  management: z.number().int().nullable(),
+  judgment: z.number().int().nullable(),
   excerpt: z.string().nullable(),
   excerpt_truncated: z.boolean(),
   clip_count: z.number().int(),
@@ -119,10 +123,75 @@ export async function listGamesWithNotes(
       selfSlot: row.self_slot,
       confidence: row.confidence,
       stress: row.stress,
+      management: row.management,
+      judgment: row.judgment,
       excerpt: row.excerpt,
       excerptTruncated: row.excerpt_truncated,
       clipCount: row.clip_count,
       hasNote: row.has_note,
     })),
+  };
+}
+
+/** Moyenne d'une échelle sur les notes qui la renseignent ; `null` si aucune. */
+export type LevelAverage = { average: number | null; count: number };
+export type NoteLevelAverages = Record<NoteLevelField, LevelAverage>;
+
+// Mêmes filtres que la liste (sans la page ni « matchs sans note ») : la moyenne porte sur
+// toutes les notes qui y correspondent, pas seulement sur la page affichée. avg() et
+// count() ignorent les échelles non renseignées.
+const AVERAGE_NOTE_LEVELS_SQL = `SELECT
+  avg(n.confidence)::float8 AS confidence_avg, count(n.confidence)::integer AS confidence_count,
+  avg(n.stress)::float8 AS stress_avg, count(n.stress)::integer AS stress_count,
+  avg(n.management)::float8 AS management_avg, count(n.management)::integer AS management_count,
+  avg(n.judgment)::float8 AS judgment_avg, count(n.judgment)::integer AS judgment_count
+FROM game g
+JOIN note n ON n.game_id = g.id AND n.user_id = g.user_id AND n.deleted_at IS NULL
+JOIN division d ON d.id = g.division_id
+JOIN team t1 ON t1.id = g.team1_id AND t1.user_id = g.user_id
+JOIN team t2 ON t2.id = g.team2_id AND t2.user_id = g.user_id
+WHERE g.user_id = $1 AND g.deleted_at IS NULL
+  AND ($2::text IS NULL OR d.division::text = $2::text)
+  AND ($3::text IS NULL OR d.type::text = $3::text)
+  AND ($4::uuid IS NULL OR t1.club_id = $4::uuid OR t2.club_id = $4::uuid)
+  AND ($5::text IS NULL OR d.level::text = $5::text)`;
+
+const averageColumn = z.number().nullable();
+const countColumn = z.number().int();
+
+const averagesRowSchema = z.object({
+  confidence_avg: averageColumn,
+  confidence_count: countColumn,
+  stress_avg: averageColumn,
+  stress_count: countColumn,
+  management_avg: averageColumn,
+  management_count: countColumn,
+  judgment_avg: averageColumn,
+  judgment_count: countColumn,
+});
+
+/** Moyenne de chaque échelle sur les notes actives de l'utilisateur qui passent les filtres. */
+export async function averageNoteLevels(
+  db: Queryable,
+  input: { userId: string; filters: GameNotesFilters },
+): Promise<NoteLevelAverages> {
+  const { filters } = input;
+  const result = await db.query(AVERAGE_NOTE_LEVELS_SQL, [
+    input.userId,
+    filters.category,
+    filters.type,
+    filters.clubId,
+    filters.level,
+  ]);
+  const row = averagesRowSchema.parse(result.rows[0]);
+  const pick = (field: NoteLevelField): LevelAverage => ({
+    average: row[`${field}_avg`],
+    count: row[`${field}_count`],
+  });
+  return {
+    confidence: pick("confidence"),
+    stress: pick("stress"),
+    management: pick("management"),
+    judgment: pick("judgment"),
   };
 }

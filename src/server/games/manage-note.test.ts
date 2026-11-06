@@ -12,6 +12,8 @@ const NOTE_ID = "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c01";
 const NOTE = noteFormSchema.parse({
   confidence: "4",
   stress: "2",
+  management: "",
+  judgment: "",
   body: "Bon placement en fin de match.",
   clips: ["https://example.com/clip"],
 });
@@ -38,6 +40,8 @@ describe("saveGameNote", () => {
       GAME_ID,
       4,
       2,
+      null,
+      null,
       "Bon placement en fin de match.",
     ]);
     expect(query.mock.calls[3]?.[1]).toEqual([USER_ID, NOTE_ID, ["https://example.com/clip"]]);

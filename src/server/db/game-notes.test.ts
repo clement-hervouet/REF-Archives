@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "./fake-db";
-import { GAME_NOTES_PAGE_SIZE, NOTE_EXCERPT_LENGTH, listGamesWithNotes } from "./game-notes";
+import {
+  GAME_NOTES_PAGE_SIZE,
+  NOTE_EXCERPT_LENGTH,
+  averageNoteLevels,
+  listGamesWithNotes,
+} from "./game-notes";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const GAME_ID = "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b01";
@@ -27,6 +32,8 @@ function row(index: number) {
     self_slot: "referee2",
     confidence: 4,
     stress: null,
+    management: 2,
+    judgment: null,
     excerpt: "Bon placement",
     excerpt_truncated: false,
     clip_count: 2,
@@ -60,6 +67,8 @@ describe("listGamesWithNotes", () => {
           selfSlot: "referee2",
           confidence: 4,
           stress: null,
+          management: 2,
+          judgment: null,
           excerpt: "Bon placement",
           excerptTruncated: false,
           clipCount: 2,
@@ -104,5 +113,36 @@ describe("listGamesWithNotes", () => {
     const page = await listGamesWithNotes(db, { userId: USER_ID, filters: NO_FILTERS });
     expect(page.hasMore).toBe(true);
     expect(page.items).toHaveLength(GAME_NOTES_PAGE_SIZE);
+  });
+});
+
+describe("averageNoteLevels", () => {
+  it("renvoie moyenne et nombre par échelle, filtres en paramètres liés", async () => {
+    const { db, query } = makeFakeDb([
+      {
+        confidence_avg: 3.75,
+        confidence_count: 4,
+        stress_avg: 2,
+        stress_count: 1,
+        management_avg: null,
+        management_count: 0,
+        judgment_avg: 4.5,
+        judgment_count: 2,
+      },
+    ]);
+    expect(
+      await averageNoteLevels(db, {
+        userId: USER_ID,
+        filters: { ...NO_FILTERS, category: "Regional", clubId: CLUB_ID, level: "U15", page: 4 },
+      }),
+    ).toEqual({
+      confidence: { average: 3.75, count: 4 },
+      stress: { average: 2, count: 1 },
+      management: { average: null, count: 0 },
+      judgment: { average: 4.5, count: 2 },
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, "Regional", null, CLUB_ID, "U15"]);
+    expect(query.mock.calls[0]?.[0]).toContain("n.deleted_at IS NULL");
+    expect(query.mock.calls[0]?.[0]).toContain("g.deleted_at IS NULL");
   });
 });

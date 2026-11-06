@@ -11,6 +11,8 @@ import type { Queryable } from "./users";
 export type NoteContent = {
   confidence: number | null;
   stress: number | null;
+  management: number | null;
+  judgment: number | null;
   body: string | null;
   /** Liens dans l'ordre choisi par l'utilisateur. */
   clips: string[];
@@ -22,10 +24,12 @@ const idRowSchema = z.object({ id: z.uuid() });
 
 // Crée la note du match ou remplace celle qui existe. La cible du ON CONFLICT reprend
 // l'index partiel : une note supprimée (soft delete) n'empêche pas d'en écrire une neuve.
-const UPSERT_NOTE_SQL = `INSERT INTO note (user_id, game_id, confidence, stress, body)
-VALUES ($1, $2, $3, $4, $5)
+const UPSERT_NOTE_SQL = `INSERT INTO note
+  (user_id, game_id, confidence, stress, management, judgment, body)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (game_id) WHERE deleted_at IS NULL
-DO UPDATE SET confidence = EXCLUDED.confidence, stress = EXCLUDED.stress, body = EXCLUDED.body
+DO UPDATE SET confidence = EXCLUDED.confidence, stress = EXCLUDED.stress,
+  management = EXCLUDED.management, judgment = EXCLUDED.judgment, body = EXCLUDED.body
 RETURNING id`;
 
 const DELETE_CLIPS_SQL = `DELETE FROM note_clip WHERE note_id = $1 AND user_id = $2`;
@@ -39,7 +43,7 @@ const SOFT_DELETE_NOTE_SQL = `UPDATE note SET deleted_at = now()
 WHERE game_id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
-const FIND_NOTE_SQL = `SELECT n.id, n.confidence, n.stress, n.body, n.updated_at,
+const FIND_NOTE_SQL = `SELECT n.id, n.confidence, n.stress, n.management, n.judgment, n.body, n.updated_at,
   coalesce(array_agg(c.url ORDER BY c.position) FILTER (WHERE c.id IS NOT NULL), '{}') AS clips
 FROM note n
 LEFT JOIN note_clip c ON c.note_id = n.id AND c.user_id = n.user_id
@@ -50,6 +54,8 @@ const noteRowSchema = z.object({
   id: z.uuid(),
   confidence: z.number().int().nullable(),
   stress: z.number().int().nullable(),
+  management: z.number().int().nullable(),
+  judgment: z.number().int().nullable(),
   body: z.string().nullable(),
   updated_at: z.date(),
   clips: z.array(z.string()),
@@ -69,6 +75,8 @@ export async function saveNote(
     input.gameId,
     note.confidence,
     note.stress,
+    note.management,
+    note.judgment,
     note.body,
   ]);
   const noteId = idRowSchema.parse(result.rows[0]).id;
@@ -103,6 +111,8 @@ export async function findNote(
     id: row.id,
     confidence: row.confidence,
     stress: row.stress,
+    management: row.management,
+    judgment: row.judgment,
     body: row.body,
     clips: row.clips,
     updatedAt: row.updated_at,
