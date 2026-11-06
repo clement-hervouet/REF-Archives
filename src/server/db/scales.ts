@@ -407,3 +407,47 @@ export async function clearLevelDefault(
 ): Promise<void> {
   await db.query(DELETE_LEVEL_DEFAULT_SQL, [input.userId, input.divisionId]);
 }
+
+// ─── Aperçu du montant dans le formulaire d'indemnité (bloc 10) ─────────────
+
+/** Ligne de barème réduite au calcul du montant. */
+export type PreviewRate = {
+  scaleId: string;
+  /** Date d'application `AAAA-MM-JJ`. */
+  effectiveFrom: string;
+  gameAmountCents: number;
+  /** Taux `numeric`, ex. `"40.00"`. */
+  centsPerKm: string;
+};
+
+// Mêmes barèmes que la liste du formulaire : les siens et le commun, non supprimés.
+const LIST_SELECTABLE_RATES_SQL = `SELECT r.scale_id, r.effective_from::text AS effective_from,
+  r.game_amount_cents, r.cents_per_km::text AS cents_per_km
+FROM scale_rate r
+JOIN scale s ON s.id = r.scale_id
+WHERE (s.user_id = $1 OR s.user_id IS NULL) AND s.deleted_at IS NULL
+ORDER BY r.scale_id, r.effective_from`;
+
+const previewRateRowSchema = z.object({
+  scale_id: z.uuid(),
+  effective_from: z.string(),
+  game_amount_cents: z.number().int(),
+  cents_per_km: z.string(),
+});
+
+/** Lignes de tous les barèmes que l'utilisateur peut choisir (les siens et le commun). */
+export async function listSelectableScaleRates(
+  db: Queryable,
+  userId: string,
+): Promise<PreviewRate[]> {
+  const result = await db.query(LIST_SELECTABLE_RATES_SQL, [userId]);
+  return result.rows.map((raw) => {
+    const row = previewRateRowSchema.parse(raw);
+    return {
+      scaleId: row.scale_id,
+      effectiveFrom: row.effective_from,
+      gameAmountCents: row.game_amount_cents,
+      centsPerKm: row.cents_per_km,
+    };
+  });
+}

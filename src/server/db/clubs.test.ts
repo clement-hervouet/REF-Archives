@@ -17,6 +17,7 @@ describe("listClubs", () => {
         number: null,
         postal_code: "62400",
         city: "Béthune",
+        country: null,
       },
     ]);
     expect(await listClubs(db, USER_ID)).toEqual([
@@ -29,6 +30,7 @@ describe("listClubs", () => {
           number: null,
           postalCode: "62400",
           city: "Béthune",
+          country: null,
         },
       },
     ]);
@@ -44,10 +46,24 @@ describe("listClubs", () => {
 describe("listAddresses", () => {
   it("renvoie les adresses de l'utilisateur", async () => {
     const { db, query } = makeFakeDb([
-      { id: ADDRESS_ID, street: "Rue Gambetta", number: "5", postal_code: "62000", city: "Arras" },
+      {
+        id: ADDRESS_ID,
+        street: "Rue Gambetta",
+        number: "5",
+        postal_code: "62000",
+        city: "Arras",
+        country: "France",
+      },
     ]);
     expect(await listAddresses(db, USER_ID)).toEqual([
-      { id: ADDRESS_ID, street: "Rue Gambetta", number: "5", postalCode: "62000", city: "Arras" },
+      {
+        id: ADDRESS_ID,
+        street: "Rue Gambetta",
+        number: "5",
+        postalCode: "62000",
+        city: "Arras",
+        country: "France",
+      },
     ]);
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
   });

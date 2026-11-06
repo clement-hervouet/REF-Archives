@@ -11,6 +11,8 @@ export type AddressSummary = {
   number: string | null;
   postalCode: string;
   city: string;
+  /** Pays (facultatif, vide = France) : sert à déduire l'organisme qui verse (bloc 10). */
+  country: string | null;
 };
 
 export type ClubSummary = {
@@ -26,6 +28,7 @@ const addressRowSchema = z.object({
   number: z.string().nullable(),
   postal_code: z.string(),
   city: z.string(),
+  country: z.string().nullable(),
 });
 
 const clubRowSchema = z.object({
@@ -36,15 +39,17 @@ const clubRowSchema = z.object({
   number: z.string().nullable(),
   postal_code: z.string(),
   city: z.string(),
+  country: z.string().nullable(),
 });
 
-const LIST_CLUBS_SQL = `SELECT c.id, c.name, a.id AS address_id, a.street, a.number, a.postal_code, a.city
+const LIST_CLUBS_SQL = `SELECT c.id, c.name, a.id AS address_id, a.street, a.number, a.postal_code, a.city,
+  a.country
 FROM club c
 JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
 WHERE c.user_id = $1
 ORDER BY lower(c.name), lower(a.city)`;
 
-const LIST_ADDRESSES_SQL = `SELECT id, street, number, postal_code, city
+const LIST_ADDRESSES_SQL = `SELECT id, street, number, postal_code, city, country
 FROM address
 WHERE user_id = $1
 ORDER BY lower(city), lower(street), number`;
@@ -63,6 +68,7 @@ export async function listClubs(db: Queryable, userId: string): Promise<ClubSumm
         number: row.number,
         postalCode: row.postal_code,
         city: row.city,
+        country: row.country,
       },
     };
   });
@@ -79,6 +85,7 @@ export async function listAddresses(db: Queryable, userId: string): Promise<Addr
       number: row.number,
       postalCode: row.postal_code,
       city: row.city,
+      country: row.country,
     };
   });
 }

@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
+import { MAX_ONE_WAY_DISTANCE_M, ONE_WAY_KM_PATTERN, oneWayKmToMeters } from "@/lib/distance";
 import { ValidationError } from "@/lib/errors";
 import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
 import { parsePayerKey } from "@/lib/payers";
@@ -19,11 +20,8 @@ import { parsePayerKey } from "@/lib/payers";
 export const MATCH_DATE_MIN = "2000-01-01";
 export const MATCH_DATE_MAX = "2100-12-31";
 
-/** Distance aller maximale (2 000 km) ; l'aller-retour reste sous la borne SQL de 4 000 km. */
-export const MAX_ONE_WAY_DISTANCE_M = 2_000_000;
-
-/** Km aller : jusqu'à 4 chiffres, au plus 3 décimales (le mètre), virgule ou point. */
-const KM_PATTERN = /^(\d{1,4})(?:[.,](\d{1,3}))?$/;
+// Règles de la distance partagées avec l'aperçu du formulaire (`src/lib/distance.ts`).
+export { MAX_ONE_WAY_DISTANCE_M };
 /** Aucun caractère de contrôle (sauts de ligne, tabulations, NUL…). */
 const NO_CONTROL_CHARS = /^[^\p{Cc}]*$/u;
 /** Code postal générique (France et étranger) : lettres, chiffres, espace, tiret. */
@@ -40,17 +38,11 @@ const optionalText = (max: number) =>
     .regex(NO_CONTROL_CHARS)
     .transform((value) => (value === "" ? null : value));
 
-/** « 23,5 » km aller → 23 500 m. Suppose une chaîne déjà validée. */
-function oneWayKmToMeters(value: string): number {
-  const [whole = "0", fraction = ""] = value.split(/[.,]/);
-  return Number(whole) * 1000 + Number(fraction.padEnd(3, "0"));
-}
-
 /** Km aller saisis → mètres aller-retour. */
 export const oneWayDistanceSchema = z
   .string()
   .trim()
-  .regex(KM_PATTERN)
+  .regex(ONE_WAY_KM_PATTERN)
   .transform(oneWayKmToMeters)
   .refine((meters) => meters <= MAX_ONE_WAY_DISTANCE_M)
   .transform((meters) => meters * 2);

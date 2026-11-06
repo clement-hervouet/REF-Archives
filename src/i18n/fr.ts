@@ -324,6 +324,23 @@ export const fr = {
       pending: "En attente",
       upcoming: "À venir",
     },
+    recap: {
+      title: "Récapitulatif",
+      match: "Match",
+      teamsMissing: "Équipes à choisir",
+      when: "Date",
+      whenMissing: "Date et heure à saisir",
+      payer: "Versée par",
+      payerPending: "Selon le niveau et l'adresse",
+      payerAuto: "{payer} (automatique)",
+      payerChosen: "{payer} (choisi)",
+      amount: "Montant",
+      incomplete: "Le montant s'affiche dès que la date, le barème et la distance sont remplis.",
+      noRate:
+        "Ce barème n'a pas de montant à cette date : choisissez-en un autre ou ajoutez une ligne au barème.",
+      detail: "Match {game} + kilométrage {mileage} ({distance} aller-retour)",
+      rateLine: "{scale}, montants en vigueur depuis le {date}",
+    },
     payers: {
       title: "Par organisme",
       monthTitle: "Par organisme",
@@ -389,7 +406,7 @@ export const fr = {
       scale: "Barème",
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",
-      payerAuto: "Automatique (selon le niveau et l'adresse)",
+      payerAuto: "Automatique",
       payerHint:
         "Automatique : comité du département pour un match départemental, ligue de la région pour un match régional, Fédération au-delà. À changer pour une coupe ou un match délocalisé.",
       payerFederation: "Fédération",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "./fake-db";
 import {
+  listSelectableScaleRates,
   MAX_RATES_PER_SCALE,
   MAX_SCALES_PER_USER,
   clearLevelDefault,
@@ -303,5 +304,27 @@ describe("barèmes par défaut", () => {
     const { db, query } = makeFakeDb();
     await clearLevelDefault(db, { userId: USER_ID, divisionId: DIVISION_ID });
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, DIVISION_ID]);
+  });
+});
+
+describe("listSelectableScaleRates", () => {
+  it("lit les lignes des barèmes de l'utilisateur et du barème commun, dates en texte", async () => {
+    const scaleId = "0b6d5a8e-2f4c-4d1a-9e3b-7c5f1a2d8e40";
+    const { db, query } = makeFakeDb([
+      {
+        scale_id: scaleId,
+        effective_from: "2026-09-01",
+        game_amount_cents: 4800,
+        cents_per_km: "42.50",
+      },
+    ]);
+    expect(await listSelectableScaleRates(db, USER_ID)).toEqual([
+      { scaleId, effectiveFrom: "2026-09-01", gameAmountCents: 4800, centsPerKm: "42.50" },
+    ]);
+    const [sql, values] = query.mock.calls[0] ?? [];
+    expect(sql).toContain("s.user_id = $1 OR s.user_id IS NULL");
+    expect(sql).toContain("s.deleted_at IS NULL");
+    expect(sql).toContain("effective_from::text");
+    expect(values).toEqual([USER_ID]);
   });
 });
