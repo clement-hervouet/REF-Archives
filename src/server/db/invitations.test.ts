@@ -200,6 +200,12 @@ describe("listInvitations", () => {
     ]);
     const list = await listInvitations(db, ADMIN_ID, NOW);
     expect(list.map((item) => item.status)).toEqual(["pending", "accepted", "revoked", "expired"]);
+    expect(list.map((item) => [item.acceptedAt, item.revokedAt])).toEqual([
+      [null, null],
+      [NOW, null],
+      [null, NOW],
+      [null, null],
+    ]);
   });
 
   it("n'expose ni jeton ni empreinte", async () => {
