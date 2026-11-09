@@ -10,6 +10,7 @@ import {
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const HASH = "$argon2id$v=19$m=65536,t=3,p=4$fake$fake";
 const NO_NAME = { firstname: null, lastname: null };
+const NO_STATE = { blocked_at: null, blocked_until: null, deletion_due_at: null };
 const NEW_USER = { email: "clem@example.com", passwordHash: HASH, ...NO_NAME };
 
 describe("createUser", () => {
@@ -73,9 +74,16 @@ describe("createUser", () => {
 
 describe("findUserCredentialsByEmail", () => {
   it("renvoie l'identifiant et le hash", async () => {
-    const { db } = makeFakeDb([{ id: USER_ID, password_hash: HASH }]);
+    const blockedAt = new Date("2026-11-01T10:00:00Z");
+    const { db } = makeFakeDb([
+      { id: USER_ID, password_hash: HASH, ...NO_STATE, blocked_at: blockedAt },
+    ]);
     const result = await findUserCredentialsByEmail(db, "clem@example.com");
-    expect(result).toEqual({ userId: USER_ID, passwordHash: HASH });
+    expect(result).toEqual({
+      userId: USER_ID,
+      passwordHash: HASH,
+      state: { blockedAt, blockedUntil: null, deletionDueAt: null },
+    });
   });
 
   it("renvoie null quand l'email n'existe pas", async () => {
@@ -84,7 +92,7 @@ describe("findUserCredentialsByEmail", () => {
   });
 
   it("passe l'email en paramètre, comparé sans tenir compte de la casse", async () => {
-    const { db, query } = makeFakeDb([{ id: USER_ID, password_hash: HASH }]);
+    const { db, query } = makeFakeDb([{ id: USER_ID, password_hash: HASH, ...NO_STATE }]);
     await findUserCredentialsByEmail(db, "clem@example.com");
     const call = query.mock.lastCall;
     expect(call?.[0]).toContain("lower(email) = lower($1)");

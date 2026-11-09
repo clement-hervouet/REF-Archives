@@ -1,6 +1,7 @@
 /**
  * Requêtes SQL sur la table `"user"` (§3.2 : SQL à la main, toujours paramétré).
  */
+import type { AccountStateColumns } from "./account-state";
 import { z } from "zod";
 
 export const userRoleSchema = z.enum(["admin", "user"]);
@@ -38,6 +39,8 @@ export type CreatedUser = {
 export type UserCredentials = {
   userId: string;
   passwordHash: string;
+  /** État du compte (bloc 10) : un compte coupé ne se connecte pas, même avec le bon mot de passe. */
+  state: AccountStateColumns;
 };
 
 /** L'email est déjà pris (unicité insensible à la casse, index `user_email_lower_key`). */
@@ -60,6 +63,9 @@ const userRowSchema = z.object({
 const credentialsRowSchema = z.object({
   id: z.uuid(),
   password_hash: z.string(),
+  blocked_at: z.date().nullable(),
+  blocked_until: z.date().nullable(),
+  deletion_due_at: z.date().nullable(),
 });
 
 const idRowSchema = z.object({
@@ -75,7 +81,7 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING id, email, role`;
 
 // `lower(...)` des deux côtés : correspond à l'index d'unicité `user_email_lower_key`.
-const FIND_CREDENTIALS_SQL = `SELECT id, password_hash
+const FIND_CREDENTIALS_SQL = `SELECT id, password_hash, blocked_at, blocked_until, deletion_due_at
 FROM "user"
 WHERE lower(email) = lower($1)`;
 
@@ -131,7 +137,15 @@ export async function findUserCredentialsByEmail(
     return null;
   }
   const parsed = credentialsRowSchema.parse(row);
-  return { userId: parsed.id, passwordHash: parsed.password_hash };
+  return {
+    userId: parsed.id,
+    passwordHash: parsed.password_hash,
+    state: {
+      blockedAt: parsed.blocked_at,
+      blockedUntil: parsed.blocked_until,
+      deletionDueAt: parsed.deletion_due_at,
+    },
+  };
 }
 
 /** Retrouve l'identifiant d'un utilisateur par son email, ou `null` (sans lire le hash). */

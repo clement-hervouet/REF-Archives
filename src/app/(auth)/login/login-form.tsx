@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { fr } from "@/i18n/fr";
+import { formatDateTime } from "@/lib/format";
 import { login } from "./actions";
 import type { LoginFormState } from "./actions";
 
@@ -12,6 +13,12 @@ function errorMessage(state: LoginFormState): string | null {
       return fr.auth.errors.invalidCredentials;
     case "rate_limited":
       return fr.auth.errors.rateLimited.replace("{minutes}", String(state.retryAfterMinutes));
+    case "blocked":
+      return state.until === null
+        ? fr.auth.errors.blocked
+        : fr.auth.errors.blockedUntil.replace("{date}", formatDateTime(new Date(state.until)));
+    case "deletion_pending":
+      return fr.auth.errors.deletionPending;
     case "error":
       return fr.auth.errors.unexpected;
     case "idle":

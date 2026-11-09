@@ -5,6 +5,7 @@ import type { LoginDeps } from "./login";
 const NOW = new Date("2026-11-01T10:00:00.000Z");
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const SESSION_ID = "9d6c2f4e-1b7a-4e0c-9a55-0c2d7f1e8b33";
+const ACTIVE_STATE = { blockedAt: null, blockedUntil: null, deletionDueAt: null };
 const ATTEMPT = {
   email: "clem@example.com",
   password: "correct horse battery staple",
@@ -16,7 +17,7 @@ function makeDeps() {
     admitAttempt: vi.fn<LoginDeps["admitAttempt"]>().mockResolvedValue({ admitted: true }),
     findCredentials: vi
       .fn<LoginDeps["findCredentials"]>()
-      .mockResolvedValue({ userId: USER_ID, passwordHash: "hash" }),
+      .mockResolvedValue({ userId: USER_ID, passwordHash: "hash", state: ACTIVE_STATE }),
     verifyPassword: vi.fn<LoginDeps["verifyPassword"]>().mockResolvedValue(true),
     verifyAgainstDummyHash: vi.fn<LoginDeps["verifyAgainstDummyHash"]>().mockResolvedValue(false),
     clearAttempts: vi.fn<LoginDeps["clearAttempts"]>().mockResolvedValue(undefined),
@@ -110,5 +111,70 @@ describe("authenticate", () => {
     const result = await authenticate(makeDeps(), ATTEMPT);
     expect(JSON.stringify(result)).not.toContain("hash");
     expect(JSON.stringify(result)).not.toContain(ATTEMPT.password);
+  });
+
+  it("compte bloqué : bon mot de passe, aucune session, raison renvoyée", async () => {
+    const deps = makeDeps();
+    const until = new Date("2026-11-15T00:00:00.000Z");
+    deps.findCredentials.mockResolvedValue({
+      userId: USER_ID,
+      passwordHash: "hash",
+      state: {
+        blockedAt: new Date("2026-10-31T10:00:00.000Z"),
+        blockedUntil: until,
+        deletionDueAt: null,
+      },
+    });
+    expect(await authenticate(deps, ATTEMPT)).toEqual({
+      status: "suspended",
+      userId: USER_ID,
+      suspension: { kind: "blocked", until },
+    });
+    expect(deps.createSession).not.toHaveBeenCalled();
+  });
+
+  it("blocage terminé : connexion normale", async () => {
+    const deps = makeDeps();
+    deps.findCredentials.mockResolvedValue({
+      userId: USER_ID,
+      passwordHash: "hash",
+      state: {
+        blockedAt: new Date("2026-10-01T10:00:00.000Z"),
+        blockedUntil: new Date("2026-10-08T10:00:00.000Z"),
+        deletionDueAt: null,
+      },
+    });
+    expect((await authenticate(deps, ATTEMPT)).status).toBe("success");
+  });
+
+  it("suppression programmée : refusée, raison renvoyée", async () => {
+    const deps = makeDeps();
+    const dueAt = new Date("2026-12-01T10:00:00.000Z");
+    deps.findCredentials.mockResolvedValue({
+      userId: USER_ID,
+      passwordHash: "hash",
+      state: { blockedAt: null, blockedUntil: null, deletionDueAt: dueAt },
+    });
+    expect(await authenticate(deps, ATTEMPT)).toEqual({
+      status: "suspended",
+      userId: USER_ID,
+      suspension: { kind: "deletion", dueAt },
+    });
+    expect(deps.createSession).not.toHaveBeenCalled();
+  });
+
+  it("compte bloqué, mauvais mot de passe : même réponse qu'un compte actif", async () => {
+    const deps = makeDeps();
+    deps.verifyPassword.mockResolvedValue(false);
+    deps.findCredentials.mockResolvedValue({
+      userId: USER_ID,
+      passwordHash: "hash",
+      state: {
+        blockedAt: new Date("2026-10-31T10:00:00.000Z"),
+        blockedUntil: null,
+        deletionDueAt: null,
+      },
+    });
+    expect(await authenticate(deps, ATTEMPT)).toEqual({ status: "invalid_credentials" });
   });
 });

@@ -3,6 +3,7 @@
  * L'horloge de référence est celle de PostgreSQL (`now()`), pour éviter tout décalage
  * entre plusieurs instances de l'application.
  */
+import { ACTIVE_ACCOUNT_CONDITION } from "./account-state";
 import { z } from "zod";
 import { userRoleSchema } from "./users";
 import type { Queryable, UserRole } from "./users";
@@ -44,11 +45,14 @@ const INSERT_SESSION_SQL = `INSERT INTO session (user_id, expires_at)
 VALUES ($1, now() + $2::integer * interval '1 second')
 RETURNING id, expires_at`;
 
-// Les deux conditions de validité vivent ici et nulle part ailleurs.
+// Les conditions de validité d'une session vivent ici et nulle part ailleurs ; celle du
+// compte (bloqué, suppression programmée) vient d'`account-state.ts` (bloc 10) : un compte
+// coupé perd l'accès à la requête suivante, même avec une session non révoquée.
 const FIND_ACTIVE_SESSION_SQL = `SELECT s.id, s.user_id, u.email, u.role, u.firstname, u.lastname
 FROM session s
 JOIN "user" u ON u.id = s.user_id
-WHERE s.id = $1 AND s.revoked_at IS NULL AND s.expires_at > now()`;
+WHERE s.id = $1 AND s.revoked_at IS NULL AND s.expires_at > now()
+  AND ${ACTIVE_ACCOUNT_CONDITION}`;
 
 // Écriture limitée : au plus une mise à jour toutes les 5 minutes par session.
 const TOUCH_SESSION_SQL = `UPDATE session

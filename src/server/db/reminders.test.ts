@@ -70,7 +70,8 @@ describe("listReminderRecipients", () => {
     const { db, query } = makeFakeDb();
     await listReminderRecipients(db, { afterUserId: OTHER_USER_ID });
     const call = query.mock.lastCall;
-    expect(call?.[0]).toContain("ORDER BY id");
+    expect(call?.[0]).toContain("ORDER BY u.id");
+    expect(call?.[0]).toContain("u.deletion_due_at IS NULL");
     expect(call?.[1]).toEqual([OTHER_USER_ID, REMINDER_RECIPIENTS_PAGE_SIZE]);
   });
 
@@ -78,7 +79,7 @@ describe("listReminderRecipients", () => {
     const { db, query } = makeFakeDb();
     await listReminderRecipients(db, { afterUserId: null, limit: 10 });
     expect(query.mock.lastCall?.[0]).toContain(
-      "availability_reminder_enabled OR weekend_recap_enabled",
+      "u.availability_reminder_enabled OR u.weekend_recap_enabled",
     );
     expect(query.mock.lastCall?.[1]).toEqual([null, 10]);
   });

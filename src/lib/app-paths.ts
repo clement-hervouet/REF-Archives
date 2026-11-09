@@ -40,3 +40,11 @@ export const COMPLETE_PROFILE_PATH = "/completer-profil";
 
 /** Page « À rembourser » : indemnités jouées non payées, validation des paiements (bloc 10). */
 export const UNPAID_PATH = "/indemnites/a-rembourser";
+
+/** Page admin « Comptes » (bloc 10). */
+export const ACCOUNTS_PATH = "/admin/comptes";
+
+/** Fiche admin d'un compte (bloc 10). */
+export function accountPath(accountId: string): string {
+  return `${ACCOUNTS_PATH}/${accountId}`;
+}

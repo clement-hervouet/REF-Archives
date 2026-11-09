@@ -18,6 +18,8 @@ export function hashIpForLog(ip: string, secret: string): string {
 export type SecurityEventInput = {
   type: SecurityEventType;
   userId?: string | null;
+  /** Compte visé par une action d'admin (bloc 10). */
+  targetUserId?: string;
   /** IP du client. Absente ou inconnue : rien n'est stocké. */
   ip?: string;
 };
@@ -43,6 +45,7 @@ export function createSecurityEventRecorder(
         type: input.type,
         userId: input.userId ?? null,
         ipHash: ip === undefined || ip === UNKNOWN_IP ? null : hashIpForLog(ip, deps.secret()),
+        ...(input.targetUserId !== undefined ? { targetUserId: input.targetUserId } : {}),
       });
     } catch (error: unknown) {
       deps.onError(error instanceof Error ? error.name : "UnknownError");

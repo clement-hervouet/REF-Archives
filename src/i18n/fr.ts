@@ -21,6 +21,7 @@ export const fr = {
     },
     compensations: "Mes indemnités",
     invitations: "Invitations",
+    accounts: "Comptes",
     scales: "Mes barèmes",
     commonScale: "Barème commun",
     upcoming: "À venir",
@@ -43,6 +44,11 @@ export const fr = {
       // Volontairement identique que l'email existe ou non (§6.1).
       invalidCredentials: "Email ou mot de passe incorrect.",
       rateLimited: "Trop de tentatives de connexion. Réessayez dans {minutes} min.",
+      // Affichés seulement après un mot de passe correct (bloc 10).
+      blocked: "Ce compte est bloqué. Contactez l'administrateur.",
+      blockedUntil: "Ce compte est bloqué jusqu'au {date}. Contactez l'administrateur.",
+      deletionPending:
+        "Ce compte est en cours de suppression. Contactez l'administrateur pour l'annuler.",
       unexpected: "Une erreur est survenue. Réessayez dans un instant.",
     },
   },
@@ -655,7 +661,7 @@ export const fr = {
     search: {
       label: "Rechercher un collègue",
       placeholder: "Nom, prénom ou club",
-      countOne: "1 collègue",
+      countOne: "{count} collègue",
       countMany: "{count} collègues",
       filtered: "{shown} sur {total}",
       none: "Aucun collègue ne correspond à « {query} ».",
@@ -710,6 +716,136 @@ export const fr = {
       sectionIntro:
         "Les utilisateurs le voient en lecture seule dans Mes barèmes. Il s'applique à chaque niveau pour lequel ils n'ont pas choisi de barème personnel.",
       missing: "Le barème commun est introuvable : vérifiez que les migrations sont appliquées.",
+    },
+    accounts: {
+      title: "Comptes",
+      intro:
+        "Tous les comptes de l'application. Ouvrez un compte pour modifier ses informations, envoyer un lien de mot de passe, le bloquer ou programmer sa suppression.",
+      empty: "Aucun compte.",
+      search: {
+        label: "Rechercher un compte",
+        placeholder: "Nom, prénom ou email",
+        countOne: "{count} compte",
+        countMany: "{count} comptes",
+        filtered: "{shown} sur {total}",
+        none: "Aucun compte ne correspond à « {query} ».",
+      },
+      summary: { suspendedOne: "1 compte coupé", suspendedMany: "{count} comptes coupés" },
+      you: "Vous",
+      admin: "Admin",
+      noName: "Nom non renseigné",
+      status: {
+        active: "Actif",
+        blocked: "Bloqué",
+        blockedUntil: "Bloqué jusqu'au {date}",
+        deletion: "Suppression le {date}",
+      },
+      createdOn: "Créé le {date}",
+      lastSeen: "dernière activité le {date}",
+      neverSeen: "jamais connecté",
+      open: "Gérer le compte de {name}",
+      back: "Retour aux comptes",
+      notFound: "Ce compte n'existe pas ou a été supprimé.",
+      selfNote:
+        "C'est votre compte : vous ne pouvez ni le bloquer, ni le supprimer, ni retirer vos droits d'administration.",
+      sections: {
+        details: {
+          title: "Informations",
+          description: "Nom, prénom, adresse de connexion et rôle.",
+          role: "Rôle",
+          roles: { user: "Utilisateur", admin: "Administrateur" },
+          selfRole: "Vous ne pouvez pas retirer vos propres droits d'administration.",
+          emailHint:
+            "Si vous changez l'adresse, l'ancienne reçoit une alerte. La personne se connecte ensuite avec la nouvelle.",
+          submit: "Enregistrer",
+          submitting: "Enregistrement…",
+        },
+        password: {
+          title: "Mot de passe",
+          description:
+            "Vous ne voyez ni ne choisissez jamais le mot de passe. La personne reçoit un lien pour en choisir un nouveau.",
+          submit: "Envoyer un lien de réinitialisation",
+          submitting: "Envoi…",
+          disabled: "Indisponible pendant une suppression programmée.",
+        },
+        block: {
+          title: "Blocage",
+          description:
+            "Un compte bloqué est déconnecté partout immédiatement et ne peut plus se connecter. Ses rappels et son abonnement calendrier sont suspendus.",
+          current: "Bloqué jusqu'au {date}.",
+          currentIndefinite: "Bloqué jusqu'à déblocage.",
+          legend: "Durée du blocage",
+          modes: {
+            "24h": "24 heures",
+            "7d": "7 jours",
+            "30d": "30 jours",
+            date: "Jusqu'à une date",
+            indefinite: "Jusqu'à déblocage",
+          },
+          date: "Débloqué le",
+          dateHint: "Le compte redevient actif ce jour-là, à minuit.",
+          submit: "Bloquer le compte",
+          change: "Modifier le blocage",
+          submitting: "Blocage…",
+          unblock: "Débloquer maintenant",
+          unblocking: "Déblocage…",
+          self: "Vous ne pouvez pas bloquer votre propre compte.",
+          deletionPending:
+            "Une suppression est programmée : annulez-la d'abord pour gérer le blocage.",
+        },
+        deletion: {
+          title: "Suppression",
+          description:
+            "Le compte est coupé tout de suite, puis effacé définitivement au bout de 30 jours avec toutes ses données. Vous pouvez annuler d'ici là.",
+          contents: "Seront effacés : {contents}.",
+          nothing: "Ce compte n'a encore aucune donnée.",
+          confirm: "Pour confirmer, saisissez l'adresse email du compte",
+          submit: "Programmer la suppression",
+          submitting: "Programmation…",
+          pending: "Suppression définitive le {date}. Le compte est coupé en attendant.",
+          cancel: "Annuler la suppression",
+          cancelling: "Annulation…",
+          self: "Vous ne pouvez pas supprimer votre propre compte.",
+        },
+      },
+      contents: {
+        compensations: ["{count} indemnité", "{count} indemnités"],
+        games: ["{count} match", "{count} matchs"],
+        notes: ["{count} note", "{count} notes"],
+        scales: ["{count} barème", "{count} barèmes"],
+        colleagues: ["{count} collègue", "{count} collègues"],
+      },
+      messages: {
+        updated: "Informations enregistrées.",
+        updatedAlertSent: "Informations enregistrées. L'ancienne adresse a reçu une alerte.",
+        updatedAlertFailed:
+          "Informations enregistrées, mais l'alerte n'a pas pu partir vers l'ancienne adresse.",
+        resetSent: "Lien envoyé à {email}. Il est valable 30 minutes.",
+        resetNotSent: "Le lien a été créé, mais l'email n'a pas pu partir. Réessayez plus tard.",
+        blocked: "Compte bloqué jusqu'au {date}. Il a été déconnecté partout.",
+        blockedIndefinite: "Compte bloqué jusqu'à déblocage. Il a été déconnecté partout.",
+        unblocked: "Compte débloqué.",
+        scheduled: "Suppression programmée le {date}. Le compte a été déconnecté partout.",
+        cancelled: "Suppression annulée. Le compte est de nouveau actif, sauf s'il est bloqué.",
+      },
+      errors: {
+        invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",
+        email: "Saisissez une adresse email valide.",
+        role: "Choisissez un rôle de la liste.",
+        emailTaken: "Un autre compte utilise déjà cette adresse.",
+        notFound: "Ce compte n'existe plus. Revenez à la liste.",
+        selfDemotion: "Vous ne pouvez pas retirer vos propres droits d'administration.",
+        self: "Vous ne pouvez pas faire cela sur votre propre compte.",
+        lastAdmin:
+          "C'est le dernier administrateur actif : nommez d'abord un autre administrateur.",
+        deletionPending: "Une suppression est programmée pour ce compte.",
+        blockMode: "Choisissez une durée de blocage.",
+        blockDate: "Saisissez une date valide.",
+        blockDatePast: "Choisissez une date à partir de demain.",
+        blockDateTooFar: "Date trop lointaine : choisissez plutôt « Jusqu'à déblocage ».",
+        confirmation: "L'adresse saisie ne correspond pas à celle du compte.",
+        rateLimited: "Trop d'emails envoyés. Réessayez dans {minutes} min.",
+      },
     },
     invitations: {
       title: "Invitations",
@@ -919,6 +1055,13 @@ export const fr = {
       body: "Le mot de passe de votre compte REF-Archives vient d'être modifié et toutes vos sessions ont été fermées.",
       advice:
         "Si vous êtes à l'origine de ce changement, vous n'avez rien à faire. Sinon, utilisez « Mot de passe oublié ? » sur la page de connexion pour choisir un nouveau mot de passe, et prévenez l'administrateur.",
+    },
+    emailChanged: {
+      subject: "L'adresse email de votre compte REF-Archives a changé",
+      title: "Adresse email modifiée",
+      body: "Un administrateur a remplacé l'adresse email de votre compte REF-Archives par {email}. Cette adresse ne recevra plus les emails de l'application.",
+      advice:
+        "Si ce changement ne vient pas d'une demande de votre part, prévenez l'administrateur.",
     },
     accountLocked: {
       subject: "Connexions suspendues sur votre compte REF-Archives",

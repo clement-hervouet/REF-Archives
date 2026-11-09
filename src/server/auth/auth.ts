@@ -6,6 +6,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import { loginSchema } from "@/lib/schemas/auth";
+import type { AccountSuspension } from "../db/account-state";
 import { getDb } from "../db/pool";
 import { SESSION_MAX_AGE_SECONDS, revokeSession } from "../db/sessions";
 import { getClientIp } from "./client-ip";
@@ -21,6 +22,20 @@ export class RateLimitedError extends CredentialsSignin {
   constructor(retryAfterSeconds: number) {
     super();
     this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/**
+ * Compte bloqué ou en attente de suppression (bloc 10) : transporte la raison jusqu'à la
+ * Server Action de connexion. Levée seulement après un mot de passe correct.
+ */
+export class AccountSuspendedError extends CredentialsSignin {
+  override code = "account_suspended";
+  readonly suspension: AccountSuspension;
+
+  constructor(suspension: AccountSuspension) {
+    super();
+    this.suspension = suspension;
   }
 }
 
@@ -50,6 +65,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (result.status === "invalid_credentials") {
           await recordSecurityEvent({ type: "login_failed", ip });
           return null;
+        }
+        if (result.status === "suspended") {
+          await recordSecurityEvent({ type: "login_failed", userId: result.userId, ip });
+          throw new AccountSuspendedError(result.suspension);
         }
         await recordSecurityEvent({ type: "login_succeeded", userId: result.userId, ip });
         return { id: result.userId, sessionId: result.sessionId };

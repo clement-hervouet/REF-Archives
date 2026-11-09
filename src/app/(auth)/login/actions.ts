@@ -2,13 +2,16 @@
 
 import { AuthError, CredentialsSignin } from "next-auth";
 import { loginSchema } from "@/lib/schemas/auth";
-import { RateLimitedError, signIn } from "@/server/auth/auth";
+import { AccountSuspendedError, RateLimitedError, signIn } from "@/server/auth/auth";
 
 /** `email` est renvoyé dans tous les états pour que le champ ne soit pas vidé après une erreur. */
 export type LoginFormState =
   | { status: "idle"; email: string }
   | { status: "invalid"; email: string }
   | { status: "rate_limited"; email: string; retryAfterMinutes: number }
+  /** Compte bloqué par un admin (bloc 10) ; `until` en ISO, `null` = sans date de fin. */
+  | { status: "blocked"; email: string; until: string | null }
+  | { status: "deletion_pending"; email: string }
   | { status: "error"; email: string };
 
 export async function login(
@@ -36,6 +39,12 @@ export async function login(
         email,
         retryAfterMinutes: Math.max(1, Math.ceil(error.retryAfterSeconds / 60)),
       };
+    }
+    if (error instanceof AccountSuspendedError) {
+      const { suspension } = error;
+      return suspension.kind === "deletion"
+        ? { status: "deletion_pending", email }
+        : { status: "blocked", email, until: suspension.until?.toISOString() ?? null };
     }
     if (error instanceof CredentialsSignin) {
       return { status: "invalid", email };
