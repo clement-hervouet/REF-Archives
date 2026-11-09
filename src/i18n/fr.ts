@@ -193,6 +193,55 @@ export const fr = {
     hint: "Le choix s'applique à cet appareil seulement.",
     submit: "Appliquer",
   },
+  seasonalTheme: {
+    title: "Thème saisonnier",
+    hint: "Une animation discrète derrière le contenu, qui change avec les saisons. Désactivée, elle revient d'elle-même à la saison suivante. Le choix s'applique à cet appareil seulement, et rien ne bouge si l'appareil demande de réduire les animations.",
+    current: "En ce moment : {season}, {effect}.",
+    seasons: {
+      spring: "printemps",
+      summer: "été",
+      autumn: "automne",
+      winter: "hiver",
+    },
+    effects: {
+      spring: "pétales portés par le vent",
+      summer: "lucioles",
+      autumn: "feuilles qui tombent",
+      winter: "neige",
+      december: "neige et guirlande",
+    },
+    stateLegend: "Animation",
+    on: "Activée",
+    off: "Désactivée jusqu'à la prochaine saison",
+    densityLegend: "Densité",
+    densities: {
+      low: "Légère",
+      medium: "Moyenne",
+      high: "Forte",
+    },
+    submit: "Appliquer",
+    // Bandeau de première apparition d'une saison (bloc 12c).
+    banner: {
+      titles: {
+        spring: "Thème du printemps",
+        summer: "Thème de l'été",
+        autumn: "Thème d'automne",
+        winter: "Thème d'hiver",
+      },
+      descriptions: {
+        spring: "Des pétales passent derrière le contenu jusqu'au 31 mai.",
+        summer: "Des lucioles passent derrière le contenu jusqu'au 31 août.",
+        autumn: "Des feuilles tombent derrière le contenu jusqu'au 30 novembre.",
+        winter: "La neige tombe derrière le contenu jusqu'à fin février.",
+        december:
+          "La neige tombe derrière le contenu jusqu'à fin février, avec une guirlande en décembre.",
+      },
+      hint: "Désactivé, il revient à la saison suivante. La densité se règle dans les",
+      settingsLink: "paramètres",
+      keep: "Garder",
+      disable: "Désactiver",
+    },
+  },
   forgotPassword: {
     title: "Mot de passe oublié",
     intro:
@@ -433,6 +482,8 @@ export const fr = {
       submit: "Enregistrer l'indemnité",
       submitting: "Enregistrement…",
       created: "Indemnité enregistrée : {total} (match {game} + kilométrage {mileage}).",
+      // Première indemnité d'une saison FFBB (bloc 12d), avec une salve de confettis.
+      seasonStart: "Première indemnité de la saison : bon début de saison {season}\u00a0!",
     },
     sections: {
       match: "Match",

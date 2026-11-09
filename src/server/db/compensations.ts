@@ -281,6 +281,28 @@ export async function insertCompensation(
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
 
+const COUNT_COMPENSATIONS_IN_RANGE_SQL = `SELECT count(*)::integer AS count
+FROM compensation
+WHERE user_id = $1 AND deleted_at IS NULL AND starts_at >= $2 AND starts_at < $3`;
+
+const countRowSchema = z.object({ count: z.number().int().nonnegative() });
+
+/**
+ * Nombre d'indemnités actives de `userId` dont le match commence dans `[from, to[`
+ * (ex. une saison FFBB, bloc 12d). Les indemnités supprimées ne comptent pas.
+ */
+export async function countCompensationsInRange(
+  db: Queryable,
+  input: { userId: string; from: Date; to: Date },
+): Promise<number> {
+  const result = await db.query(COUNT_COMPENSATIONS_IN_RANGE_SQL, [
+    input.userId,
+    input.from,
+    input.to,
+  ]);
+  return countRowSchema.parse(result.rows[0]).count;
+}
+
 // ─── Lecture : liste, totaux, modification ─────────────────────────────────
 
 /** Ce qu'il faut pour calculer le montant d'une indemnité (totaux mensuels). */

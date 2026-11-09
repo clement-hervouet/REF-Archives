@@ -57,6 +57,30 @@
 
   /* Voile derrière un panneau ouvert (menu « Plus ») : marine translucide, jamais du noir. */
   --overlay: rgb(8 51 91 / 0.35);
+
+  /*
+   * Thème saisonnier (bloc 12, §3.14) : couleurs des animations décoratives, jamais de texte.
+   * Lues par le calque animé (canvas) et par la guirlande de décembre.
+   */
+  --seasonal-snow: #a9bcd0;
+  --seasonal-firefly: #d99a06;
+  --seasonal-leaf-1: #c2571a;
+  --seasonal-leaf-2: #d98e04;
+  --seasonal-leaf-3: #9a3412;
+  --seasonal-leaf-4: #b7151a;
+  --seasonal-petal-1: #ed93b1;
+  --seasonal-petal-2: #f2a7c3;
+  --seasonal-petal-3: #e47ea5;
+  --seasonal-bulb-1: #b7151a;
+  --seasonal-bulb-2: #03a752;
+  --seasonal-bulb-3: #f4ad0b;
+  --seasonal-wire: #9fb2c6;
+
+  /* Confettis de début de saison FFBB (bloc 12d) : les couleurs de la palette. */
+  --confetti-1: #08335b;
+  --confetti-2: #03a752;
+  --confetti-3: #f4ad0b;
+  --confetti-4: #b7151a;
 }
 
 /* Thème sombre : choisi explicitement, ou système sombre sans choix explicite. */
@@ -93,6 +117,25 @@
   --sidebar-accent: #0c2540;
   --sidebar-border: #12304f;
   --overlay: rgb(2 9 16 / 0.65);
+
+  --seasonal-snow: #ffffff;
+  --seasonal-firefly: #f4ad0b;
+  --seasonal-leaf-1: #d9682a;
+  --seasonal-leaf-2: #e9a21a;
+  --seasonal-leaf-3: #b8501f;
+  --seasonal-leaf-4: #d0383c;
+  --seasonal-petal-1: #f4c0d1;
+  --seasonal-petal-2: #fbeaf0;
+  --seasonal-petal-3: #ed93b1;
+  --seasonal-bulb-1: #e0393e;
+  --seasonal-bulb-2: #03a752;
+  --seasonal-bulb-3: #f4ad0b;
+  --seasonal-wire: #3a5673;
+  /* Marine invisible sur fond sombre : bleu clair à la place. */
+  --confetti-1: #d7e3ef;
+  --confetti-2: #03a752;
+  --confetti-3: #f4ad0b;
+  --confetti-4: #e0393e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -129,6 +172,25 @@
     --sidebar-accent: #0c2540;
     --sidebar-border: #12304f;
     --overlay: rgb(2 9 16 / 0.65);
+
+    --seasonal-snow: #ffffff;
+    --seasonal-firefly: #f4ad0b;
+    --seasonal-leaf-1: #d9682a;
+    --seasonal-leaf-2: #e9a21a;
+    --seasonal-leaf-3: #b8501f;
+    --seasonal-leaf-4: #d0383c;
+    --seasonal-petal-1: #f4c0d1;
+    --seasonal-petal-2: #fbeaf0;
+    --seasonal-petal-3: #ed93b1;
+    --seasonal-bulb-1: #e0393e;
+    --seasonal-bulb-2: #03a752;
+    --seasonal-bulb-3: #f4ad0b;
+    --seasonal-wire: #3a5673;
+    /* Marine invisible sur fond sombre : bleu clair à la place. */
+    --confetti-1: #d7e3ef;
+    --confetti-2: #03a752;
+    --confetti-3: #f4ad0b;
+    --confetti-4: #e0393e;
   }
 }
 
@@ -223,6 +285,36 @@
     text-wrap: balance;
   }
 
+  /*
+   * Thème saisonnier actif (`data-seasonal` sur la mise en page, bloc 12) : le calque animé
+   * passe derrière le contenu. Les cartes, transparentes ou teintées en translucide
+   * (`bg-warning/15`…), reçoivent dessous un fond opaque de la couleur de la page : rien ne
+   * change à l'œil, mais rien ne passe derrière un texte à lire.
+   * - `::before` à `z-index: -1`, sans créer de contexte d'empilement sur la carte (pas
+   *   d'`isolation`) : il se peint au-dessus du calque (`-z-10`) et sous la carte, et un menu
+   *   ouvert dans une carte (`z-20`) passe toujours par-dessus les cartes suivantes.
+   * - `:where` (spécificité nulle) dans la couche `base` : tout utilitaire de position
+   *   (`absolute`, `sticky`…) posé par un composant reste prioritaire sur `relative`.
+   * Les champs, eux, n'ont pas de `::before` : ils reçoivent directement la couleur du fond.
+   */
+  [data-seasonal] main :where(.border) {
+    position: relative;
+  }
+
+  [data-seasonal] main :where(.border)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: var(--color-background);
+    pointer-events: none;
+  }
+
+  [data-seasonal] main :where(input, select, textarea) {
+    background-color: var(--color-background);
+  }
+
   /* Focus toujours visible (§7.4), dans la couleur du thème. */
   :focus-visible {
     outline: 2px solid var(--color-ring);
@@ -236,5 +328,94 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+/*
+ * Guirlande de décembre (bloc 12, §3.14, `seasonal-garland.tsx`) : un fil en haut de la zone
+ * de contenu (à droite de la barre latérale sur ordinateur), derrière le contenu, et des
+ * ampoules aux trois couleurs qui scintillent à tour de rôle. Le nombre d'ampoules visibles
+ * suit la largeur de l'écran.
+ */
+@layer components {
+  .seasonal-garland {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: -10;
+    display: flex;
+    justify-content: space-around;
+    height: 1.25rem;
+    padding-inline: 0.5rem;
+    border-top: 2px solid var(--seasonal-wire);
+    pointer-events: none;
+  }
+
+  .seasonal-garland-bulb {
+    position: relative;
+    width: 0.5rem;
+    height: 0.75rem;
+    margin-top: 0.3rem;
+    border-radius: 50% 50% 45% 45%;
+    background-color: var(--seasonal-bulb-1);
+    animation: seasonal-twinkle 2.4s ease-in-out infinite;
+  }
+
+  /* Douille : relie l'ampoule au fil. */
+  .seasonal-garland-bulb::before {
+    content: "";
+    position: absolute;
+    top: -0.3rem;
+    left: 0.125rem;
+    width: 0.25rem;
+    height: 0.3rem;
+    background-color: var(--seasonal-wire);
+  }
+
+  .seasonal-garland-bulb:nth-child(3n + 2) {
+    background-color: var(--seasonal-bulb-2);
+    animation-delay: 0.8s;
+  }
+
+  .seasonal-garland-bulb:nth-child(3n + 3) {
+    background-color: var(--seasonal-bulb-3);
+    animation-delay: 1.6s;
+  }
+
+  /* Téléphone : 10 ampoules ; tablette : 16 ; grand écran : toutes. */
+  .seasonal-garland-bulb:nth-child(n + 11) {
+    display: none;
+  }
+
+  @media (min-width: 48rem) {
+    .seasonal-garland {
+      left: 15rem;
+    }
+
+    .seasonal-garland-bulb:nth-child(n + 11) {
+      display: block;
+    }
+
+    .seasonal-garland-bulb:nth-child(n + 17) {
+      display: none;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .seasonal-garland-bulb:nth-child(n + 17) {
+      display: block;
+    }
+  }
+}
+
+@keyframes seasonal-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
   }
 }

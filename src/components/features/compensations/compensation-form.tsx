@@ -26,6 +26,7 @@ import { previewCompensation } from "@/server/compensation/preview";
 import { compensationStatusMessage, fieldError } from "./compensation-messages";
 import { CompensationRecap } from "./compensation-recap";
 import { PayerSelect } from "./payer-select";
+import { SeasonStartCelebration } from "./season-start-celebration";
 import { previewInputFromForm, readFormData } from "./preview-input";
 import { SelectField } from "./select-field";
 
@@ -71,6 +72,10 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
+      {/* Première indemnité d'une saison FFBB (bloc 12d) : une salve par saisie (clé). */}
+      {state.status === "created" && state.firstOfSeason !== null && (
+        <SeasonStartCelebration key={formKey} season={state.firstOfSeason} />
+      )}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
         <form

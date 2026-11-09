@@ -34,7 +34,8 @@ export type CompensationFormState =
   | { status: "idle" }
   | { status: "invalid"; fields: CompensationField[] }
   | CreateCompensationRejection
-  | { status: "created"; amount: CompensationAmount }
+  /** `firstOfSeason` : saison FFBB à fêter (première indemnité de la saison), sinon `null`. */
+  | { status: "created"; amount: CompensationAmount; firstOfSeason: number | null }
   | { status: "updated"; amount: CompensationAmount };
 
 export type DeleteCompensationState =
@@ -151,7 +152,9 @@ export async function handleCreateCompensation(
     return { status: "invalid", fields: invalidFields(parsed.error) };
   }
   const result = await createCompensation(deps, userId, parsed.data);
-  return result.status === "created" ? { status: "created", amount: result.amount } : result;
+  return result.status === "created"
+    ? { status: "created", amount: result.amount, firstOfSeason: result.firstOfSeason }
+    : result;
 }
 
 const compensationIdSchema = z.uuid();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { seasonLabel, seasonOf } from "./seasons";
+import { seasonLabel, seasonOf, seasonRange } from "./seasons";
 
 describe("seasonOf", () => {
   it("rattache juillet à décembre à la saison qui commence cette année", () => {
@@ -22,5 +22,15 @@ describe("seasonOf", () => {
 describe("seasonLabel", () => {
   it("affiche les deux années", () => {
     expect(seasonLabel(2026)).toBe("2026-2027");
+  });
+});
+
+describe("seasonRange", () => {
+  it("va du 1er juillet minuit à Paris au 1er juillet suivant (exclu)", () => {
+    // Juillet : heure d'été, Paris = UTC+2.
+    expect(seasonRange(2026)).toEqual({
+      from: new Date("2026-06-30T22:00:00Z"),
+      to: new Date("2027-06-30T22:00:00Z"),
+    });
   });
 });

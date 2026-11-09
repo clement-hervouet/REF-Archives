@@ -5,6 +5,7 @@ import { ProfileForm } from "@/components/features/account/profile-form";
 import { ThemeForm } from "@/components/features/account/theme-form";
 import { CalendarFeedSection } from "@/components/features/calendar/calendar-feed-section";
 import { ReminderSettingsForm } from "@/components/features/reminders/reminder-settings-form";
+import { SeasonalThemeForm } from "@/components/features/settings/seasonal-theme-form";
 import { SettingsSection } from "@/components/features/settings/settings-section";
 import { fr } from "@/i18n/fr";
 import { DATA_EXPORT_PATH } from "@/lib/app-paths";
@@ -12,6 +13,7 @@ import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
 import { ACCOUNT_DELETION_DELAY_DAYS } from "@/lib/schemas/accounts";
 import { THEME_COOKIE, themePreferenceFromCookie } from "@/lib/theme";
+import { getSeasonalState } from "@/server/account/seasonal-theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { getCalendarFeedStatus } from "@/server/db/calendar-feeds";
 import { getDb } from "@/server/db/pool";
@@ -20,6 +22,7 @@ import { requestAccountDeletionAction } from "./account-deletion-actions";
 import { updateReminderSettingsAction } from "./actions";
 import { manageCalendarFeedAction } from "./calendar-actions";
 import { updateProfileAction } from "./profile-actions";
+import { updateSeasonalThemeAction } from "./seasonal-theme-actions";
 import { updateThemeAction } from "./theme-actions";
 
 const t = fr.reminders.settings;
@@ -39,6 +42,7 @@ export default async function SettingsPage() {
     notFound();
   }
   const theme = themePreferenceFromCookie((await cookies()).get(THEME_COOKIE)?.value);
+  const seasonal = await getSeasonalState();
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,6 +70,14 @@ export default async function SettingsPage() {
 
       <SettingsSection id="settings-theme" title={fr.theme.title} description={fr.theme.hint}>
         <ThemeForm current={theme} action={updateThemeAction} />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-seasonal-theme"
+        title={fr.seasonalTheme.title}
+        description={fr.seasonalTheme.hint}
+      >
+        <SeasonalThemeForm state={seasonal} action={updateSeasonalThemeAction} />
       </SettingsSection>
 
       <SettingsSection id="settings-reminders" title={t.sectionTitle} description={t.intro}>
