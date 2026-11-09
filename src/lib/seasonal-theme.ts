@@ -22,6 +22,17 @@ export type SeasonalDensity = (typeof SEASONAL_DENSITIES)[number];
 /** Densité par défaut : la plus discrète (§3.14). */
 export const DEFAULT_SEASONAL_DENSITY: SeasonalDensity = "low";
 
+/**
+ * Nombre d'éléments animés selon la saison et la densité (§3.14). Peu d'éléments, pour
+ * rester léger sur téléphone : les feuilles, plus grandes, sont les moins nombreuses.
+ */
+export const SEASONAL_PARTICLE_COUNTS: Record<WeatherSeason, Record<SeasonalDensity, number>> = {
+  spring: { low: 12, medium: 20, high: 32 },
+  summer: { low: 10, medium: 18, high: 28 },
+  autumn: { low: 8, medium: 14, high: 22 },
+  winter: { low: 30, medium: 60, high: 100 },
+};
+
 /** Cookie d'état : `<saison>-<année>:on` ou `:off`. Absent = saison jamais vue. */
 export const SEASONAL_STATE_COOKIE = "seasonal";
 

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  SEASONAL_DENSITIES,
+  SEASONAL_PARTICLE_COUNTS,
+  WEATHER_SEASONS,
   currentSeasonalPeriod,
   parseSeasonalForm,
   resolveSeasonalState,
@@ -145,5 +148,21 @@ describe("parseSeasonalForm", () => {
     expect(parseSeasonalForm(form({ density: "high" }))).toBeNull();
     expect(parseSeasonalForm(form({ seasonal: "yes" }))).toBeNull();
     expect(parseSeasonalForm(form({ seasonal: "on", density: "max" }))).toBeNull();
+  });
+});
+
+describe("SEASONAL_PARTICLE_COUNTS", () => {
+  it("augmente avec la densité pour chaque saison", () => {
+    for (const season of WEATHER_SEASONS) {
+      const counts = SEASONAL_DENSITIES.map((density) => SEASONAL_PARTICLE_COUNTS[season][density]);
+      expect(counts).toEqual([...counts].sort((a, b) => a - b));
+      expect(new Set(counts).size).toBe(counts.length);
+    }
+  });
+
+  it("reste léger : jamais plus de 100 éléments", () => {
+    for (const season of WEATHER_SEASONS) {
+      expect(SEASONAL_PARTICLE_COUNTS[season].high).toBeLessThanOrEqual(100);
+    }
   });
 });
