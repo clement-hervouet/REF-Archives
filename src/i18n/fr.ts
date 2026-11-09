@@ -193,6 +193,34 @@ export const fr = {
     hint: "Le choix s'applique à cet appareil seulement.",
     submit: "Appliquer",
   },
+  seasonalTheme: {
+    title: "Thème saisonnier",
+    hint: "Une animation discrète derrière le contenu, qui change avec les saisons. Désactivée, elle revient d'elle-même à la saison suivante. Le choix s'applique à cet appareil seulement, et rien ne bouge si l'appareil demande de réduire les animations.",
+    current: "En ce moment : {season}, {effect}.",
+    seasons: {
+      spring: "printemps",
+      summer: "été",
+      autumn: "automne",
+      winter: "hiver",
+    },
+    effects: {
+      spring: "pétales portés par le vent",
+      summer: "lucioles",
+      autumn: "feuilles qui tombent",
+      winter: "neige",
+      december: "neige et guirlande",
+    },
+    stateLegend: "Animation",
+    on: "Activée",
+    off: "Désactivée jusqu'à la prochaine saison",
+    densityLegend: "Densité",
+    densities: {
+      low: "Légère",
+      medium: "Moyenne",
+      high: "Forte",
+    },
+    submit: "Appliquer",
+  },
   forgotPassword: {
     title: "Mot de passe oublié",
     intro:
