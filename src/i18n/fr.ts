@@ -220,6 +220,27 @@ export const fr = {
       high: "Forte",
     },
     submit: "Appliquer",
+    // Bandeau de première apparition d'une saison (bloc 12c).
+    banner: {
+      titles: {
+        spring: "Thème du printemps",
+        summer: "Thème de l'été",
+        autumn: "Thème d'automne",
+        winter: "Thème d'hiver",
+      },
+      descriptions: {
+        spring: "Des pétales passent derrière le contenu jusqu'au 31 mai.",
+        summer: "Des lucioles passent derrière le contenu jusqu'au 31 août.",
+        autumn: "Des feuilles tombent derrière le contenu jusqu'au 30 novembre.",
+        winter: "La neige tombe derrière le contenu jusqu'à fin février.",
+        december:
+          "La neige tombe derrière le contenu jusqu'à fin février, avec une guirlande en décembre.",
+      },
+      hint: "Désactivé, il revient à la saison suivante. La densité se règle dans les",
+      settingsLink: "paramètres",
+      keep: "Garder",
+      disable: "Désactiver",
+    },
   },
   forgotPassword: {
     title: "Mot de passe oublié",

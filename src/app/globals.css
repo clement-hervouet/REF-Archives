@@ -271,12 +271,31 @@
 
   /*
    * Thème saisonnier actif (`data-seasonal` sur la mise en page, bloc 12) : le calque animé
-   * passe derrière le contenu. Les cartes et les champs, transparents d'ordinaire, prennent
-   * la couleur du fond (donc rien ne change à l'œil) pour que rien ne passe derrière un
-   * texte à lire. `:where` (spécificité nulle) et la couche `base` laissent gagner tout
-   * utilitaire `bg-*` posé par un composant.
+   * passe derrière le contenu. Les cartes, transparentes ou teintées en translucide
+   * (`bg-warning/15`…), reçoivent dessous un fond opaque de la couleur de la page : rien ne
+   * change à l'œil, mais rien ne passe derrière un texte à lire.
+   * - `::before` à `z-index: -1`, sans créer de contexte d'empilement sur la carte (pas
+   *   d'`isolation`) : il se peint au-dessus du calque (`-z-10`) et sous la carte, et un menu
+   *   ouvert dans une carte (`z-20`) passe toujours par-dessus les cartes suivantes.
+   * - `:where` (spécificité nulle) dans la couche `base` : tout utilitaire de position
+   *   (`absolute`, `sticky`…) posé par un composant reste prioritaire sur `relative`.
+   * Les champs, eux, n'ont pas de `::before` : ils reçoivent directement la couleur du fond.
    */
-  [data-seasonal] main :where(.border, input, select, textarea) {
+  [data-seasonal] main :where(.border) {
+    position: relative;
+  }
+
+  [data-seasonal] main :where(.border)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: var(--color-background);
+    pointer-events: none;
+  }
+
+  [data-seasonal] main :where(input, select, textarea) {
     background-color: var(--color-background);
   }
 

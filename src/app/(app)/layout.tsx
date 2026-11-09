@@ -2,12 +2,14 @@ import type { ReactNode } from "react";
 import { MobileNav } from "@/components/features/navigation/mobile-nav";
 import type { NavUser } from "@/components/features/navigation/nav-user";
 import { Sidebar } from "@/components/features/navigation/sidebar";
+import { SeasonalBanner } from "@/components/features/seasonal/seasonal-banner";
 import { SeasonalGarland } from "@/components/features/seasonal/seasonal-garland";
 import { SeasonalLayer } from "@/components/features/seasonal/seasonal-layer";
 import { fr } from "@/i18n/fr";
 import { getSeasonalState } from "@/server/account/seasonal-theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { logout } from "./actions";
+import { updateSeasonalThemeAction } from "./parametres/seasonal-theme-actions";
 
 // La CSP à nonce (src/proxy.ts) exige un rendu à chaque requête : une page prérendue
 // au build ne pourrait pas porter le nonce, et ses scripts seraient bloqués.
@@ -22,7 +24,9 @@ export const dynamic = "force-dynamic";
  *
  * Thème saisonnier (bloc 12, §3.14) : s'il est actif sur cet appareil, un calque animé et,
  * en décembre, une guirlande passent derrière le contenu ; `data-seasonal` rend alors les
- * cartes et les champs opaques (`globals.css`).
+ * cartes et les champs opaques (`globals.css`). À la première apparition d'une saison sur cet
+ * appareil, un bandeau propose de garder ou de désactiver le thème (placé après le contenu :
+ * il vient en dernier dans l'ordre de tabulation et ne prend jamais le focus).
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUserOrRedirect();
@@ -61,6 +65,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       >
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
+      {seasonal.announce && (
+        <SeasonalBanner period={seasonal.period} action={updateSeasonalThemeAction} />
+      )}
     </div>
   );
 }
