@@ -24,6 +24,8 @@ export const securityEventTypeSchema = z.enum([
   "account_deletion_scheduled",
   "account_deletion_cancelled",
   "account_deleted",
+  // Export de ses données par l'utilisateur (bloc 11, migration 019).
+  "data_exported",
 ]);
 export type SecurityEventType = z.infer<typeof securityEventTypeSchema>;
 

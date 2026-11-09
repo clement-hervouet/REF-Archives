@@ -38,6 +38,8 @@ export const fr = {
       submitting: "Connexion en cours…",
       forgotPassword: "Mot de passe oublié ?",
       passwordResetDone: "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
+      accountDeletionScheduled:
+        "La suppression de votre compte est programmée : il est désactivé et sera effacé avec toutes vos données dans 30 jours. Pour annuler, contactez l'administrateur.",
     },
     logout: "Se déconnecter",
     errors: {
@@ -101,6 +103,35 @@ export const fr = {
       lastnameInvalid: "Le nom contient des caractères non autorisés.",
       invalid: "Vérifiez votre prénom et votre nom.",
       notFound: "Votre compte est introuvable. Reconnectez-vous.",
+    },
+  },
+  myData: {
+    title: "Mes données",
+    description:
+      "Vos données vous appartiennent : vous pouvez en télécharger une copie complète à tout moment.",
+    export: {
+      label: "Télécharger mes données",
+      hint: "Un fichier JSON avec votre compte, vos indemnités, matchs, notes, barèmes, collègues et clubs, y compris ce que vous avez supprimé depuis moins de 30 jours. Gardez-le en lieu sûr : il contient des informations personnelles.",
+    },
+    deletion: {
+      title: "Supprimer mon compte",
+      description:
+        "Votre compte est désactivé tout de suite, puis effacé définitivement avec toutes vos données au bout de {days} jours. Pensez à télécharger vos données avant.",
+      open: "Supprimer mon compte",
+      warning:
+        "Vous serez déconnecté de tous vos appareils et vous recevrez un email de confirmation. Jusqu'à l'effacement, seul l'administrateur peut annuler la suppression.",
+      password: "Votre mot de passe",
+      passwordHint: "Pour confirmer que c'est bien vous.",
+      submit: "Supprimer mon compte",
+      submitting: "Suppression…",
+      errors: {
+        invalid: "Saisissez votre mot de passe.",
+        wrongPassword: "Mot de passe incorrect.",
+        rateLimited: "Trop de tentatives. Réessayez dans {minutes} min.",
+        lastAdmin:
+          "Vous êtes le dernier administrateur actif : nommez un autre administrateur avant de supprimer votre compte.",
+        notFound: "Votre compte est introuvable. Reconnectez-vous.",
+      },
     },
   },
   home: {
@@ -1062,6 +1093,13 @@ export const fr = {
       body: "Un administrateur a remplacé l'adresse email de votre compte REF-Archives par {email}. Cette adresse ne recevra plus les emails de l'application.",
       advice:
         "Si ce changement ne vient pas d'une demande de votre part, prévenez l'administrateur.",
+    },
+    accountDeletionScheduled: {
+      subject: "Suppression de votre compte REF-Archives",
+      title: "Suppression de votre compte programmée",
+      body: "La suppression de votre compte REF-Archives a été demandée depuis vos paramètres. Votre compte est désactivé et toutes vos sessions sont fermées. Votre compte et toutes vos données seront effacés définitivement le {date}.",
+      advice:
+        "Pour annuler avant cette date, contactez l'administrateur. Si vous n'êtes pas à l'origine de cette demande, prévenez-le au plus vite : quelqu'un connaît votre mot de passe.",
     },
     accountLocked: {
       subject: "Connexions suspendues sur votre compte REF-Archives",

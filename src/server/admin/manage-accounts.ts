@@ -61,8 +61,15 @@ function isActiveAdmin(account: AccountSummary, now: Date): boolean {
   return account.role === "admin" && accountSuspension(account.state, now) === null;
 }
 
-/** Refuse de couper le dernier admin actif. À appeler sous verrou, dans la transaction. */
-async function wouldLeaveNoAdmin(db: Queryable, account: AccountSummary, now: Date) {
+/**
+ * Refuse de couper le dernier admin actif. À appeler sous verrou, dans la transaction.
+ * Partagé avec la suppression de son propre compte (`src/server/account/delete-account.ts`).
+ */
+export async function wouldLeaveNoAdmin(
+  db: Queryable,
+  account: AccountSummary,
+  now: Date,
+): Promise<boolean> {
   return isActiveAdmin(account, now) && (await lockOtherActiveAdmins(db, account.id)) === 0;
 }
 

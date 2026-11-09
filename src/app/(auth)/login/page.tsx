@@ -7,7 +7,9 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: fr.auth.login.title };
 
-type LoginPageProps = { searchParams: Promise<{ reset?: string | string[] }> };
+type LoginPageProps = {
+  searchParams: Promise<{ reset?: string | string[]; deleted?: string | string[] }>;
+};
 
 /**
  * Un visiteur déjà connecté n'a rien à faire ici. C'est la page qui redirige (après
@@ -22,15 +24,24 @@ async function RedirectIfSignedIn() {
   return null;
 }
 
-/** Confirmation affichée après un reset réussi (`/login?reset=1`). */
-async function ResetNotice({ searchParams }: LoginPageProps) {
-  const { reset } = await searchParams;
-  if (reset !== "1") {
+/**
+ * Confirmation affichée après un reset réussi (`/login?reset=1`) ou après la suppression
+ * programmée de son compte (`/login?deleted=1`, bloc 11).
+ */
+async function LoginNotice({ searchParams }: LoginPageProps) {
+  const { reset, deleted } = await searchParams;
+  const text =
+    reset === "1"
+      ? fr.auth.login.passwordResetDone
+      : deleted === "1"
+        ? fr.auth.login.accountDeletionScheduled
+        : null;
+  if (text === null) {
     return null;
   }
   return (
     <p role="status" className="rounded-md border border-input p-3 text-sm">
-      {fr.auth.login.passwordResetDone}
+      {text}
     </p>
   );
 }
@@ -43,7 +54,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       </Suspense>
       <h1 className="text-2xl font-semibold">{fr.auth.login.title}</h1>
       <Suspense fallback={null}>
-        <ResetNotice searchParams={searchParams} />
+        <LoginNotice searchParams={searchParams} />
       </Suspense>
       <LoginForm />
     </main>

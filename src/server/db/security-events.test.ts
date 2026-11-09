@@ -72,6 +72,7 @@ describe("securityEventTypeSchema", () => {
       "account_deletion_scheduled",
       "account_deletion_cancelled",
       "account_deleted",
+      "data_exported",
     ]) {
       expect(securityEventTypeSchema.safeParse(type).success).toBe(true);
     }
