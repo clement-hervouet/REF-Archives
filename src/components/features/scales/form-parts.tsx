@@ -21,7 +21,7 @@ type TextFieldProps = {
   defaultValue: string;
   error: string | null;
   hint?: string;
-  type?: "text" | "date" | "time";
+  type?: "text" | "date" | "time" | "email";
   inputMode?: "decimal";
   maxLength?: number;
   /** Champ obligatoire (par défaut). */

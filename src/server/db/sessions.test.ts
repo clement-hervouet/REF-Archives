@@ -1,3 +1,4 @@
+import { ACTIVE_ACCOUNT_CONDITION } from "./account-state";
 import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "./fake-db";
 import {
@@ -82,6 +83,8 @@ describe("findActiveSession", () => {
     const call = query.mock.lastCall;
     expect(call?.[0]).toContain("revoked_at IS NULL");
     expect(call?.[0]).toContain("expires_at > now()");
+    // Bloc 10 : un compte bloqué ou en attente de suppression perd sa session.
+    expect(call?.[0]).toContain(ACTIVE_ACCOUNT_CONDITION);
     expect(call?.[1]).toEqual([SESSION_ID]);
   });
 

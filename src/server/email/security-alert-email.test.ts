@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EmailDeliveryError } from "@/lib/errors";
 import type { EmailMessage } from "@/lib/schemas/email";
 import {
+  buildEmailChangedEmail,
   buildAccountLockedEmail,
   buildPasswordChangedEmail,
   sendAccountLockedAlert,
@@ -77,5 +78,26 @@ describe("sendPasswordChangedAlert / sendAccountLockedAlert", () => {
     expect(await sendPasswordChangedAlert(deps, { email: EMAIL })).toBe(false);
     expect(await sendAccountLockedAlert(deps, { email: EMAIL, minutes: 15 })).toBe(false);
     expect(errors).toEqual(["EmailDeliveryError", "EmailDeliveryError"]);
+  });
+});
+
+describe("buildEmailChangedEmail", () => {
+  it("part vers l'ancienne adresse, nomme la nouvelle, sans aucun lien", () => {
+    const message = buildEmailChangedEmail({
+      previousEmail: "ancienne@example.test",
+      newEmail: "nouvelle@example.test",
+    });
+    expect(message.to).toBe("ancienne@example.test");
+    expect(message.text).toContain("nouvelle@example.test");
+    expect(message.text).not.toMatch(/https?:\/\//);
+    expect(message.html).not.toContain("<a ");
+  });
+
+  it("échappe la nouvelle adresse dans le HTML", () => {
+    const message = buildEmailChangedEmail({
+      previousEmail: "a@example.test",
+      newEmail: "<b>x</b>@example.test",
+    });
+    expect(message.html).not.toContain("<b>x</b>");
   });
 });

@@ -9,13 +9,25 @@ describe("insertSecurityEvent", () => {
   it("insère le type, l'utilisateur et l'empreinte d'IP, dans cet ordre", async () => {
     const { db, query } = makeFakeDb();
     await insertSecurityEvent(db, { type: "login_succeeded", userId: USER_ID, ipHash: IP_HASH });
-    expect(query.mock.lastCall?.[1]).toEqual(["login_succeeded", USER_ID, IP_HASH]);
+    expect(query.mock.lastCall?.[1]).toEqual(["login_succeeded", USER_ID, IP_HASH, null]);
   });
 
   it("accepte un utilisateur et une IP inconnus", async () => {
     const { db, query } = makeFakeDb();
     await insertSecurityEvent(db, { type: "login_failed", userId: null, ipHash: null });
-    expect(query.mock.lastCall?.[1]).toEqual(["login_failed", null, null]);
+    expect(query.mock.lastCall?.[1]).toEqual(["login_failed", null, null, null]);
+  });
+
+  it("enregistre le compte visé par une action d'admin", async () => {
+    const { db, query } = makeFakeDb();
+    const TARGET = "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
+    await insertSecurityEvent(db, {
+      type: "account_blocked",
+      userId: USER_ID,
+      ipHash: null,
+      targetUserId: TARGET,
+    });
+    expect(query.mock.lastCall?.[1]).toEqual(["account_blocked", USER_ID, null, TARGET]);
   });
 
   it("utilise une requête paramétrée, sans valeur dans le texte SQL", async () => {
@@ -40,7 +52,7 @@ describe("insertSecurityEvent", () => {
 });
 
 describe("securityEventTypeSchema", () => {
-  it("accepte les onze types d'événements", () => {
+  it("accepte tous les types d'événements", () => {
     for (const type of [
       "login_succeeded",
       "login_failed",
@@ -53,6 +65,13 @@ describe("securityEventTypeSchema", () => {
       "password_reset_completed",
       "calendar_feed_created",
       "calendar_feed_revoked",
+      "account_updated",
+      "account_blocked",
+      "account_unblocked",
+      "account_password_reset_sent",
+      "account_deletion_scheduled",
+      "account_deletion_cancelled",
+      "account_deleted",
     ]) {
       expect(securityEventTypeSchema.safeParse(type).success).toBe(true);
     }

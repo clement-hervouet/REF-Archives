@@ -1,3 +1,4 @@
+import { ACTIVE_ACCOUNT_CONDITION } from "./account-state";
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "@/lib/errors";
 import { hashToken } from "../auth/tokens";
@@ -62,6 +63,8 @@ describe("findUserIdByCalendarToken", () => {
     const { db, query } = makeFakeDb([{ user_id: USER_ID }]);
     expect(await findUserIdByCalendarToken(db, TOKEN_HASH)).toBe(USER_ID);
     expect(query.mock.lastCall?.[1]).toEqual([TOKEN_HASH]);
+    // Bloc 10 : le flux d'un compte coupé répond comme un jeton inconnu.
+    expect(query.mock.lastCall?.[0]).toContain(ACTIVE_ACCOUNT_CONDITION);
   });
 
   it("renvoie null pour une empreinte inconnue", async () => {

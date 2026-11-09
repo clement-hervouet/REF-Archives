@@ -7,6 +7,7 @@
  * ne part jamais deux fois. Si l'envoi échoue, la réservation est libérée pour réessayer
  * au passage suivant.
  */
+import { ACTIVE_ACCOUNT_CONDITION } from "./account-state";
 import { z } from "zod";
 import { assertIsoDate } from "@/lib/dates";
 import type { ReminderSettings } from "@/server/reminders/schedule";
@@ -55,12 +56,14 @@ RETURNING id`;
 
 // Pagination par clé (id > dernier id vu) : stable même si des comptes sont créés
 // pendant le job, et sans OFFSET qui relit les lignes déjà parcourues.
-const LIST_RECIPIENTS_SQL = `SELECT id, email, availability_reminder_enabled,
-  availability_reminder_weeks, weekend_recap_enabled
-FROM "user"
-WHERE (availability_reminder_enabled OR weekend_recap_enabled)
-  AND ($1::uuid IS NULL OR id > $1::uuid)
-ORDER BY id
+// Un compte coupé (bloqué, suppression programmée) ne reçoit aucun rappel (bloc 10).
+const LIST_RECIPIENTS_SQL = `SELECT u.id, u.email, u.availability_reminder_enabled,
+  u.availability_reminder_weeks, u.weekend_recap_enabled
+FROM "user" u
+WHERE (u.availability_reminder_enabled OR u.weekend_recap_enabled)
+  AND ${ACTIVE_ACCOUNT_CONDITION}
+  AND ($1::uuid IS NULL OR u.id > $1::uuid)
+ORDER BY u.id
 LIMIT $2`;
 
 const CLAIM_DISPATCH_SQL = `INSERT INTO reminder_dispatch (user_id, kind, period_start)

@@ -4,6 +4,8 @@
  */
 import { loginKeys } from "./rate-limit";
 import type { AttemptDecision } from "./rate-limit";
+import { accountSuspension } from "../db/account-state";
+import type { AccountSuspension } from "../db/account-state";
 import type { UserCredentials } from "../db/users";
 
 /** Un compte existant vient d'être bloqué par une tentative de connexion ratée. */
@@ -39,7 +41,12 @@ export type LoginAttempt = {
 export type LoginResult =
   | { status: "success"; userId: string; sessionId: string }
   | { status: "invalid_credentials" }
-  | { status: "rate_limited"; retryAfterSeconds: number };
+  | { status: "rate_limited"; retryAfterSeconds: number }
+  /**
+   * Bon mot de passe, mais compte coupé par un admin (bloc 10). Annoncé seulement après
+   * un mot de passe correct : sans lui, rien ne distingue ce compte d'un autre.
+   */
+  | { status: "suspended"; userId: string; suspension: AccountSuspension };
 
 /**
  * Tente une connexion. Le résultat est identique que l'email existe ou non
@@ -79,6 +86,11 @@ export async function authenticate(deps: LoginDeps, attempt: LoginAttempt): Prom
   // Seul le compteur du compte est effacé : effacer celui de l'IP permettrait à un
   // attaquant de le remettre à zéro en se connectant à son propre compte.
   await deps.clearAttempts(accountKey);
+  const suspension = accountSuspension(credentials.state, deps.now());
+  if (suspension !== null) {
+    // Aucune session créée.
+    return { status: "suspended", userId: credentials.userId, suspension };
+  }
   const session = await deps.createSession(credentials.userId);
   return { status: "success", userId: credentials.userId, sessionId: session.id };
 }

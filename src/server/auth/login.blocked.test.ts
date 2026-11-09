@@ -12,7 +12,11 @@ const USER_ID = "3f2b8c1e-5d4a-4f6b-9a7c-1e2d3c4b5a69";
 const SESSION_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 const { ipKey, accountKey } = loginKeys(IP, EMAIL);
 
-const existingAccount: UserCredentials = { userId: USER_ID, passwordHash: "hash" };
+const existingAccount: UserCredentials = {
+  userId: USER_ID,
+  passwordHash: "hash",
+  state: { blockedAt: null, blockedUntil: null, deletionDueAt: null },
+};
 
 type Options = {
   decision?: AttemptDecision;

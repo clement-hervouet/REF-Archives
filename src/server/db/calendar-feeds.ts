@@ -4,6 +4,7 @@
  * Un seul lien par compte. Seule l'empreinte SHA-256 du jeton est stockée (voir
  * `src/server/auth/tokens.ts`) : l'URL complète n'est montrée qu'une fois, à sa création.
  */
+import { ACTIVE_ACCOUNT_CONDITION } from "./account-state";
 import { z } from "zod";
 import { ValidationError } from "@/lib/errors";
 import { TOKEN_BYTES } from "../auth/tokens";
@@ -27,7 +28,11 @@ const DELETE_FEED_SQL = `DELETE FROM calendar_feed WHERE user_id = $1 RETURNING 
 
 const GET_STATUS_SQL = `SELECT created_at FROM calendar_feed WHERE user_id = $1`;
 
-const FIND_USER_BY_TOKEN_SQL = `SELECT user_id FROM calendar_feed WHERE token_hash = $1`;
+// Compte coupé (bloqué, suppression programmée) : le flux répond comme un jeton inconnu.
+const FIND_USER_BY_TOKEN_SQL = `SELECT f.user_id
+FROM calendar_feed f
+JOIN "user" u ON u.id = f.user_id
+WHERE f.token_hash = $1 AND ${ACTIVE_ACCOUNT_CONDITION}`;
 
 function assertTokenHash(tokenHash: Buffer): void {
   // Garde-fou : on ne stocke ni ne cherche jamais autre chose qu'une empreinte SHA-256.

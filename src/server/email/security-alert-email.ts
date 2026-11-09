@@ -1,5 +1,6 @@
 /**
- * Emails d'alerte de sécurité (§9) : mot de passe modifié, connexions suspendues.
+ * Emails d'alerte de sécurité (§9) : mot de passe modifié, connexions suspendues, adresse
+ * email remplacée par un admin (bloc 10, envoyée à l'ancienne adresse).
  *
  * Règles (§6.6) : jamais de mot de passe ni de jeton. Pas non plus de lien : un lien dans
  * une alerte est le schéma classique de l'hameçonnage, on renvoie vers « Mot de passe
@@ -11,6 +12,7 @@ import { renderEmail } from "./layout";
 
 const passwordChanged = fr.email.passwordChanged;
 const accountLocked = fr.email.accountLocked;
+const emailChanged = fr.email.emailChanged;
 
 /** Alerte envoyée après un changement de mot de passe. */
 export function buildPasswordChangedEmail(input: { email: string }): EmailMessage {
@@ -33,6 +35,19 @@ export function buildAccountLockedEmail(input: { email: string; minutes: number 
     footer: fr.email.securityFooter,
   });
   return { to: input.email, subject: accountLocked.subject, text, html };
+}
+
+/** Alerte envoyée à l'ANCIENNE adresse quand un admin change l'email du compte. */
+export function buildEmailChangedEmail(input: {
+  previousEmail: string;
+  newEmail: string;
+}): EmailMessage {
+  const { text, html } = renderEmail({
+    title: emailChanged.title,
+    paragraphs: [emailChanged.body.replace("{email}", () => input.newEmail), emailChanged.advice],
+    footer: fr.email.securityFooter,
+  });
+  return { to: input.previousEmail, subject: emailChanged.subject, text, html };
 }
 
 export type SecurityAlertDeps = {
@@ -64,4 +79,11 @@ export function sendAccountLockedAlert(
   input: { email: string; minutes: number },
 ): Promise<boolean> {
   return trySend(deps, () => buildAccountLockedEmail(input));
+}
+
+export function sendEmailChangedAlert(
+  deps: SecurityAlertDeps,
+  input: { previousEmail: string; newEmail: string },
+): Promise<boolean> {
+  return trySend(deps, () => buildEmailChangedEmail(input));
 }

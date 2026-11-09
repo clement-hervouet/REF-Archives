@@ -3,7 +3,13 @@
  * et la barre d'onglets (téléphone). Pur et sans React : testé à part.
  */
 import { fr } from "@/i18n/fr";
-import { COLLEAGUES_PATH, GAME_NOTES_PATH, SETTINGS_PATH, UPCOMING_PATH } from "@/lib/app-paths";
+import {
+  ACCOUNTS_PATH,
+  COLLEAGUES_PATH,
+  GAME_NOTES_PATH,
+  SETTINGS_PATH,
+  UPCOMING_PATH,
+} from "@/lib/app-paths";
 
 export type NavIcon = "home" | "upcoming" | "compensations" | "notes";
 
@@ -48,6 +54,7 @@ export const SECONDARY_NAV: readonly NavItem[] = [
 export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/bareme-commun", label: fr.nav.commonScale },
   { href: "/admin/invitations", label: fr.nav.invitations },
+  { href: ACCOUNTS_PATH, label: fr.nav.accounts },
 ];
 
 /** Page du compte, en bas de la barre latérale. */
