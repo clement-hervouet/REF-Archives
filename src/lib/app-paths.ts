@@ -6,6 +6,9 @@
 /** Page « Paramètres » : réglages des rappels (bloc 7) et lien d'abonnement iCal (bloc 8). */
 export const SETTINGS_PATH = "/parametres";
 
+/** Export RGPD de toutes ses données, en JSON (bloc 11), réservé au compte connecté. */
+export const DATA_EXPORT_PATH = `${SETTINGS_PATH}/export`;
+
 /** Page « À venir » : matchs prévus, récapitulatif du weekend (bloc 7). */
 export const UPCOMING_PATH = "/a-venir";
 

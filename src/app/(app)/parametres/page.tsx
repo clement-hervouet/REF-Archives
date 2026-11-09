@@ -1,18 +1,22 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { AccountDeletionForm } from "@/components/features/account/account-deletion-form";
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { ThemeForm } from "@/components/features/account/theme-form";
 import { CalendarFeedSection } from "@/components/features/calendar/calendar-feed-section";
 import { ReminderSettingsForm } from "@/components/features/reminders/reminder-settings-form";
 import { SettingsSection } from "@/components/features/settings/settings-section";
 import { fr } from "@/i18n/fr";
+import { DATA_EXPORT_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
+import { ACCOUNT_DELETION_DELAY_DAYS } from "@/lib/schemas/accounts";
 import { THEME_COOKIE, themePreferenceFromCookie } from "@/lib/theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { getCalendarFeedStatus } from "@/server/db/calendar-feeds";
 import { getDb } from "@/server/db/pool";
 import { getReminderSettings } from "@/server/db/reminders";
+import { requestAccountDeletionAction } from "./account-deletion-actions";
 import { updateReminderSettingsAction } from "./actions";
 import { manageCalendarFeedAction } from "./calendar-actions";
 import { updateProfileAction } from "./profile-actions";
@@ -21,6 +25,7 @@ import { updateThemeAction } from "./theme-actions";
 const t = fr.reminders.settings;
 const account = fr.profile.settings;
 const calendar = fr.calendar.settings;
+const myData = fr.myData;
 
 export default async function SettingsPage() {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
@@ -81,6 +86,34 @@ export default async function SettingsPage() {
           activeSince={feed === null ? null : formatIsoDate(toParisIsoDate(feed.createdAt))}
           action={manageCalendarFeedAction}
         />
+      </SettingsSection>
+
+      <SettingsSection id="settings-data" title={myData.title} description={myData.description}>
+        <div className="flex flex-col items-start gap-2">
+          {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+          <a
+            href={DATA_EXPORT_PATH}
+            download
+            aria-describedby="settings-data-export-hint"
+            className="inline-flex min-h-11 items-center rounded-md border border-input px-4 font-medium"
+          >
+            {myData.export.label}
+          </a>
+          <p id="settings-data-export-hint" className="text-sm text-muted-foreground">
+            {myData.export.hint}
+          </p>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-deletion"
+        title={myData.deletion.title}
+        description={myData.deletion.description.replace(
+          "{days}",
+          String(ACCOUNT_DELETION_DELAY_DAYS),
+        )}
+      >
+        <AccountDeletionForm action={requestAccountDeletionAction} />
       </SettingsSection>
     </div>
   );

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { EmailDeliveryError } from "@/lib/errors";
 import type { EmailMessage } from "@/lib/schemas/email";
 import {
+  buildAccountDeletionScheduledEmail,
   buildEmailChangedEmail,
   buildAccountLockedEmail,
   buildPasswordChangedEmail,
+  sendAccountDeletionScheduledAlert,
   sendAccountLockedAlert,
   sendPasswordChangedAlert,
 } from "./security-alert-email";
@@ -99,5 +101,48 @@ describe("buildEmailChangedEmail", () => {
       newEmail: "<b>x</b>@example.test",
     });
     expect(message.html).not.toContain("<b>x</b>");
+  });
+});
+
+describe("buildAccountDeletionScheduledEmail", () => {
+  it("cible le compte, donne la date d'effacement et renvoie vers l'administrateur", () => {
+    const message = buildAccountDeletionScheduledEmail({ email: EMAIL, date: "09/12/2026" });
+    expect(message.to).toBe(EMAIL);
+    expect(message.subject).toBe("Suppression de votre compte REF-Archives");
+    expect(message.text).toContain("09/12/2026");
+    expect(message.text).toContain("contactez l'administrateur");
+  });
+
+  it("ne contient aucun lien (anti-hameçonnage, §6.6)", () => {
+    const message = buildAccountDeletionScheduledEmail({ email: EMAIL, date: "09/12/2026" });
+    expect(message.text).not.toContain("http");
+    expect(message.html).not.toContain("<a ");
+  });
+});
+
+describe("sendAccountDeletionScheduledAlert", () => {
+  it("envoie l'alerte et renvoie vrai", async () => {
+    const { sent, send } = recorder();
+    expect(
+      await sendAccountDeletionScheduledAlert(
+        { send, onError: () => undefined },
+        { email: EMAIL, date: "09/12/2026" },
+      ),
+    ).toBe(true);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("un échec d'envoi renvoie faux sans lever, et ne transmet que le nom de l'erreur", async () => {
+    const errors: string[] = [];
+    expect(
+      await sendAccountDeletionScheduledAlert(
+        {
+          send: () => Promise.reject(new EmailDeliveryError(EMAIL)),
+          onError: (name) => errors.push(name),
+        },
+        { email: EMAIL, date: "09/12/2026" },
+      ),
+    ).toBe(false);
+    expect(errors).toEqual(["EmailDeliveryError"]);
   });
 });

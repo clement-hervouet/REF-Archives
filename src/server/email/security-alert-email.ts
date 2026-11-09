@@ -1,6 +1,7 @@
 /**
  * Emails d'alerte de sécurité (§9) : mot de passe modifié, connexions suspendues, adresse
- * email remplacée par un admin (bloc 10, envoyée à l'ancienne adresse).
+ * email remplacée par un admin (bloc 10, envoyée à l'ancienne adresse), suppression de son
+ * compte programmée (bloc 11).
  *
  * Règles (§6.6) : jamais de mot de passe ni de jeton. Pas non plus de lien : un lien dans
  * une alerte est le schéma classique de l'hameçonnage, on renvoie vers « Mot de passe
@@ -13,6 +14,7 @@ import { renderEmail } from "./layout";
 const passwordChanged = fr.email.passwordChanged;
 const accountLocked = fr.email.accountLocked;
 const emailChanged = fr.email.emailChanged;
+const deletionScheduled = fr.email.accountDeletionScheduled;
 
 /** Alerte envoyée après un changement de mot de passe. */
 export function buildPasswordChangedEmail(input: { email: string }): EmailMessage {
@@ -48,6 +50,23 @@ export function buildEmailChangedEmail(input: {
     footer: fr.email.securityFooter,
   });
   return { to: input.previousEmail, subject: emailChanged.subject, text, html };
+}
+
+/** Confirmation envoyée quand l'utilisateur programme la suppression de son compte. */
+export function buildAccountDeletionScheduledEmail(input: {
+  email: string;
+  /** Date d'effacement, déjà mise en forme (JJ/MM/AAAA, jour de Paris). */
+  date: string;
+}): EmailMessage {
+  const { text, html } = renderEmail({
+    title: deletionScheduled.title,
+    paragraphs: [
+      deletionScheduled.body.replace("{date}", () => input.date),
+      deletionScheduled.advice,
+    ],
+    footer: fr.email.securityFooter,
+  });
+  return { to: input.email, subject: deletionScheduled.subject, text, html };
 }
 
 export type SecurityAlertDeps = {
@@ -86,4 +105,11 @@ export function sendEmailChangedAlert(
   input: { previousEmail: string; newEmail: string },
 ): Promise<boolean> {
   return trySend(deps, () => buildEmailChangedEmail(input));
+}
+
+export function sendAccountDeletionScheduledAlert(
+  deps: SecurityAlertDeps,
+  input: { email: string; date: string },
+): Promise<boolean> {
+  return trySend(deps, () => buildAccountDeletionScheduledEmail(input));
 }

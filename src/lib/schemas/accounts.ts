@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { isIsoDate, toParisIsoDate } from "@/lib/dates";
 import { parisLocalToUtc } from "@/lib/paris-time";
-import { emailSchema } from "./auth";
+import { emailSchema, PASSWORD_MAX_LENGTH } from "./auth";
 import { parseProfile } from "./profile";
 import type { Profile, ProfileIssue } from "./profile";
 
@@ -14,6 +14,15 @@ export type AccountRole = (typeof ACCOUNT_ROLES)[number];
 
 /** Délai avant l'effacement définitif d'un compte dont la suppression est demandée. */
 export const ACCOUNT_DELETION_DELAY_DAYS = 30;
+
+/**
+ * Suppression de son propre compte (bloc 11) : le mot de passe actuel, sans la politique
+ * des nouveaux mots de passe (comme à la connexion). La longueur maximale borne le coût
+ * d'argon2 face à une saisie énorme.
+ */
+export const selfDeletionSchema = z.object({
+  password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+});
 
 export type AccountEdit = Profile & { email: string; role: AccountRole };
 export type AccountEditIssue = ProfileIssue | "email.invalid" | "role.invalid";
