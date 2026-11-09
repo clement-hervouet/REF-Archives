@@ -43,10 +43,10 @@ export function ReminderSettingsForm({ settings, action }: Props) {
   const recapHintId = `${id}-recap-hint`;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <FormMessage message={reminderSettingsMessage(state.status)} />
       <form key={formKey} action={formAction} className="flex flex-col gap-6">
-        <fieldset className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.availability.legend}</legend>
           <label className={CHECKBOX_LABEL_CLASS}>
             <input
@@ -66,7 +66,7 @@ export function ReminderSettingsForm({ settings, action }: Props) {
               name="availabilityReminderWeeks"
               defaultValue={String(settings.availabilityReminderWeeks)}
               aria-describedby={weeksHintId}
-              className="min-h-11 w-full rounded-md border border-neutral-400 px-3 py-2 md:w-72"
+              className="min-h-11 w-full rounded-md border border-input px-3 py-2 md:w-72"
             >
               {WEEK_OPTIONS.map((weeks) => (
                 <option key={weeks} value={String(weeks)}>
@@ -74,13 +74,13 @@ export function ReminderSettingsForm({ settings, action }: Props) {
                 </option>
               ))}
             </select>
-            <p id={weeksHintId} className="text-sm text-neutral-700">
+            <p id={weeksHintId} className="text-sm text-muted-foreground">
               {t.availability.hint}
             </p>
           </div>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-3 rounded-md border border-neutral-300 p-4">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.weekendRecap.legend}</legend>
           <label className={CHECKBOX_LABEL_CLASS}>
             <input
@@ -92,7 +92,7 @@ export function ReminderSettingsForm({ settings, action }: Props) {
             />
             <span>{t.weekendRecap.enabled}</span>
           </label>
-          <p id={recapHintId} className="text-sm text-neutral-700">
+          <p id={recapHintId} className="text-sm text-muted-foreground">
             {t.weekendRecap.hint}
           </p>
         </fieldset>

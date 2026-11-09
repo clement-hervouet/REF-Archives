@@ -4,6 +4,8 @@
  * Un collègue est une fiche nom seul, propre à l'utilisateur (§3.8, §3.11) : la case
  * `has_account` est informative, aucune requête ne cherche ni ne relie un autre compte
  * (§6.5 : pas d'oracle d'existence de compte). Chaque requête filtre sur `user_id`.
+ * Un collègue peut être rattaché à un club de l'utilisateur (bloc 10, colonne `club_id` de
+ * la migration 002 ; la clé `(club_id, user_id)` interdit le club d'un autre compte).
  */
 import { z } from "zod";
 import type { Queryable } from "./users";
@@ -26,6 +28,8 @@ export type Colleague = {
   firstname: string | null;
   lastname: string;
   hasAccount: boolean;
+  /** Club de rattachement, ou `null`. */
+  club: { id: string; name: string } | null;
 };
 
 export type NewColleague = {
@@ -79,6 +83,8 @@ const colleagueRowSchema = z.object({
   firstname: z.string().nullable(),
   lastname: z.string(),
   has_account: z.boolean(),
+  club_id: z.uuid().nullable(),
+  club_name: z.string().nullable(),
 });
 
 function toColleague(row: z.infer<typeof colleagueRowSchema>): Colleague {
@@ -87,14 +93,20 @@ function toColleague(row: z.infer<typeof colleagueRowSchema>): Colleague {
     firstname: row.firstname,
     lastname: row.lastname,
     hasAccount: row.has_account,
+    club:
+      row.club_id !== null && row.club_name !== null
+        ? { id: row.club_id, name: row.club_name }
+        : null,
   };
 }
 
 // Tri insensible à la casse ; un collègue a toujours un nom (CHECK person_name_check).
-const LIST_COLLEAGUES_SQL = `SELECT id, firstname, lastname, has_account
-FROM person
-WHERE user_id = $1 AND NOT is_self
-ORDER BY lower(lastname), lower(coalesce(firstname, '')), id`;
+const LIST_COLLEAGUES_SQL = `SELECT p.id, p.firstname, p.lastname, p.has_account,
+  c.id AS club_id, c.name AS club_name
+FROM person p
+LEFT JOIN club c ON c.id = p.club_id AND c.user_id = p.user_id
+WHERE p.user_id = $1 AND NOT p.is_self
+ORDER BY lower(p.lastname), lower(coalesce(p.firstname, '')), p.id`;
 
 const OWNED_COLLEAGUES_SQL = `SELECT id FROM person
 WHERE id = ANY($1::uuid[]) AND user_id = $2 AND NOT is_self`;
@@ -106,14 +118,15 @@ const INSERT_COLLEAGUE_SQL = `WITH allowed AS (
   ) < $5::integer AS ok
 ),
 inserted AS (
-  INSERT INTO person (user_id, type, is_self, firstname, lastname, has_account)
-  SELECT $1::uuid, 'referee', false, $2::text, $3::text, $4::boolean FROM allowed WHERE ok
+  INSERT INTO person (user_id, type, is_self, firstname, lastname, has_account, club_id)
+  SELECT $1::uuid, 'referee', false, $2::text, $3::text, $4::boolean, $6::uuid
+  FROM allowed WHERE ok
   RETURNING id
 )
 SELECT (SELECT id FROM inserted) AS id`;
 
 const UPDATE_COLLEAGUE_SQL = `UPDATE person
-SET firstname = $3, lastname = $4, has_account = $5
+SET firstname = $3, lastname = $4, has_account = $5, club_id = $6
 WHERE id = $1 AND user_id = $2 AND NOT is_self
 RETURNING id`;
 
@@ -152,10 +165,13 @@ export async function findOwnedColleagueIds(
   return new Set(result.rows.map((raw) => idRowSchema.parse(raw).id));
 }
 
-/** Crée un collègue. `null` si l'utilisateur a atteint la limite de collègues. */
+/**
+ * Crée un collègue. `null` si l'utilisateur a atteint la limite de collègues. Le club,
+ * facultatif, doit déjà avoir été vérifié comme appartenant à l'utilisateur.
+ */
 export async function insertColleague(
   db: Queryable,
-  input: { userId: string; colleague: NewColleague },
+  input: { userId: string; colleague: NewColleague; clubId?: string | null },
 ): Promise<string | null> {
   const { colleague } = input;
   const result = await db.query(INSERT_COLLEAGUE_SQL, [
@@ -164,14 +180,15 @@ export async function insertColleague(
     colleague.lastname,
     colleague.hasAccount,
     MAX_COLLEAGUES_PER_USER,
+    input.clubId ?? null,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
 
-/** Modifie un collègue de l'utilisateur. Faux s'il est introuvable. */
+/** Modifie un collègue de l'utilisateur (club compris). Faux s'il est introuvable. */
 export async function updateColleague(
   db: Queryable,
-  input: { userId: string; personId: string; colleague: NewColleague },
+  input: { userId: string; personId: string; colleague: NewColleague; clubId: string | null },
 ): Promise<boolean> {
   const { colleague } = input;
   const result = await db.query(UPDATE_COLLEAGUE_SQL, [
@@ -180,6 +197,7 @@ export async function updateColleague(
     colleague.firstname,
     colleague.lastname,
     colleague.hasAccount,
+    input.clubId,
   ]);
   return result.rows.length > 0;
 }

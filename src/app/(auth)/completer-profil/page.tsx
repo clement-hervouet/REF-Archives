@@ -26,7 +26,7 @@ export default async function CompleteProfilePage() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 p-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">{t.intro}</p>
+        <p className="text-muted-foreground">{t.intro}</p>
       </div>
       <ProfileForm
         profile={{ firstname: user.firstname ?? "", lastname: user.lastname ?? "" }}

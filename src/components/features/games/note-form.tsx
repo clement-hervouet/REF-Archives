@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Note d'un match (bloc 9) : confiance et stress de 1 à 5 (boutons radio, « non
- * renseigné » possible), texte libre et liens de clips, un par ligne. Tout est
- * facultatif, mais une note vide est refusée côté serveur.
+ * Note d'un match (blocs 9 et 10) : confiance, stress, gestion du match et jugement de 1 à
+ * 5 (boutons radio, « non renseigné » possible), texte libre et liens de clips, un par
+ * ligne. Tout est facultatif, mais une note vide est refusée côté serveur.
  */
 import { useId } from "react";
 import {
@@ -17,10 +17,14 @@ import {
   CLIP_URL_MAX,
   MAX_CLIPS_PER_NOTE,
   NOTE_BODY_MAX,
+  NOTE_LEVEL_FIELDS,
   NOTE_LEVELS,
 } from "@/lib/game-form-fields";
+import type { NoteLevelField } from "@/lib/game-form-fields";
 import type { NoteFormState } from "@/server/games/note-form";
 import { noteFieldError, noteStatusMessage } from "./game-messages";
+import { levelTone } from "./level-tone";
+import type { LevelTone } from "./level-tone";
 
 const t = fr.games.note;
 
@@ -52,20 +56,16 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
       <form key={formKey} action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-4 md:grid-cols-2">
-          <LevelField
-            idBase={`${id}-confidence`}
-            name="confidence"
-            legend={t.confidence}
-            value={current("confidence")}
-            error={noteFieldError("confidence", state)}
-          />
-          <LevelField
-            idBase={`${id}-stress`}
-            name="stress"
-            legend={t.stress}
-            value={current("stress")}
-            error={noteFieldError("stress", state)}
-          />
+          {NOTE_LEVEL_FIELDS.map((field) => (
+            <LevelField
+              key={field}
+              idBase={`${id}-${field}`}
+              name={field}
+              legend={t.levels[field]}
+              value={current(field)}
+              error={noteFieldError(field, state)}
+            />
+          ))}
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <label htmlFor={`${id}-body`} className="text-sm font-medium">
@@ -81,11 +81,11 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             aria-describedby={`${id}-body-hint${bodyError !== null ? ` ${id}-body-error` : ""}`}
             className={FIELD_CLASS}
           />
-          <p id={`${id}-body-hint`} className="text-sm text-neutral-700">
+          <p id={`${id}-body-hint`} className="text-sm text-muted-foreground">
             {t.bodyHint}
           </p>
           {bodyError !== null && (
-            <p id={`${id}-body-error`} className="text-sm font-medium text-red-700">
+            <p id={`${id}-body-error`} className="text-sm font-medium text-destructive">
               {bodyError}
             </p>
           )}
@@ -108,11 +108,11 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             aria-describedby={`${id}-clips-hint${clipsError !== null ? ` ${id}-clips-error` : ""}`}
             className={`${FIELD_CLASS} font-mono text-sm`}
           />
-          <p id={`${id}-clips-hint`} className="text-sm text-neutral-700">
+          <p id={`${id}-clips-hint`} className="text-sm text-muted-foreground">
             {t.clipsHint}
           </p>
           {clipsError !== null && (
-            <p id={`${id}-clips-error`} className="text-sm font-medium text-red-700">
+            <p id={`${id}-clips-error`} className="text-sm font-medium text-destructive">
               {clipsError}
             </p>
           )}
@@ -127,44 +127,79 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
 
 type LevelFieldProps = {
   idBase: string;
-  name: "confidence" | "stress";
+  name: NoteLevelField;
   legend: string;
   value: string;
   error: string | null;
 };
 
+/**
+ * Option cochée : bordure et fond teinté dans la couleur du ton (bloc 10), texte en couleur
+ * normale (le vert et le jaune ne portent pas de texte, §3.12). Classes écrites en entier :
+ * Tailwind ne voit que des noms complets.
+ */
+const CHECKED_TONE: Record<LevelTone | "none", string> = {
+  none: "has-[:checked]:border-primary has-[:checked]:bg-accent",
+  good: "has-[:checked]:border-success has-[:checked]:bg-success/20",
+  medium: "has-[:checked]:border-warning has-[:checked]:bg-warning/25",
+  bad: "has-[:checked]:border-destructive has-[:checked]:bg-destructive/15",
+};
+
+type LevelOptionProps = {
+  name: LevelFieldProps["name"];
+  option: { value: string; label: string };
+  checked: boolean;
+};
+
+/** Un choix de l'échelle, coloré selon le niveau une fois coché. */
+function LevelOption({ name, option, checked }: LevelOptionProps) {
+  const tone = option.value === "" ? "none" : levelTone(name, Number(option.value));
+  return (
+    <label
+      className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-input px-3 has-[:checked]:border-2 has-[:checked]:font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${CHECKED_TONE[tone]}`}
+    >
+      <input
+        type="radio"
+        name={name}
+        value={option.value}
+        defaultChecked={checked}
+        className="sr-only"
+      />
+      {option.label}
+    </label>
+  );
+}
+
 /** Échelle de 1 à 5 en boutons radio, avec « non renseigné » (§7.4 : fieldset + legend). */
 function LevelField({ idBase, name, legend, value, error }: LevelFieldProps) {
-  const options = [
-    { value: "", label: t.notRated },
-    ...NOTE_LEVELS.map((level) => ({ value: String(level), label: String(level) })),
-  ];
+  const noneOption = { value: "", label: t.notRated };
+  const levelOptions = NOTE_LEVELS.map((level) => ({
+    value: String(level),
+    label: String(level),
+  }));
   const describedBy = `${idBase}-hint${error !== null ? ` ${idBase}-error` : ""}`;
   return (
     <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={describedBy}>
       <legend className="text-sm font-medium">{legend}</legend>
+      {/* « Non renseigné » puis les cinq niveaux, qui restent sur une même ligne. */}
       <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <label
-            key={option.value}
-            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-neutral-400 px-3 has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-900 has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2"
-          >
-            <input
-              type="radio"
+        <LevelOption name={name} option={noneOption} checked={value === ""} />
+        <div className="flex gap-2">
+          {levelOptions.map((option) => (
+            <LevelOption
+              key={option.value}
               name={name}
-              value={option.value}
-              defaultChecked={value === option.value}
-              className="sr-only"
+              option={option}
+              checked={value === option.value}
             />
-            {option.label}
-          </label>
-        ))}
+          ))}
+        </div>
       </div>
-      <p id={`${idBase}-hint`} className="text-sm text-neutral-700">
+      <p id={`${idBase}-hint`} className="text-sm text-muted-foreground">
         {t.scaleHint}
       </p>
       {error !== null && (
-        <p id={`${idBase}-error`} className="text-sm font-medium text-red-700">
+        <p id={`${idBase}-error`} className="text-sm font-medium text-destructive">
           {error}
         </p>
       )}

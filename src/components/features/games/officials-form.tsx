@@ -39,9 +39,18 @@ type Props = {
   /** Champ caché vérifié côté serveur : `compensationId` (création) ou `gameId`. */
   hidden: { name: "compensationId" | "gameId"; value: string };
   labels: { submit: string; submitting: string };
+  /** Faux quand la page fournit déjà le cadre et le titre (fiche du match). */
+  framed?: boolean;
 };
 
-export function OfficialsForm({ action, colleagues, initialValues, hidden, labels }: Props) {
+export function OfficialsForm({
+  action,
+  colleagues,
+  initialValues,
+  hidden,
+  labels,
+  framed = true,
+}: Props) {
   const { state, valueOf, formKey, formAction, isPending } = useScaleForm(
     action,
     { status: "idle" },
@@ -60,7 +69,12 @@ export function OfficialsForm({ action, colleagues, initialValues, hidden, label
       <FormMessage message={officialsStatusMessage(state)} />
       <form key={formKey} action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name={hidden.name} value={hidden.value} />
-        <OfficialsFieldset colleagues={colleagues} current={current} state={state} />
+        <OfficialsFieldset
+          colleagues={colleagues}
+          current={current}
+          state={state}
+          framed={framed}
+        />
         <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
           {isPending ? labels.submitting : labels.submit}
         </button>
@@ -74,14 +88,23 @@ type OfficialsFieldsetProps = {
   /** Valeur actuelle d'un champ (saisie conservée ou valeur enregistrée). */
   current: (name: string) => string;
   state: OfficialsFormState;
+  /** Cadre et légende visibles (vrai par défaut) ; sinon la légende reste pour les lecteurs d'écran. */
+  framed?: boolean;
 };
 
 /** Les quatre places, sans `<form>` : aussi utilisé par le formulaire de match sans indemnité. */
-export function OfficialsFieldset({ colleagues, current, state }: OfficialsFieldsetProps) {
+export function OfficialsFieldset({
+  colleagues,
+  current,
+  state,
+  framed = true,
+}: OfficialsFieldsetProps) {
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
-      <legend className="px-1 font-semibold">{t.officials.legend}</legend>
-      <p className="text-sm text-neutral-700">{t.officials.intro}</p>
+    <fieldset
+      className={`flex min-w-0 flex-col gap-4 ${framed ? "rounded-md border border-border p-4" : ""}`}
+    >
+      <legend className={framed ? "px-1 font-semibold" : "sr-only"}>{t.officials.legend}</legend>
+      <p className="text-sm text-muted-foreground">{t.officials.intro}</p>
       <div className="grid gap-6 md:grid-cols-2">
         {OFFICIAL_SLOTS.map((slot) => (
           <SlotFields
@@ -141,7 +164,7 @@ function SlotFields({ slot, colleagues, current, error }: SlotFieldsProps) {
         <option value={PERSON_NEW}>{t.officials.newColleague}</option>
       </SelectField>
       {person === PERSON_NEW && (
-        <div className="flex flex-col gap-3 border-l-2 border-neutral-300 pl-3">
+        <div className="flex flex-col gap-3 border-l-2 border-border pl-3">
           <TextField
             id={`${id}-lastname`}
             name={officialFieldName(slot, "Lastname")}
@@ -169,7 +192,7 @@ function SlotFields({ slot, colleagues, current, error }: SlotFieldsProps) {
             />
             <span className="flex flex-col">
               <span>{t.officials.hasAccount}</span>
-              <span id={`${id}-has-account-hint`} className="text-sm text-neutral-700">
+              <span id={`${id}-has-account-hint`} className="text-sm text-muted-foreground">
                 {t.officials.hasAccountHint}
               </span>
             </span>

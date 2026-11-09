@@ -7,7 +7,7 @@ import { resetPasswordAction } from "./actions";
 import type { ResetPasswordFormState } from "./actions";
 
 const t = fr.resetPassword;
-const FIELD_CLASS = "min-h-11 w-full rounded-md border border-neutral-400 px-3 py-2";
+const FIELD_CLASS = "min-h-11 w-full rounded-md border border-input px-3 py-2";
 
 const PASSWORD_ISSUE_MESSAGES: Record<string, string> = {
   "password.too_short": fr.validation.passwordTooShort,
@@ -45,9 +45,13 @@ export function ResetForm({ token }: { token: string }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <p className="text-sm text-neutral-700">{t.intro}</p>
+      <p className="text-sm text-muted-foreground">{t.intro}</p>
       {message !== null && (
-        <p id="reset-error" role="alert" className="text-sm font-medium text-red-700">
+        <p
+          id="reset-error"
+          role="alert"
+          className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+        >
           {message}
         </p>
       )}
@@ -73,7 +77,7 @@ export function ResetForm({ token }: { token: string }) {
           aria-describedby={describedBy}
           className={FIELD_CLASS}
         />
-        <p id="reset-password-hint" className="text-sm text-neutral-700">
+        <p id="reset-password-hint" className="text-sm text-muted-foreground">
           {fr.invitation.passwordHint}
         </p>
       </div>
@@ -94,7 +98,7 @@ export function ResetForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-11 rounded-md bg-neutral-900 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="min-h-11 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
       >
         {isPending ? t.submitting : t.submit}
       </button>

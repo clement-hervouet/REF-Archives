@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useActionState } from "react";
 import { fr } from "@/i18n/fr";
 import type { DeleteRateState } from "@/server/scales/manage-scales";
@@ -15,7 +16,8 @@ type Props = {
 };
 
 /**
- * Suppression d'une ligne. Le serveur décide (ligne utilisée, dernière ligne) : le
+ * Suppression d'une ligne : une icône discrète (bloc 10), nommée par la date de la ligne
+ * pour les lecteurs d'écran et au survol. Le serveur décide (ligne utilisée, dernière ligne) : le
  * bouton n'est qu'un confort, jamais une protection.
  */
 export function DeleteRateButton({ rateId, dateLabel, action }: Props) {
@@ -31,12 +33,13 @@ export function DeleteRateButton({ rateId, dateLabel, action }: Props) {
         type="submit"
         disabled={isPending}
         aria-label={t.deleteRate.label.replace("{date}", dateLabel)}
-        className="min-h-11 rounded-md border border-neutral-400 px-3 disabled:opacity-60"
+        title={t.deleteRate.label.replace("{date}", dateLabel)}
+        className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-60"
       >
-        {t.deleteRate.submit}
+        <Trash2 aria-hidden="true" className="size-4" />
       </button>
       {message !== null && (
-        <p role="alert" className="max-w-56 text-right text-sm font-medium text-red-700">
+        <p role="alert" className="max-w-56 text-right text-sm font-medium text-destructive">
           {message.text}
         </p>
       )}

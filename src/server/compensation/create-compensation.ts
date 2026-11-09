@@ -95,7 +95,7 @@ async function resolveCompensation(
 
   return {
     rate,
-    row: { ...match, scaleRateId: rate.id, distanceM: form.distanceM },
+    row: { ...match, scaleRateId: rate.id, distanceM: form.distanceM, payer: form.payer },
   };
 }
 

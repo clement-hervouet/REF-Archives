@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRoundTripKm, oneWayKmInput } from "./distance";
+import { formatRoundTripKm, oneWayKmInput, parseOneWayDistance } from "./distance";
 import { ValidationError } from "./errors";
 import { oneWayDistanceSchema } from "./schemas/compensations";
 
@@ -31,5 +31,20 @@ describe("formatRoundTripKm", () => {
   it("affiche l'aller-retour en km", () => {
     expect(formatRoundTripKm(47_000)).toBe("47 km");
     expect(formatRoundTripKm(46_500)).toBe("46,5 km");
+  });
+});
+
+describe("parseOneWayDistance", () => {
+  it("convertit les km aller en mètres aller-retour", () => {
+    expect(parseOneWayDistance("23,5")).toBe(47_000);
+    expect(parseOneWayDistance(" 12 ")).toBe(24_000);
+    expect(parseOneWayDistance("0.001")).toBe(2);
+    expect(parseOneWayDistance("2000")).toBe(4_000_000);
+  });
+
+  it("renvoie null pour une saisie invalide ou trop grande", () => {
+    for (const value of ["", "abc", "-3", "1,2345", "2000,001", "12 km"]) {
+      expect(parseOneWayDistance(value)).toBeNull();
+    }
   });
 });

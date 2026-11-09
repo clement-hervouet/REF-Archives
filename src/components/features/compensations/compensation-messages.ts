@@ -70,6 +70,7 @@ export function fieldError(field: CompensationField, state: CompensationFormStat
     case "time":
     case "divisionId":
     case "scaleId":
+    case "payer":
     case "venue":
     case "oneWayDistance":
       return t.errors[field];

@@ -2,6 +2,7 @@
  * Barème par défaut de chaque niveau, regroupé par catégorie (Départemental, Régional…).
  * Composant serveur : chaque ligne est un petit formulaire client.
  */
+import { ChevronDown } from "lucide-react";
 import { fr } from "@/i18n/fr";
 import type { Division, DivisionCategory } from "@/server/db/divisions";
 import type { LevelDefaultRow } from "@/server/db/scales";
@@ -28,6 +29,12 @@ function groupByCategory(divisions: readonly Division[]): Map<DivisionCategory, 
   return groups;
 }
 
+function customizedLabel(count: number): string {
+  if (count === 0) return t.defaults.customizedNone;
+  if (count === 1) return t.defaults.customizedOne;
+  return t.defaults.customizedMany.replace("{count}", String(count));
+}
+
 export function LevelDefaults({ divisions, defaults, scales, action }: Props) {
   const chosen = new Map(defaults.map((entry) => [entry.divisionId, entry.scaleId]));
 
@@ -36,16 +43,18 @@ export function LevelDefaults({ divisions, defaults, scales, action }: Props) {
       {[...groupByCategory(divisions)].map(([category, group]) => {
         const customized = group.filter((division) => chosen.has(division.id)).length;
         return (
-          <details key={category} className="rounded-md border border-neutral-300 px-3">
-            <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 font-medium">
-              <span>{t.divisions.category[category]}</span>
-              {customized > 0 && (
-                <span className="text-sm font-normal text-neutral-700">
-                  {t.defaults.customized.replace("{count}", String(customized))}
-                </span>
-              )}
+          <details key={category} className="group rounded-md border border-border">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 select-none hover:bg-accent [&::-webkit-details-marker]:hidden">
+              <span className="font-medium">{t.divisions.category[category]}</span>
+              <span className="ml-auto text-sm text-muted-foreground">
+                {customizedLabel(customized)}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="size-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+              />
             </summary>
-            <div className="divide-y divide-neutral-200 pb-2">
+            <div className="divide-y divide-border border-t border-border px-4 pb-1">
               {group.map((division) => (
                 <LevelDefaultForm
                   key={division.id}

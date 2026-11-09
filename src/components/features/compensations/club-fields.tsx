@@ -35,7 +35,7 @@ export function ClubFields({
   state,
 }: Props) {
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
       <legend className="px-1 font-semibold">{legend}</legend>
       <SelectField
         id={`${idBase}-club`}

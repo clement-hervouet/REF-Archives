@@ -15,12 +15,19 @@ describe("saveNote", () => {
       await saveNote(db, {
         userId: USER_ID,
         gameId: GAME_ID,
-        note: { confidence: 4, stress: null, body: "RAS", clips: CLIPS },
+        note: {
+          confidence: 4,
+          stress: null,
+          management: 3,
+          judgment: null,
+          body: "RAS",
+          clips: CLIPS,
+        },
       }),
     ).toBe(NOTE_ID);
     expect(query).toHaveBeenCalledTimes(3);
     expect(query.mock.calls[0]?.[0]).toContain("ON CONFLICT (game_id) WHERE deleted_at IS NULL");
-    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, GAME_ID, 4, null, "RAS"]);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, GAME_ID, 4, null, 3, null, "RAS"]);
     expect(query.mock.calls[1]?.[1]).toEqual([NOTE_ID, USER_ID]);
     expect(query.mock.calls[2]?.[1]).toEqual([USER_ID, NOTE_ID, CLIPS]);
   });
@@ -30,7 +37,14 @@ describe("saveNote", () => {
     await saveNote(db, {
       userId: USER_ID,
       gameId: GAME_ID,
-      note: { confidence: null, stress: 2, body: null, clips: [] },
+      note: {
+        confidence: null,
+        stress: 2,
+        management: null,
+        judgment: 5,
+        body: null,
+        clips: [],
+      },
     });
     expect(query).toHaveBeenCalledTimes(2);
     expect(query.mock.calls[1]?.[0]).toContain("DELETE FROM note_clip");
@@ -54,12 +68,23 @@ describe("findNote", () => {
   it("renvoie la note et ses liens", async () => {
     const updatedAt = new Date("2026-11-15T10:00:00Z");
     const { db, query } = makeFakeDb([
-      { id: NOTE_ID, confidence: 3, stress: 4, body: null, updated_at: updatedAt, clips: CLIPS },
+      {
+        id: NOTE_ID,
+        confidence: 3,
+        stress: 4,
+        management: 2,
+        judgment: 5,
+        body: null,
+        updated_at: updatedAt,
+        clips: CLIPS,
+      },
     ]);
     expect(await findNote(db, { userId: USER_ID, gameId: GAME_ID })).toEqual({
       id: NOTE_ID,
       confidence: 3,
       stress: 4,
+      management: 2,
+      judgment: 5,
       body: null,
       clips: CLIPS,
       updatedAt,

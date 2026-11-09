@@ -42,7 +42,7 @@ export default async function EditGamePage(props: EditGamePageProps) {
           {t.back}
         </Link>
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="text-neutral-700">
+        <p className="text-muted-foreground">
           {game.compensationId === null ? t.introAlone : t.introLinked}
         </p>
       </section>

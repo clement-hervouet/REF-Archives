@@ -89,6 +89,7 @@ describe("createGameFromCompensation", () => {
       "Durand",
       false,
       MAX_COLLEAGUES_PER_USER,
+      null,
     ]);
     expect(query.mock.calls[5]?.[1]).toEqual([
       USER_ID,

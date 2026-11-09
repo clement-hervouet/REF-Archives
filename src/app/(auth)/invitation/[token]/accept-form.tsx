@@ -8,7 +8,7 @@ import { acceptInvitationAction } from "./actions";
 import type { AcceptFormState } from "./actions";
 
 const t = fr.invitation;
-const FIELD_CLASS = "min-h-11 w-full rounded-md border border-neutral-400 px-3 py-2";
+const FIELD_CLASS = "min-h-11 w-full rounded-md border border-input px-3 py-2";
 
 const PASSWORD_MESSAGES: Record<string, string> = {
   "password.too_short": fr.validation.passwordTooShort,
@@ -52,7 +52,10 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
       {messages.length > 0 && (
         <div id="accept-errors" role="alert" className="flex flex-col gap-1">
           {messages.map((message) => (
-            <p key={message} className="text-sm font-medium text-red-700">
+            <p
+              key={message}
+              className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
+            >
               {message}
             </p>
           ))}
@@ -77,7 +80,7 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
           aria-describedby={describedBy}
           className={FIELD_CLASS}
         />
-        <p id="accept-hint" className="text-sm text-neutral-700">
+        <p id="accept-hint" className="text-sm text-muted-foreground">
           {t.passwordHint}
         </p>
       </div>
@@ -97,7 +100,7 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-11 rounded-md bg-neutral-900 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="min-h-11 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
       >
         {isPending ? t.submitting : t.submit}
       </button>

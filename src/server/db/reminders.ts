@@ -141,3 +141,42 @@ export async function releaseReminderDispatch(
 ): Promise<void> {
   await db.query(RELEASE_DISPATCH_SQL, dispatchValues(key));
 }
+
+// ─── Rappel des indisponibilités validé sur l'accueil (bloc 10) ─────────────
+
+// `::text` : une colonne `date` lue telle quelle deviendrait un Date à minuit du serveur.
+const GET_ACK_WEEK_SQL = `SELECT availability_ack_week::text AS week FROM "user" WHERE id = $1`;
+
+const SET_ACK_WEEK_SQL = `UPDATE "user" SET availability_ack_week = $2::date WHERE id = $1
+RETURNING id`;
+
+const ackRowSchema = z.object({ week: z.string().nullable() });
+
+/**
+ * Lundi (Paris, `AAAA-MM-JJ`) de la semaine où l'utilisateur a indiqué avoir saisi ses
+ * indisponibilités, ou `null` (jamais, ou annulé).
+ */
+export async function getAvailabilityAckWeek(
+  db: Queryable,
+  userId: string,
+): Promise<string | null> {
+  const result = await db.query(GET_ACK_WEEK_SQL, [userId]);
+  const row = result.rows[0];
+  return row === undefined ? null : ackRowSchema.parse(row).week;
+}
+
+/**
+ * Enregistre la semaine validée (un lundi, contrôlé aussi par la base), ou `null` pour
+ * annuler. Renvoie `false` si le compte n'existe pas.
+ */
+export async function setAvailabilityAckWeek(
+  db: Queryable,
+  userId: string,
+  monday: string | null,
+): Promise<boolean> {
+  if (monday !== null) {
+    assertIsoDate(monday);
+  }
+  const result = await db.query(SET_ACK_WEEK_SQL, [userId, monday]);
+  return result.rows.length > 0;
+}

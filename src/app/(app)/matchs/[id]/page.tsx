@@ -5,11 +5,10 @@ import { ConfirmActionButton } from "@/components/features/games/confirm-action-
 import { NoteForm } from "@/components/features/games/note-form";
 import { OfficialsForm } from "@/components/features/games/officials-form";
 import { addressLabel } from "@/components/features/compensations/address-label";
+import { MatchDate } from "@/components/features/compensations/match-date";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { toParisIsoDate } from "@/lib/dates";
-import { formatIsoDate } from "@/lib/format";
-import { toParisTimeOfDay } from "@/lib/paris-time";
+import { GAME_NOTES_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { findGame } from "@/server/db/games";
 import { findNote } from "@/server/db/notes";
@@ -26,7 +25,7 @@ import {
 
 const t = fr.games;
 
-const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-neutral-400 px-4";
+const LINK_CLASS = "inline-flex min-h-11 items-center rounded-md border border-input px-4";
 
 // Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
 // avant le typecheck, sur un clone sans `.next/types`.
@@ -51,25 +50,31 @@ export default async function GamePage(props: GamePageProps) {
   ]);
 
   return (
-    <div className="flex flex-col gap-8">
-      <section className="flex max-w-2xl flex-col gap-2">
-        <Link href="/indemnites" className="inline-flex min-h-11 items-center self-start underline">
-          {t.detail.back}
-        </Link>
-        <h1 className="text-2xl font-semibold break-words">
-          {t.detail.title.replace("{team1}", game.team1Name).replace("{team2}", game.team2Name)}
-        </h1>
-        <p className="text-neutral-700">
-          {t.detail.when
-            .replace("{date}", formatIsoDate(toParisIsoDate(game.startsAt)))
-            .replace("{time}", toParisTimeOfDay(game.startsAt))}
-        </p>
-        <p className="break-words">
-          {t.detail.details
-            .replace("{division}", divisionLabel(game.division))
-            .replace("{address}", addressLabel(game.address))}
-        </p>
-        <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-6">
+      <Link
+        href={GAME_NOTES_PATH}
+        className="inline-flex min-h-11 items-center self-start underline"
+      >
+        {t.detail.back}
+      </Link>
+
+      {/* En-tête : la carte du match, comme dans les listes. */}
+      <section className="grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
+        <MatchDate startsAt={game.startsAt} />
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-2xl font-semibold break-words">
+            {t.detail.title.replace("{team1}", game.team1Name).replace("{team2}", game.team2Name)}
+          </h1>
+          <p className="break-words">
+            {t.detail.details
+              .replace("{division}", divisionLabel(game.division))
+              .replace("{address}", addressLabel(game.address))}
+          </p>
+          {game.compensationId === null && (
+            <p className="text-sm text-muted-foreground">{t.detail.noCompensation}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 md:flex-col md:items-stretch">
           <Link href={`/matchs/${game.id}/modifier`} className={LINK_CLASS}>
             {t.info.edit}
           </Link>
@@ -79,23 +84,15 @@ export default async function GamePage(props: GamePageProps) {
             </Link>
           )}
         </div>
-        {game.compensationId === null && (
-          <p className="text-sm text-neutral-700">{t.detail.noCompensation}</p>
-        )}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <OfficialsForm
-          action={updateOfficialsAction}
-          colleagues={colleagues}
-          initialValues={officialsFormValues(game.officials)}
-          hidden={{ name: "gameId", value: game.id }}
-          labels={{ submit: t.officials.submit, submitting: t.officials.submitting }}
-        />
-      </section>
-
-      <section className="flex flex-col gap-4 rounded-md border border-neutral-300 p-4">
-        <h2 className="text-lg font-semibold">{t.note.legend}</h2>
+      <section
+        aria-labelledby="game-note"
+        className="flex flex-col gap-4 rounded-md border border-border p-4"
+      >
+        <h2 id="game-note" className="text-lg font-semibold">
+          {t.note.legend}
+        </h2>
         {/* Clé : une note supprimée (ou recréée) repart de valeurs neuves. */}
         <NoteForm
           key={note?.id ?? "none"}
@@ -104,7 +101,7 @@ export default async function GamePage(props: GamePageProps) {
           initialValues={noteFormValues(note)}
         />
         {note !== null && note.clips.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
             <h3 className="text-sm font-medium">{t.note.savedClips}</h3>
             <ul className="flex flex-col gap-1">
               {note.clips.map((url, index) => (
@@ -125,22 +122,50 @@ export default async function GamePage(props: GamePageProps) {
           </div>
         )}
         {note !== null && (
-          <ConfirmActionButton
-            action={deleteNoteAction}
-            hidden={{ name: "gameId", value: game.id }}
-            labels={{
-              submit: t.note.delete,
-              warning: t.note.delete,
-              confirm: t.delete.confirm,
-              cancel: t.delete.cancel,
-            }}
-            messages={{ deleted: t.note.deleted, not_found: t.errors.gameNotFound }}
-            successStatuses={["deleted"]}
-          />
+          <div className="border-t border-border pt-3">
+            <ConfirmActionButton
+              action={deleteNoteAction}
+              hidden={{ name: "gameId", value: game.id }}
+              labels={{
+                submit: t.note.delete,
+                warning: t.note.delete,
+                confirm: t.delete.confirm,
+                cancel: t.delete.cancel,
+              }}
+              messages={{ deleted: t.note.deleted, not_found: t.errors.gameNotFound }}
+              successStatuses={["deleted"]}
+            />
+          </div>
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section
+        aria-labelledby="game-officials"
+        className="flex flex-col gap-4 rounded-md border border-border p-4"
+      >
+        <h2 id="game-officials" className="text-lg font-semibold">
+          {t.officials.legend}
+        </h2>
+        <OfficialsForm
+          framed={false}
+          action={updateOfficialsAction}
+          colleagues={colleagues}
+          initialValues={officialsFormValues(game.officials)}
+          hidden={{ name: "gameId", value: game.id }}
+          labels={{ submit: t.officials.submit, submitting: t.officials.submitting }}
+        />
+      </section>
+
+      <section
+        aria-labelledby="game-delete"
+        className="flex flex-col gap-3 rounded-md border border-destructive/40 p-4"
+      >
+        <div className="flex flex-col gap-1">
+          <h2 id="game-delete" className="font-semibold">
+            {t.detail.deleteZone}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t.detail.deleteHint}</p>
+        </div>
         <ConfirmActionButton
           action={deleteGameAction}
           hidden={{ name: "gameId", value: game.id }}

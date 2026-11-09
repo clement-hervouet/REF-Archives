@@ -29,6 +29,9 @@ export type InvitationSummary = {
   email: string;
   createdAt: Date;
   expiresAt: Date;
+  /** Dates d'acceptation et de révocation, pour l'historique (bloc 10). */
+  acceptedAt: Date | null;
+  revokedAt: Date | null;
   status: InvitationStatus;
 };
 
@@ -191,6 +194,8 @@ export async function listInvitations(
       email: row.email,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      acceptedAt: row.accepted_at,
+      revokedAt: row.revoked_at,
       status: getInvitationStatus(
         { acceptedAt: row.accepted_at, revokedAt: row.revoked_at, expiresAt: row.expires_at },
         now,

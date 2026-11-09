@@ -22,7 +22,11 @@ import type { Division } from "@/server/db/divisions";
 import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
 import { ClubFields } from "./club-fields";
+import { previewCompensation } from "@/server/compensation/preview";
 import { compensationStatusMessage, fieldError } from "./compensation-messages";
+import { CompensationRecap } from "./compensation-recap";
+import { PayerSelect } from "./payer-select";
+import { previewInputFromForm, readFormData } from "./preview-input";
 import { SelectField } from "./select-field";
 
 const t = fr.compensations;
@@ -54,17 +58,54 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   const labels = editing ? t.edit : t.new;
   const compensationId = valueOf("compensationId");
 
+  // Récapitulatif en direct (bloc 10) : relu dans le formulaire à chaque saisie. Lié au
+  // `formKey` : après un envoi (formulaire remonté), il repart des valeurs conservées.
+  const [snapshot, setSnapshot] = useState<{ key: number; read: (name: string) => string }>({
+    key: formKey,
+    read: valueOf,
+  });
+  const read = snapshot.key === formKey ? snapshot.read : valueOf;
+  const recapInput = previewInputFromForm(read, data);
+  const recapPreview = previewCompensation(recapInput);
+
   return (
     <div className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
-      {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
-      <form key={formKey} action={formAction} className="flex flex-col gap-6">
-        {editing && <input type="hidden" name="compensationId" value={compensationId} />}
-        <MatchFields data={data} state={state} valueOf={valueOf} />
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
-          {isPending ? labels.submitting : labels.submit}
-        </button>
-      </form>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
+        <form
+          key={formKey}
+          action={formAction}
+          onChange={(event) => {
+            const form = event.currentTarget;
+            // Lu au tour suivant : un changement de niveau repositionne le barème par
+            // l'état de React, appliqué au DOM après ce gestionnaire.
+            window.setTimeout(() => {
+              if (form.isConnected) {
+                setSnapshot({ key: formKey, read: readFormData(new FormData(form)) });
+              }
+            }, 0);
+          }}
+          className="flex min-w-0 flex-col gap-6"
+        >
+          {editing && <input type="hidden" name="compensationId" value={compensationId} />}
+          <MatchFields data={data} state={state} valueOf={valueOf} />
+          {/* Téléphone : le récapitulatif juste avant le bouton. Ordinateur : à côté. */}
+          <CompensationRecap input={recapInput} preview={recapPreview} className="lg:hidden" />
+          <button
+            type="submit"
+            disabled={isPending}
+            className={`${PRIMARY_BUTTON_CLASS} self-start`}
+          >
+            {isPending ? labels.submitting : labels.submit}
+          </button>
+        </form>
+        <CompensationRecap
+          input={recapInput}
+          preview={recapPreview}
+          className="hidden lg:sticky lg:top-6 lg:flex"
+        />
+      </div>
     </div>
   );
 }
@@ -105,7 +146,7 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
 
   return (
     <>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.sections.match}</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
@@ -167,6 +208,15 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
               ))}
             </SelectField>
           )}
+          {withCompensation && (
+            <div className="md:col-span-2">
+              <PayerSelect
+                id={`${id}-payer`}
+                defaultValue={valueOf("payer")}
+                error={fieldError("payer", state)}
+              />
+            </div>
+          )}
         </div>
       </fieldset>
 
@@ -193,10 +243,10 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
         />
       </div>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.sections.venue}</legend>
         {!venueException && (club1 !== undefined || team1Club === NEW_CHOICE) && (
-          <p id={venueHintId} className="text-sm text-neutral-700">
+          <p id={venueHintId} className="text-sm text-muted-foreground">
             {club1 !== undefined
               ? t.fields.defaultVenue.replace("{address}", addressLabel(club1.address))
               : t.fields.defaultVenueNewClub}
@@ -245,7 +295,7 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
       </fieldset>
 
       {withCompensation && (
-        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
+        <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.sections.travel}</legend>
           <div className="md:max-w-xs">
             <TextField

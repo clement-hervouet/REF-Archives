@@ -1,9 +1,11 @@
 /**
  * Filtres de la page « Notes de match » : un simple formulaire GET, sans JavaScript.
  * Les valeurs repartent dans l'URL et sont revalidées côté serveur
- * (`parseGameNotesFilters`).
+ * (`parseGameNotesFilters`). Repliés dans un `<details>` (bloc 10), ouverts d'office quand
+ * un filtre est actif ; le résumé affiche leur nombre.
  */
 import Link from "next/link";
+import { Disclosure } from "@/components/features/common/disclosure";
 import {
   FIELD_CLASS,
   PRIMARY_BUTTON_CLASS,
@@ -24,107 +26,127 @@ const divisions = fr.scales.divisions;
 
 type Props = { filters: Filters; clubs: readonly Pick<ClubSummary, "id" | "name">[] };
 
+/** Nombre de filtres actifs (la page n'en est pas un). */
+export function activeFilterCount(filters: Filters): number {
+  return [
+    filters.category !== null,
+    filters.level !== null,
+    filters.type !== null,
+    filters.clubId !== null,
+    filters.includeWithoutNote,
+  ].filter(Boolean).length;
+}
+
+function summaryLabel(count: number): string {
+  if (count === 0) return t.summary;
+  const template = count === 1 ? fr.gameNotes.filtersActive : fr.gameNotes.filtersActiveMany;
+  return template.replace("{count}", String(count));
+}
+
 export function GameNotesFilters({ filters, clubs }: Props) {
+  const active = activeFilterCount(filters);
   return (
-    <form method="get" action={GAME_NOTES_PATH} className="flex flex-col gap-4">
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-neutral-300 p-4">
-        <legend className="px-1 font-semibold">{t.legend}</legend>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <label htmlFor="filter-category" className="text-sm font-medium">
-              {t.category}
-            </label>
-            <select
-              id="filter-category"
-              name="categorie"
-              defaultValue={filters.category ?? ""}
-              className={FIELD_CLASS}
-            >
-              <option value="">{t.all}</option>
-              {GAME_NOTE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {divisions.category[category]}
-                </option>
-              ))}
-            </select>
+    <Disclosure summary={summaryLabel(active)} open={active > 0}>
+      <form method="get" action={GAME_NOTES_PATH} className="flex flex-col gap-4">
+        <fieldset className="flex min-w-0 flex-col gap-4">
+          <legend className="sr-only">{t.legend}</legend>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="filter-category" className="text-sm font-medium">
+                {t.category}
+              </label>
+              <select
+                id="filter-category"
+                name="categorie"
+                defaultValue={filters.category ?? ""}
+                className={FIELD_CLASS}
+              >
+                <option value="">{t.all}</option>
+                {GAME_NOTE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {divisions.category[category]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="filter-level" className="text-sm font-medium">
+                {t.level}
+              </label>
+              <select
+                id="filter-level"
+                name="niveau"
+                defaultValue={filters.level ?? ""}
+                className={FIELD_CLASS}
+              >
+                <option value="">{t.all}</option>
+                {GAME_NOTE_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {t.levels[level]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="filter-type" className="text-sm font-medium">
+                {t.type}
+              </label>
+              <select
+                id="filter-type"
+                name="type"
+                defaultValue={filters.type ?? ""}
+                className={FIELD_CLASS}
+              >
+                <option value="">{t.all}</option>
+                {GAME_NOTE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {divisions.type[type]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="filter-club" className="text-sm font-medium">
+                {t.club}
+              </label>
+              <select
+                id="filter-club"
+                name="club"
+                defaultValue={filters.clubId ?? ""}
+                className={FIELD_CLASS}
+              >
+                <option value="">{t.all}</option>
+                {clubs.map((club) => (
+                  <option key={club.id} value={club.id}>
+                    {club.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <label htmlFor="filter-level" className="text-sm font-medium">
-              {t.level}
-            </label>
-            <select
-              id="filter-level"
-              name="niveau"
-              defaultValue={filters.level ?? ""}
-              className={FIELD_CLASS}
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              type="checkbox"
+              name="tous"
+              value="1"
+              defaultChecked={filters.includeWithoutNote}
+              className="h-5 w-5 shrink-0"
+            />
+            <span>{t.includeWithoutNote}</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className={PRIMARY_BUTTON_CLASS}>
+              {t.submit}
+            </button>
+            <Link
+              href={GAME_NOTES_PATH}
+              className={`${SECONDARY_BUTTON_CLASS} inline-flex items-center`}
             >
-              <option value="">{t.all}</option>
-              {GAME_NOTE_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {t.levels[level]}
-                </option>
-              ))}
-            </select>
+              {t.reset}
+            </Link>
           </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <label htmlFor="filter-type" className="text-sm font-medium">
-              {t.type}
-            </label>
-            <select
-              id="filter-type"
-              name="type"
-              defaultValue={filters.type ?? ""}
-              className={FIELD_CLASS}
-            >
-              <option value="">{t.all}</option>
-              {GAME_NOTE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {divisions.type[type]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <label htmlFor="filter-club" className="text-sm font-medium">
-              {t.club}
-            </label>
-            <select
-              id="filter-club"
-              name="club"
-              defaultValue={filters.clubId ?? ""}
-              className={FIELD_CLASS}
-            >
-              <option value="">{t.all}</option>
-              {clubs.map((club) => (
-                <option key={club.id} value={club.id}>
-                  {club.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <label className="flex min-h-11 items-center gap-3">
-          <input
-            type="checkbox"
-            name="tous"
-            value="1"
-            defaultChecked={filters.includeWithoutNote}
-            className="h-5 w-5 shrink-0"
-          />
-          <span>{t.includeWithoutNote}</span>
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <button type="submit" className={PRIMARY_BUTTON_CLASS}>
-            {t.submit}
-          </button>
-          <Link
-            href={GAME_NOTES_PATH}
-            className={`${SECONDARY_BUTTON_CLASS} inline-flex items-center`}
-          >
-            {t.reset}
-          </Link>
-        </div>
-      </fieldset>
-    </form>
+        </fieldset>
+      </form>
+    </Disclosure>
   );
 }

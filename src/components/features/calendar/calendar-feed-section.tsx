@@ -46,7 +46,7 @@ function CreatedLink({ url, webcalUrl }: { url: string; webcalUrl: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-amber-700 bg-amber-50 p-4">
+    <div className="flex flex-col gap-3 rounded-md border border-warning bg-warning/15 p-4">
       <label htmlFor={urlId} className="text-sm font-medium">
         {t.urlLabel}
       </label>
@@ -59,7 +59,7 @@ function CreatedLink({ url, webcalUrl }: { url: string; webcalUrl: string }) {
         onFocus={(event) => {
           event.currentTarget.select();
         }}
-        className="min-h-11 w-full rounded-md border border-neutral-400 bg-white px-3 py-2 font-mono text-sm"
+        className="min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
       />
       <p id={warningId} className="text-sm font-medium">
         {t.urlOnce}
@@ -76,7 +76,7 @@ function CreatedLink({ url, webcalUrl }: { url: string; webcalUrl: string }) {
         </button>
         <a
           href={webcalUrl}
-          className="inline-flex min-h-11 items-center rounded-md border border-neutral-400 bg-white px-4"
+          className="inline-flex min-h-11 items-center rounded-md border border-input bg-background px-4"
         >
           {t.openInApp}
         </a>
@@ -84,7 +84,7 @@ function CreatedLink({ url, webcalUrl }: { url: string; webcalUrl: string }) {
       <p role="status" className="text-sm">
         {copy === "copied" ? t.copied : copy === "failed" ? t.copyFailed : ""}
       </p>
-      <p className="text-sm text-neutral-700">{t.howTo}</p>
+      <p className="text-sm text-muted-foreground">{t.howTo}</p>
     </div>
   );
 }
@@ -103,7 +103,7 @@ function ConfirmBox({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-red-700 p-3">
+    <div className="flex flex-col gap-3 rounded-md border border-destructive p-3">
       <p className="text-sm">{warning}</p>
       <div className="flex flex-wrap gap-2">
         <button
@@ -111,7 +111,7 @@ function ConfirmBox({
           name="intent"
           value={intent}
           disabled={isPending}
-          className="min-h-11 rounded-md bg-red-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
         >
           {isPending ? t.pending : confirmLabel}
         </button>
@@ -133,9 +133,8 @@ export function CalendarFeedSection({ activeSince, action }: Props) {
   const hasLink = activeSince !== null;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-4">
-      <p className="text-neutral-700">{t.intro}</p>
-      <p className="text-sm text-neutral-700">{t.content}</p>
+    // L'explication (`intro`, `content`) est dans l'en-tête de la section (bloc 10).
+    <div className="flex flex-col gap-4">
       <FormMessage message={calendarFeedMessage(state.status)} />
       {state.status === "created" && <CreatedLink url={state.url} webcalUrl={state.webcalUrl} />}
       <p className="font-medium">

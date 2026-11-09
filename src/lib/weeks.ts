@@ -28,6 +28,11 @@ export function addDays(isoDate: string, days: number): string {
   return new Date(toUtcMidnight(isoDate).getTime() + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** Nombre de jours de `from` à `to` (négatif si `to` est avant), ex. 06/11 → 08/11 = 2. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((toUtcMidnight(to).getTime() - toUtcMidnight(from).getTime()) / DAY_MS);
+}
+
 /** Jour de la semaine ISO d'une date (1 = lundi … 7 = dimanche). */
 export function isoWeekday(isoDate: string): IsoWeekday {
   return ISO_WEEKDAYS[toUtcMidnight(isoDate).getUTCDay()] ?? 7;

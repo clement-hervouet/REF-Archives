@@ -6,7 +6,7 @@ import { fr } from "@/i18n/fr";
 import type { OfficialSlot } from "@/lib/schemas/officials";
 import type { ScaleMessage } from "@/components/features/scales/scale-messages";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
-import type { ColleagueFormState } from "@/server/games/colleagues-form";
+import type { ColleagueFormState, NewClubField } from "@/server/games/colleagues-form";
 import type { GameFormState } from "@/server/games/game-info-form";
 import type { NoteField, NoteFormState } from "@/server/games/note-form";
 import type { OfficialsFormState } from "@/server/games/officials-form";
@@ -84,6 +84,8 @@ export function noteFieldError(field: NoteField | "clips", state: NoteFormState)
   switch (field) {
     case "confidence":
     case "stress":
+    case "management":
+    case "judgment":
       return state.fields.includes(field) ? t.errors.level : null;
     case "body":
       if (state.fields.includes("body")) {
@@ -118,7 +120,21 @@ export function colleagueStatusMessage(state: ColleagueFormState): ScaleMessage 
       return { tone: "error", text: c.errors.notFound };
     case "limit_reached":
       return { tone: "error", text: c.errors.limit };
+    case "club_not_found":
+      return { tone: "error", text: c.errors.club };
+    case "club_invalid":
+      return { tone: "error", text: c.errors.newClub };
+    case "club_limit":
+      return { tone: "error", text: fr.compensations.errors.clubLimit };
   }
+}
+
+/** Erreur d'un champ du nouveau club, ou `null` (mêmes messages que les indemnités). */
+export function newClubFieldError(field: NewClubField, state: ColleagueFormState): string | null {
+  if (state.status !== "club_invalid" || !state.fields.includes(field)) {
+    return null;
+  }
+  return fr.compensations.errors[field];
 }
 
 /** Message global du formulaire de match (sans indemnité, ou informations modifiées). */

@@ -4,9 +4,11 @@ import { makeFakeDb } from "./fake-db";
 import {
   REMINDER_RECIPIENTS_PAGE_SIZE,
   claimReminderDispatch,
+  getAvailabilityAckWeek,
   getReminderSettings,
   listReminderRecipients,
   releaseReminderDispatch,
+  setAvailabilityAckWeek,
   updateReminderSettings,
 } from "./reminders";
 
@@ -116,5 +118,39 @@ describe("releaseReminderDispatch", () => {
     });
     expect(query.mock.lastCall?.[0]).toContain("DELETE FROM reminder_dispatch");
     expect(query.mock.lastCall?.[1]).toEqual([USER_ID, "weekend_recap", "2026-11-07"]);
+  });
+});
+
+describe("getAvailabilityAckWeek", () => {
+  it("renvoie le lundi validé, lu en texte", async () => {
+    const { db, query } = makeFakeDb([{ week: "2026-11-02" }]);
+    expect(await getAvailabilityAckWeek(db, USER_ID)).toBe("2026-11-02");
+    expect(query.mock.calls[0]?.[0]).toContain("availability_ack_week::text");
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
+  });
+
+  it("renvoie null sans validation ou sans compte", async () => {
+    expect(await getAvailabilityAckWeek(makeFakeDb([{ week: null }]).db, USER_ID)).toBeNull();
+    expect(await getAvailabilityAckWeek(makeFakeDb().db, USER_ID)).toBeNull();
+  });
+});
+
+describe("setAvailabilityAckWeek", () => {
+  it("enregistre la semaine de l'utilisateur", async () => {
+    const { db, query } = makeFakeDb([{ id: USER_ID }]);
+    expect(await setAvailabilityAckWeek(db, USER_ID, "2026-11-02")).toBe(true);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, "2026-11-02"]);
+  });
+
+  it("annule avec null", async () => {
+    const { db, query } = makeFakeDb([{ id: USER_ID }]);
+    expect(await setAvailabilityAckWeek(db, USER_ID, null)).toBe(true);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, null]);
+  });
+
+  it("refuse une date mal formée sans toucher à la base", async () => {
+    const { db, query } = makeFakeDb();
+    await expect(setAvailabilityAckWeek(db, USER_ID, "lundi")).rejects.toThrow();
+    expect(query).not.toHaveBeenCalled();
   });
 });

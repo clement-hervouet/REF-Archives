@@ -5,6 +5,7 @@
  *
  * Champs du formulaire HTML :
  * - date, time, divisionId, scaleId, oneWayDistance ;
+ * - payer : organisme qui verse, vide = déduit du niveau et de l'adresse (bloc 10) ;
  * - team1Club / team2Club : identifiant d'un club, ou `new` (champs teamN* d'un nouveau club) ;
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
  *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*).
@@ -98,6 +99,7 @@ export function readCompensationFormData(formData: FormData): Record<string, unk
     time: text(formData, "time"),
     divisionId: text(formData, "divisionId"),
     scaleId: text(formData, "scaleId"),
+    payer: text(formData, "payer") ?? "",
     team1: readTeam(formData, "team1"),
     team2: readTeam(formData, "team2"),
     venue: readVenue(formData),
@@ -203,6 +205,7 @@ export function compensationFormValues(compensation: CompensationForEdit): Recor
     time: toParisTimeOfDay(compensation.startsAt),
     divisionId: compensation.divisionId,
     scaleId: compensation.scaleId,
+    payer: compensation.payer ?? "",
     team1Club: compensation.team1ClubId,
     team2Club: compensation.team2ClubId,
     oneWayDistance: oneWayKmInput(compensation.distanceM),
