@@ -5,6 +5,7 @@
  */
 import { isMonth } from "./months";
 import { ValidationError } from "./errors";
+import { parisLocalToUtc } from "./paris-time";
 
 /** Premier mois d'une saison (juillet). */
 export const SEASON_FIRST_MONTH = 7;
@@ -21,4 +22,15 @@ export function seasonOf(month: string): number {
 /** Libellé court, ex. `2026` → « 2026-2027 ». */
 export function seasonLabel(startYear: number): string {
   return `${String(startYear)}-${String(startYear + 1)}`;
+}
+
+/**
+ * Bornes d'une saison en instants UTC : du 1er juillet à minuit (Paris) inclus au
+ * 1er juillet suivant exclu. Pour filtrer `starts_at >= from AND starts_at < to`.
+ */
+export function seasonRange(startYear: number): { from: Date; to: Date } {
+  return {
+    from: parisLocalToUtc(`${String(startYear)}-07-01`, "00:00"),
+    to: parisLocalToUtc(`${String(startYear + 1)}-07-01`, "00:00"),
+  };
 }

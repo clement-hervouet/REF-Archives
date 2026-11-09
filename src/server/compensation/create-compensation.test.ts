@@ -86,6 +86,8 @@ describe("createCompensation", () => {
       [],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
+      // Saison FFBB du match : déjà une autre indemnité, pas de confettis.
+      [{ count: 2 }],
     );
 
     expect(await createCompensation(deps, USER_ID, form())).toEqual({
@@ -93,6 +95,7 @@ describe("createCompensation", () => {
       compensationId: COMPENSATION_ID,
       // 47 km × 0,425 €/km = 19,975 € → 19,98 € (arrondi au centime, demi vers le haut).
       amount: { gameCents: 4800, mileageCents: 1998, totalCents: 6798 },
+      firstOfSeason: null,
     });
     expect(transactionCount()).toBe(1);
     // Équipe 2 introuvable à ce niveau : créée.
@@ -122,6 +125,8 @@ describe("createCompensation", () => {
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
+      // Saison FFBB du match : déjà une autre indemnité, pas de confettis.
+      [{ count: 2 }],
     );
     // 01/09/2026 à 00:30 à Paris = 31/08/2026 22:30 UTC : la ligne du 01/09 s'applique.
     const result = await createCompensation(
@@ -147,6 +152,8 @@ describe("createCompensation", () => {
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
+      // Saison FFBB du match : déjà une autre indemnité, pas de confettis.
+      [{ count: 2 }],
     );
 
     const result = await createCompensation(
@@ -178,6 +185,8 @@ describe("createCompensation", () => {
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
+      // Saison FFBB du match : déjà une autre indemnité, pas de confettis.
+      [{ count: 2 }],
     );
     const result = await createCompensation(
       deps,
@@ -289,6 +298,67 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     query.mockRejectedValueOnce(new Error("connexion perdue"));
     await expect(createCompensation(deps, USER_ID, form())).rejects.toThrow("connexion perdue");
+  });
+});
+
+describe("première indemnité de la saison (bloc 12d)", () => {
+  it("renvoie la saison FFBB du match quand elle n'avait aucune autre indemnité", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ id: DIVISION_ID }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+      [{ count: 1 }],
+    );
+    const result = await createCompensation(deps, USER_ID, form({ date: "2027-03-06" }));
+    expect(result).toMatchObject({ status: "created", firstOfSeason: 2026 });
+    // Compté sur toute la saison 2026-2027, au jour de Paris, dans la même transaction.
+    expect(query.mock.calls[6]?.[1]).toEqual([
+      USER_ID,
+      new Date("2026-06-30T22:00:00Z"),
+      new Date("2027-06-30T22:00:00Z"),
+    ]);
+  });
+
+  it("rattache un match du 1er juillet à 00:30 (Paris) à la nouvelle saison", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ id: DIVISION_ID }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+      [{ count: 1 }],
+    );
+    const result = await createCompensation(
+      deps,
+      USER_ID,
+      form({ date: "2027-07-01", time: "00:30" }),
+    );
+    expect(result).toMatchObject({ firstOfSeason: 2027 });
+  });
+
+  it("ne fête rien quand la saison avait déjà une indemnité", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ id: DIVISION_ID }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+      [{ count: 3 }],
+    );
+    expect(await createCompensation(deps, USER_ID, form())).toMatchObject({
+      firstOfSeason: null,
+    });
   });
 });
 

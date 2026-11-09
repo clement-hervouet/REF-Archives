@@ -482,6 +482,8 @@ export const fr = {
       submit: "Enregistrer l'indemnité",
       submitting: "Enregistrement…",
       created: "Indemnité enregistrée : {total} (match {game} + kilométrage {mileage}).",
+      // Première indemnité d'une saison FFBB (bloc 12d), avec une salve de confettis.
+      seasonStart: "Première indemnité de la saison : bon début de saison {season}\u00a0!",
     },
     sections: {
       match: "Match",

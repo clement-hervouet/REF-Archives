@@ -165,12 +165,14 @@ describe("handleCreateCompensation", () => {
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
+      [{ count: 2 }],
     ]) {
       query.mockResolvedValueOnce({ rows });
     }
     expect(await handleCreateCompensation(deps, USER_ID, form(BASE))).toEqual({
       status: "created",
       amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
+      firstOfSeason: null,
     });
   });
 

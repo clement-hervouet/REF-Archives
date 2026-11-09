@@ -12,6 +12,7 @@ describe("compensationStatusMessage", () => {
       compensationStatusMessage({
         status: "created",
         amount: { gameCents: 4800, mileageCents: 1998, totalCents: 6798 },
+        firstOfSeason: null,
       }),
     ).toEqual({
       tone: "success",
@@ -65,6 +66,7 @@ describe("fieldError", () => {
       fieldError("date", {
         status: "created",
         amount: { gameCents: 0, mileageCents: 0, totalCents: 0 },
+        firstOfSeason: null,
       }),
     ).toBeNull();
   });

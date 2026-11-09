@@ -11,7 +11,9 @@
 import { toParisIsoDate } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import type { CompensationForm } from "@/lib/schemas/compensations";
+import { seasonOf, seasonRange } from "@/lib/seasons";
 import {
+  countCompensationsInRange,
   divisionExists,
   insertCompensation,
   listApplicableRates,
@@ -44,7 +46,16 @@ export type CreateCompensationRejection =
   | { status: "limit_reached"; resource: "club" | "compensation" };
 
 export type CreateCompensationResult =
-  | { status: "created"; compensationId: string; amount: CompensationAmount }
+  | {
+      status: "created";
+      compensationId: string;
+      amount: CompensationAmount;
+      /**
+       * Année de début de la saison FFBB (`2026` = 2026-2027) si c'est la première
+       * indemnité de cette saison pour l'utilisateur (confettis, bloc 12d), sinon `null`.
+       */
+      firstOfSeason: number | null;
+    }
   | CreateCompensationRejection;
 
 export type UpdateCompensationResult =
@@ -115,6 +126,22 @@ async function runRejectable<T>(
 }
 
 /**
+ * Saison FFBB du match si l'indemnité qui vient d'être insérée (dans la même transaction)
+ * est la seule de cette saison, sinon `null`. La saison se lit au jour du match à Paris.
+ * Deux saisies simultanées d'une même saison vide verraient chacune 2 : pas de confettis,
+ * sans conséquence.
+ */
+async function firstOfSeason(
+  db: Queryable,
+  userId: string,
+  startsAt: Date,
+): Promise<number | null> {
+  const season = seasonOf(toParisIsoDate(startsAt).slice(0, 7));
+  const count = await countCompensationsInRange(db, { userId, ...seasonRange(season) });
+  return count === 1 ? season : null;
+}
+
+/**
  * Crée une indemnité pour `userId` à partir d'un formulaire déjà validé. Un refus
  * (ressource introuvable, pas de barème à la date, limite) annule toute la transaction.
  */
@@ -133,6 +160,7 @@ export async function createCompensation(
       status: "created",
       compensationId,
       amount: computeCompensation(rate, form.distanceM),
+      firstOfSeason: await firstOfSeason(db, userId, form.startsAt),
     };
   });
 }

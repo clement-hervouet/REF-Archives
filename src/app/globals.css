@@ -75,6 +75,12 @@
   --seasonal-bulb-2: #03a752;
   --seasonal-bulb-3: #f4ad0b;
   --seasonal-wire: #9fb2c6;
+
+  /* Confettis de début de saison FFBB (bloc 12d) : les couleurs de la palette. */
+  --confetti-1: #08335b;
+  --confetti-2: #03a752;
+  --confetti-3: #f4ad0b;
+  --confetti-4: #b7151a;
 }
 
 /* Thème sombre : choisi explicitement, ou système sombre sans choix explicite. */
@@ -125,6 +131,11 @@
   --seasonal-bulb-2: #03a752;
   --seasonal-bulb-3: #f4ad0b;
   --seasonal-wire: #3a5673;
+  /* Marine invisible sur fond sombre : bleu clair à la place. */
+  --confetti-1: #d7e3ef;
+  --confetti-2: #03a752;
+  --confetti-3: #f4ad0b;
+  --confetti-4: #e0393e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -175,6 +186,11 @@
     --seasonal-bulb-2: #03a752;
     --seasonal-bulb-3: #f4ad0b;
     --seasonal-wire: #3a5673;
+    /* Marine invisible sur fond sombre : bleu clair à la place. */
+    --confetti-1: #d7e3ef;
+    --confetti-2: #03a752;
+    --confetti-3: #f4ad0b;
+    --confetti-4: #e0393e;
   }
 }
 

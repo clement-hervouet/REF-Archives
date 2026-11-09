@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
+    "canvas-confetti": "1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.68.0",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22",
     "@types/nodemailer": "8.0.2",
     "@types/pg": "^8.23.1",
