@@ -4,6 +4,7 @@ import { AccountDeletionForm } from "@/components/features/account/account-delet
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { ThemeForm } from "@/components/features/account/theme-form";
 import { CalendarFeedSection } from "@/components/features/calendar/calendar-feed-section";
+import { InstallAppSection } from "@/components/features/pwa/install-app-section";
 import { ReminderSettingsForm } from "@/components/features/reminders/reminder-settings-form";
 import { SeasonalThemeForm } from "@/components/features/settings/seasonal-theme-form";
 import { SettingsSection } from "@/components/features/settings/settings-section";
@@ -98,6 +99,14 @@ export default async function SettingsPage() {
           activeSince={feed === null ? null : formatIsoDate(toParisIsoDate(feed.createdAt))}
           action={manageCalendarFeedAction}
         />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-install"
+        title={fr.pwa.install.title}
+        description={fr.pwa.install.description}
+      >
+        <InstallAppSection />
       </SettingsSection>
 
       <SettingsSection id="settings-data" title={myData.title} description={myData.description}>
