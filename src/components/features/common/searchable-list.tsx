@@ -53,9 +53,11 @@ export function SearchableList({ entries, labels, layout = "grid" }: Props) {
           <label htmlFor={id} className="sr-only">
             {labels.label}
           </label>
+          {/* `z-10` : avec le thème saisonnier, le champ (`.border`) passe en `relative`
+              (globals.css) et se peindrait par-dessus l'icône. */}
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-muted-foreground"
           />
           <input
             id={id}

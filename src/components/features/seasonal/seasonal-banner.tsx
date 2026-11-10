@@ -30,16 +30,20 @@ type Props = {
 export function SeasonalBanner({ period, action }: Props) {
   const description = period.december ? t.descriptions.december : t.descriptions[period.season];
   return (
+    // Compact sur téléphone (bloc 13) : le rappel « il revient à la saison suivante » et le
+    // lien vers les paramètres n'y sont pas répétés (la section « Thème saisonnier » les
+    // donne). `data-seasonal-banner` élargit la marge de défilement (globals.css).
     <section
       aria-labelledby="seasonal-banner-title"
-      className="fixed inset-x-3 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] z-30 flex flex-col gap-3 rounded-md border border-l-4 border-border border-l-primary bg-background p-4 md:inset-x-auto md:right-8 md:bottom-6 md:w-[26rem]"
+      data-seasonal-banner=""
+      className="fixed inset-x-3 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] z-30 flex flex-col gap-2 rounded-md border border-l-4 border-border border-l-primary bg-background p-3 md:inset-x-auto md:right-8 md:bottom-6 md:w-[26rem] md:gap-3 md:p-4"
     >
       <div className="flex flex-col gap-1">
         <h2 id="seasonal-banner-title" className="font-semibold">
           {t.titles[period.season]}
         </h2>
         <p className="text-sm">{description}</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="hidden text-sm text-muted-foreground md:block">
           {t.hint}{" "}
           <Link href={SETTINGS_ANCHOR} className="underline underline-offset-2">
             {t.settingsLink}

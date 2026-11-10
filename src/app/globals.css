@@ -62,6 +62,8 @@
    * Thème saisonnier (bloc 12, §3.14) : couleurs des animations décoratives, jamais de texte.
    * Lues par le calque animé (canvas) et par la guirlande de décembre.
    */
+  /* Hauteur du bandeau saisonnier compact sur téléphone (marge de défilement, bloc 13). */
+  --seasonal-banner-height: 10.5rem;
   --seasonal-snow: #a9bcd0;
   --seasonal-firefly: #d99a06;
   --seasonal-leaf-1: #c2571a;
@@ -313,6 +315,29 @@
 
   [data-seasonal] main :where(input, select, textarea) {
     background-color: var(--color-background);
+  }
+
+  /*
+   * Téléphone : la barre d'onglets (3,5 rem) est fixe en bas. Sans marge de défilement, un
+   * élément amené à l'écran par le navigateur (focus au clavier, ancre, `scrollIntoView`)
+   * s'arrêtait dessous (WCAG 2.4.11, bloc 13). Le bandeau saisonnier, quand il est affiché,
+   * s'ajoute à la barre (`--seasonal-banner-height` : bandeau compact, description de décembre sur 3 lignes).
+   */
+  html {
+    scroll-padding-bottom: calc(3.5rem + env(safe-area-inset-bottom) + 1rem);
+  }
+
+  html:has([data-seasonal-banner]) {
+    scroll-padding-bottom: calc(
+      3.5rem + env(safe-area-inset-bottom) + 0.75rem + var(--seasonal-banner-height) + 1rem
+    );
+  }
+
+  @media (width >= 48rem) {
+    html,
+    html:has([data-seasonal-banner]) {
+      scroll-padding-bottom: 1rem;
+    }
   }
 
   /* Focus toujours visible (§7.4), dans la couleur du thème. */

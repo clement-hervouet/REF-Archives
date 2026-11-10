@@ -7,6 +7,7 @@
  * barème du niveau ; les champs texte restent non contrôlés (`defaultValue`).
  */
 import { useId, useState } from "react";
+import { RevealResult } from "@/components/features/common/reveal-result";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import {
   FormMessage,
@@ -70,7 +71,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   const recapPreview = previewCompensation(recapInput);
 
   return (
-    <div className="flex flex-col gap-4">
+    <RevealResult submission={formKey} className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
       {/* Première indemnité d'une saison FFBB (bloc 12d) : une salve par saisie (clé). */}
       {state.status === "created" && state.firstOfSeason !== null && (
@@ -111,7 +112,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
           className="hidden lg:sticky lg:top-6 lg:flex"
         />
       </div>
-    </div>
+    </RevealResult>
   );
 }
 

@@ -89,12 +89,17 @@ export function FormMessage({ message }: { message: ScaleMessage | null }) {
   return message.tone === "error" ? (
     <p
       role="alert"
+      data-form-message=""
       className="border-l-4 border-destructive pl-3 text-sm font-medium text-destructive"
     >
       {message.text}
     </p>
   ) : (
-    <p role="status" className="border-l-4 border-success pl-3 text-sm font-medium">
+    <p
+      role="status"
+      data-form-message=""
+      className="border-l-4 border-success pl-3 text-sm font-medium"
+    >
       {message.text}
     </p>
   );
