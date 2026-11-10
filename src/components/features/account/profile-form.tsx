@@ -5,7 +5,7 @@
  * après l'enregistrement) et section « Mon compte » des paramètres.
  */
 import { useId } from "react";
-import { FormMessage, PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import type { ProfileState } from "@/server/account/profile";
 import { ProfileFields } from "./profile-fields";
@@ -42,7 +42,7 @@ export function ProfileForm({ profile, action, submitLabel, submittingLabel }: P
           defaults={defaults}
           issues={state.status === "invalid" ? state.issues : []}
         />
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? submittingLabel : submitLabel}
         </button>
       </form>

@@ -4,7 +4,7 @@
  * se recharge avec le nouveau thème, posé côté serveur. Un bouton explicite plutôt qu'un
  * envoi au changement : parcourir les choix au clavier ne doit rien appliquer (§7.4).
  */
-import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { THEME_PREFERENCES } from "@/lib/theme";
 import type { ThemePreference } from "@/lib/theme";
@@ -87,7 +87,7 @@ export function ThemeForm({ current, action }: Props) {
           ))}
         </div>
       </fieldset>
-      <button type="submit" className={`${SECONDARY_BUTTON_CLASS} self-start`}>
+      <button type="submit" className={SUBMIT_BUTTON_CLASS}>
         {t.submit}
       </button>
     </form>

@@ -3,7 +3,11 @@
 import { useActionState, useState } from "react";
 import { fr } from "@/i18n/fr";
 import type { DeleteScaleState } from "@/server/scales/manage-scales";
-import { SECONDARY_BUTTON_CLASS } from "./form-parts";
+import {
+  DANGER_BUTTON_CLASS,
+  DESTRUCTIVE_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+} from "./form-parts";
 import { scaleStatusMessage } from "./scale-messages";
 
 const t = fr.scales;
@@ -37,7 +41,7 @@ export function DeleteScaleButton({ scaleId, action }: Props) {
           onClick={() => {
             setConfirming(true);
           }}
-          className={`${SECONDARY_BUTTON_CLASS} self-start`}
+          className={`${DANGER_BUTTON_CLASS} self-start`}
         >
           {t.deleteScale.submit}
         </button>
@@ -53,11 +57,7 @@ export function DeleteScaleButton({ scaleId, action }: Props) {
       <input type="hidden" name="scaleId" value={scaleId} />
       <p className="text-sm">{t.deleteScale.warning}</p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
-        >
+        <button type="submit" disabled={isPending} className={DESTRUCTIVE_BUTTON_CLASS}>
           {t.deleteScale.confirm}
         </button>
         <button

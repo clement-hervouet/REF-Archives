@@ -7,7 +7,11 @@
  */
 import { useActionState, useId } from "react";
 import { Disclosure } from "@/components/features/common/disclosure";
-import { FIELD_CLASS, FormMessage } from "@/components/features/scales/form-parts";
+import {
+  DESTRUCTIVE_BUTTON_CLASS,
+  FIELD_CLASS,
+  FormMessage,
+} from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import type { AccountDeletionState } from "@/app/(app)/parametres/account-deletion-actions";
 import { accountDeletionMessage } from "./account-deletion-messages";
@@ -52,7 +56,7 @@ export function AccountDeletionForm({ action }: Props) {
           <button
             type="submit"
             disabled={isPending}
-            className="min-h-11 self-start rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
+            className={`${DESTRUCTIVE_BUTTON_CLASS} self-start`}
           >
             {isPending ? t.submitting : t.submit}
           </button>

@@ -140,9 +140,6 @@ export const fr = {
     undo: "Annuler",
     weekendTitle: "Ce weekend",
     weekendRange: "Du vendredi {friday} au dimanche {sunday}",
-    weekendOfficials: "Officiels : {officials}",
-    itinerary: "Itinéraire",
-    itineraryLabel: "Itinéraire vers {address} (nouvel onglet)",
     unpaid: {
       title: "À rembourser",
       none: "Tous vos matchs joués sont payés.",
@@ -568,7 +565,7 @@ export const fr = {
       introLinked:
         "L'indemnité liée sera mise à jour en même temps, avec la ligne de son barème en vigueur à la nouvelle date.",
       introAlone: "Ce match n'a pas d'indemnité liée.",
-      edit: "Modifier le match (date, équipes, adresse…)",
+      edit: "Modifier le match",
       submit: "Enregistrer les modifications",
       submitting: "Enregistrement…",
       updated: "Match modifié.",

@@ -7,7 +7,7 @@
  */
 import { MatchFields } from "@/components/features/compensations/compensation-form";
 import { RevealResult } from "@/components/features/common/reveal-result";
-import { FormMessage, PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import type { CompensationFormData } from "@/server/compensation/form-data";
 import type { Colleague } from "@/server/db/persons";
@@ -61,7 +61,7 @@ export function GameForm(props: Props) {
             state={officialsFieldState(state)}
           />
         )}
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? labels.submitting : labels.submit}
         </button>
       </form>

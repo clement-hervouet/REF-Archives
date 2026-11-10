@@ -11,7 +11,7 @@ import { RevealResult } from "@/components/features/common/reveal-result";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import {
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
   TextField,
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
@@ -98,11 +98,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
           <MatchFields data={data} state={state} valueOf={valueOf} />
           {/* Téléphone : le récapitulatif juste avant le bouton. Ordinateur : à côté. */}
           <CompensationRecap input={recapInput} preview={recapPreview} className="lg:hidden" />
-          <button
-            type="submit"
-            disabled={isPending}
-            className={`${PRIMARY_BUTTON_CLASS} self-start`}
-          >
+          <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
             {isPending ? labels.submitting : labels.submit}
           </button>
         </form>

@@ -7,6 +7,7 @@
  */
 import { useActionState, useId } from "react";
 import {
+  DESTRUCTIVE_BUTTON_CLASS,
   FIELD_CLASS,
   FormMessage,
   SECONDARY_BUTTON_CLASS,
@@ -82,7 +83,7 @@ export function DeletionForm({ scheduleAction, cancelAction, accountId, pendingD
         <button
           type="submit"
           disabled={scheduling}
-          className="min-h-11 self-start rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
+          className={`${DESTRUCTIVE_BUTTON_CLASS} self-start`}
         >
           {scheduling ? t.submitting : t.submit}
         </button>

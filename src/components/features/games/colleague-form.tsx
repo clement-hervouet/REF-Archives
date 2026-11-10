@@ -116,11 +116,7 @@ export function ColleagueForm({
           <span>{t.hasAccount}</span>
         </label>
         <div className={cn("flex flex-wrap gap-2", inline && "md:self-end")}>
-          <button
-            type="submit"
-            disabled={isPending}
-            className={editing ? SECONDARY_BUTTON_CLASS : PRIMARY_BUTTON_CLASS}
-          >
+          <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
             {isPending ? labels.submitting : labels.submit}
           </button>
           {onCancel !== undefined && (

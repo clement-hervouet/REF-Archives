@@ -9,8 +9,8 @@ import { useActionState, useId, useState } from "react";
 import {
   FIELD_CLASS,
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { BLOCK_MODES } from "@/lib/schemas/accounts";
@@ -105,7 +105,7 @@ export function BlockForm({ blockAction, unblockAction, accountId, current, minD
             </p>
           </div>
         )}
-        <button type="submit" disabled={blocking} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={blocking} className={SUBMIT_BUTTON_CLASS}>
           {blocking ? t.submitting : current === null ? t.submit : t.change}
         </button>
       </form>

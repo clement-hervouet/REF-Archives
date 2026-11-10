@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { fr } from "@/i18n/fr";
 import type { RenameScaleState } from "@/server/scales/manage-scales";
-import { FormMessage, SECONDARY_BUTTON_CLASS, TextField } from "./form-parts";
+import { FormMessage, PRIMARY_BUTTON_CLASS, TextField } from "./form-parts";
 import { fieldError, scaleStatusMessage } from "./scale-messages";
 import { useScaleForm } from "./use-scale-form";
 
@@ -48,7 +48,7 @@ export function RenameScaleForm({ scaleId, currentName, action }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className={`${SECONDARY_BUTTON_CLASS} self-start md:self-auto`}
+          className={`${PRIMARY_BUTTON_CLASS} w-full md:w-auto`}
         >
           {isPending ? t.rename.submitting : t.rename.submit}
         </button>

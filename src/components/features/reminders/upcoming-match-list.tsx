@@ -1,7 +1,8 @@
 /**
  * Matchs à venir (page « À venir », blocs 7 et 10) : quand (avec « Demain », « Dans 5
  * jours »), qui, niveau, lieu, officiels du match complet. « Itinéraire » reste visible ;
- * agenda, match et modification sont dans le menu « ⋯ ». Ni montant ni barème : c'est une
+ * agenda, match et modification sont dans le menu « ⋯ ». Aussi utilisée, sans le menu,
+ * pour les matchs du weekend de l'accueil (bloc 13). Ni montant ni barème : c'est une
  * fiche pratique pour se rendre au match.
  */
 import Link from "next/link";
@@ -43,7 +44,14 @@ function relativeLabel(today: string, startsAt: Date): string | null {
   }
 }
 
-function UpcomingMatchCard({ match, today }: { match: UpcomingMatch; today: string }) {
+type CardProps = {
+  match: UpcomingMatch;
+  today: string;
+  /** Faux sur l'accueil (bloc 13) : « Itinéraire » seul, les autres actions restent sur « À venir ». */
+  withActions: boolean;
+};
+
+function UpcomingMatchCard({ match, today, withActions }: CardProps) {
   const address = addressLabel(match.address);
   const date = formatIsoDate(toParisIsoDate(match.startsAt));
   const officials = officialsSummary(match.officials);
@@ -72,45 +80,47 @@ function UpcomingMatchCard({ match, today }: { match: UpcomingMatch; today: stri
         >
           {t.itinerary}
         </a>
-        <ActionsMenu ariaLabel={fr.compensations.list.moreActionsLabel.replace("{date}", date)}>
-          {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
-          <a
-            href={matchExportPath(match.id)}
-            download
-            data-close-menu
-            aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
-            className={MENU_ITEM_CLASS}
-          >
-            {fr.calendar.export.label}
-          </a>
-          {match.gameId === null ? (
-            <Link
-              href={completeGamePath(match.id)}
+        {withActions && (
+          <ActionsMenu ariaLabel={fr.compensations.list.moreActionsLabel.replace("{date}", date)}>
+            {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+            <a
+              href={matchExportPath(match.id)}
+              download
               data-close-menu
-              aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+              aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
               className={MENU_ITEM_CLASS}
             >
-              {fr.games.completeMatch}
-            </Link>
-          ) : (
+              {fr.calendar.export.label}
+            </a>
+            {match.gameId === null ? (
+              <Link
+                href={completeGamePath(match.id)}
+                data-close-menu
+                aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                className={MENU_ITEM_CLASS}
+              >
+                {fr.games.completeMatch}
+              </Link>
+            ) : (
+              <Link
+                href={gamePath(match.gameId)}
+                data-close-menu
+                aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                className={MENU_ITEM_CLASS}
+              >
+                {fr.games.viewMatch}
+              </Link>
+            )}
             <Link
-              href={gamePath(match.gameId)}
+              href={`/indemnites/${match.id}/modifier`}
               data-close-menu
-              aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+              aria-label={t.editLabel.replace("{date}", date)}
               className={MENU_ITEM_CLASS}
             >
-              {fr.games.viewMatch}
+              {t.edit}
             </Link>
-          )}
-          <Link
-            href={`/indemnites/${match.id}/modifier`}
-            data-close-menu
-            aria-label={t.editLabel.replace("{date}", date)}
-            className={MENU_ITEM_CLASS}
-          >
-            {t.edit}
-          </Link>
-        </ActionsMenu>
+          </ActionsMenu>
+        )}
       </div>
     </article>
   );
@@ -120,14 +130,16 @@ type Props = {
   matches: readonly UpcomingMatch[];
   /** Jour de Paris (`AAAA-MM-JJ`), pour « Demain », « Dans 5 jours ». */
   today: string;
+  /** Menu « ⋯ » (agenda, match, modification) : vrai par défaut, faux sur l'accueil. */
+  withActions?: boolean;
 };
 
-export function UpcomingMatchList({ matches, today }: Props) {
+export function UpcomingMatchList({ matches, today, withActions = true }: Props) {
   return (
     <ul className="flex flex-col gap-3">
       {matches.map((match) => (
         <li key={match.id}>
-          <UpcomingMatchCard match={match} today={today} />
+          <UpcomingMatchCard match={match} today={today} withActions={withActions} />
         </li>
       ))}
     </ul>
