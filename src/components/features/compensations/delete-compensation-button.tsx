@@ -1,7 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import {
+  DESTRUCTIVE_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+} from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
 
@@ -64,11 +67,7 @@ export function DeleteCompensationButton({
       <input type="hidden" name="compensationId" value={compensationId} />
       <p className="text-sm">{t.delete.warning}</p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
-        >
+        <button type="submit" disabled={isPending} className={DESTRUCTIVE_BUTTON_CLASS}>
           {t.delete.confirm}
         </button>
         <button

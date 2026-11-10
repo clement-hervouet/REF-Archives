@@ -158,7 +158,7 @@ export default async function GamePage(props: GamePageProps) {
 
       <section
         aria-labelledby="game-delete"
-        className="flex flex-col gap-3 rounded-md border border-destructive/40 p-4"
+        className="flex flex-col gap-3 border-t border-border pt-4"
       >
         <div className="flex flex-col gap-1">
           <h2 id="game-delete" className="font-semibold">

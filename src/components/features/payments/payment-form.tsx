@@ -148,9 +148,11 @@ export function PaymentForm({ groups, today, action }: Props) {
                   aria-labelledby={headingId}
                   className="flex flex-col gap-2"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                    <div className="flex items-baseline gap-3">
-                      <h2 id={headingId} className="text-lg font-semibold">
+                  {/* Nom et montant à gauche (empilés sur téléphone), bouton à droite : un nom
+                      long (« Ligue des Hauts-de-France ») ne repousse plus le bouton à la ligne. */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-col md:flex-row md:items-baseline md:gap-3">
+                      <h2 id={headingId} className="text-lg font-semibold break-words">
                         {group.label}
                       </h2>
                       <p className="tabular-nums text-muted-foreground">
@@ -166,7 +168,7 @@ export function PaymentForm({ groups, today, action }: Props) {
                         "{payer}",
                         group.label,
                       )}
-                      className="inline-flex min-h-11 items-center text-sm underline"
+                      className={`${SECONDARY_BUTTON_CLASS} shrink-0`}
                     >
                       {groupSelected ? t.selectNone : t.selectAll}
                     </button>
@@ -238,7 +240,7 @@ export function PaymentForm({ groups, today, action }: Props) {
             type="submit"
             disabled={isPending || selectedItems.length === 0}
             aria-describedby={summaryId}
-            className={`${PRIMARY_BUTTON_CLASS} md:mb-7`}
+            className={`${PRIMARY_BUTTON_CLASS} w-full md:mb-7 md:w-auto`}
           >
             {isPending ? t.submitting : t.submit}
           </button>

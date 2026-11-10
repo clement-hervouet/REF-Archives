@@ -4,7 +4,7 @@ import type { PayableGroup } from "@/components/features/payments/payment-form";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
-import { formatCents, formatIsoDate } from "@/lib/format";
+import { formatCents, formatMatchDay } from "@/lib/format";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { computeCompensation } from "@/server/compensation/amount";
@@ -33,7 +33,7 @@ export default async function UnpaidCompensationsPage() {
     items: group.rows.map((row) => ({
       id: row.id,
       dateLabel: fr.compensations.list.matchOn
-        .replace("{date}", formatIsoDate(toParisIsoDate(row.startsAt)))
+        .replace("{date}", formatMatchDay(row.startsAt))
         .replace("{time}", toParisTimeOfDay(row.startsAt)),
       teams: fr.compensations.list.teams
         .replace("{team1}", row.team1Name)

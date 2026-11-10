@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { fr } from "@/i18n/fr";
 import { getCurrentUser } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
+import { AppBrand } from "@/components/features/common/app-brand";
 
 export const metadata: Metadata = { title: fr.auth.login.title };
 
@@ -52,6 +53,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       <Suspense fallback={null}>
         <RedirectIfSignedIn />
       </Suspense>
+      <AppBrand />
       <h1 className="text-2xl font-semibold">{fr.auth.login.title}</h1>
       <Suspense fallback={null}>
         <LoginNotice searchParams={searchParams} />

@@ -9,7 +9,7 @@ import { useId } from "react";
 import {
   FIELD_CLASS,
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
@@ -117,7 +117,7 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             </p>
           )}
         </div>
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? t.submitting : t.submit}
         </button>
       </form>

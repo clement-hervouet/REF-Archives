@@ -7,10 +7,11 @@
  * barème du niveau ; les champs texte restent non contrôlés (`defaultValue`).
  */
 import { useId, useState } from "react";
+import { RevealResult } from "@/components/features/common/reveal-result";
 import { divisionLabel } from "@/components/features/scales/division-label";
 import {
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
   TextField,
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
@@ -70,7 +71,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   const recapPreview = previewCompensation(recapInput);
 
   return (
-    <div className="flex flex-col gap-4">
+    <RevealResult submission={formKey} className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
       {/* Première indemnité d'une saison FFBB (bloc 12d) : une salve par saisie (clé). */}
       {state.status === "created" && state.firstOfSeason !== null && (
@@ -97,11 +98,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
           <MatchFields data={data} state={state} valueOf={valueOf} />
           {/* Téléphone : le récapitulatif juste avant le bouton. Ordinateur : à côté. */}
           <CompensationRecap input={recapInput} preview={recapPreview} className="lg:hidden" />
-          <button
-            type="submit"
-            disabled={isPending}
-            className={`${PRIMARY_BUTTON_CLASS} self-start`}
-          >
+          <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
             {isPending ? labels.submitting : labels.submit}
           </button>
         </form>
@@ -111,7 +108,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
           className="hidden lg:sticky lg:top-6 lg:flex"
         />
       </div>
-    </div>
+    </RevealResult>
   );
 }
 

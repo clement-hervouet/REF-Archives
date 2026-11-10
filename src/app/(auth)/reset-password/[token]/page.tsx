@@ -7,6 +7,7 @@ import { hashToken } from "@/server/auth/tokens";
 import { findPendingPasswordReset } from "@/server/db/password-resets";
 import { getDb } from "@/server/db/pool";
 import { ResetForm } from "./reset-form";
+import { AppBrand } from "@/components/features/common/app-brand";
 
 // Le jeton est dans l'URL : on évite qu'il fuite par le Referer et qu'une page soit indexée.
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ async function ResetContent({ params }: ResetPasswordPageProps) {
 export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
+      <AppBrand />
       <h1 className="text-2xl font-semibold">{fr.resetPassword.title}</h1>
       <Suspense fallback={null}>
         <ResetContent params={params} />

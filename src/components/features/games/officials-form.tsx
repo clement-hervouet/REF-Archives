@@ -10,7 +10,7 @@ import { useId, useState } from "react";
 import { SelectField } from "@/components/features/compensations/select-field";
 import {
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
   TextField,
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
@@ -75,7 +75,7 @@ export function OfficialsForm({
           state={state}
           framed={framed}
         />
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? labels.submitting : labels.submit}
         </button>
       </form>

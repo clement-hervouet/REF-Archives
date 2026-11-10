@@ -10,7 +10,7 @@ import { ProfileFields } from "@/components/features/account/profile-fields";
 import {
   FIELD_CLASS,
   FormMessage,
-  PRIMARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
   TextField,
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
@@ -112,7 +112,7 @@ export function AccountDetailsForm({ action, account, isSelf }: Props) {
             <p className="text-sm font-medium text-destructive">{roleError}</p>
           )}
         </div>
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? t.submitting : t.submit}
         </button>
       </form>

@@ -10,9 +10,11 @@
  */
 import { useActionState, useId, useState } from "react";
 import {
+  DESTRUCTIVE_BUTTON_CLASS,
   FormMessage,
   PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
+  SUBMIT_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import type { CalendarFeedState } from "@/server/calendar/manage-feed";
@@ -111,7 +113,7 @@ function ConfirmBox({
           name="intent"
           value={intent}
           disabled={isPending}
-          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
+          className={DESTRUCTIVE_BUTTON_CLASS}
         >
           {isPending ? t.pending : confirmLabel}
         </button>
@@ -147,7 +149,7 @@ export function CalendarFeedSection({ activeSince, action }: Props) {
             name="intent"
             value="create"
             disabled={isPending}
-            className={`${PRIMARY_BUTTON_CLASS} self-start`}
+            className={SUBMIT_BUTTON_CLASS}
           >
             {isPending ? t.pending : t.create}
           </button>

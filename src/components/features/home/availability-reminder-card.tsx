@@ -46,7 +46,10 @@ export function AvailabilityReminderCard({ state, acknowledgeAction, undoAction 
           <p id="home-availability" className="font-medium">
             {fr.reminders.home.availability.replace("{date}", date)}
           </p>
-          <Link href={SETTINGS_PATH} className="self-start text-sm underline">
+          <Link
+            href={SETTINGS_PATH}
+            className="inline-flex min-h-11 items-center self-start text-sm underline"
+          >
             {fr.reminders.home.settingsLink}
           </Link>
         </div>

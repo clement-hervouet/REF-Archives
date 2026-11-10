@@ -5,7 +5,7 @@
  * pas de saisie libre à valider côté client, le serveur revalide quand même (§6.3).
  */
 import { useId } from "react";
-import { FormMessage, PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
 import {
@@ -97,7 +97,7 @@ export function ReminderSettingsForm({ settings, action }: Props) {
           </p>
         </fieldset>
 
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? t.submitting : t.submit}
         </button>
       </form>

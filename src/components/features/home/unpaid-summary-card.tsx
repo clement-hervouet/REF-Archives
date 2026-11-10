@@ -6,8 +6,7 @@ import Link from "next/link";
 import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { UNPAID_PATH } from "@/lib/app-paths";
-import { toParisIsoDate } from "@/lib/dates";
-import { formatCents, formatIsoDate } from "@/lib/format";
+import { formatCents, formatMatchDay } from "@/lib/format";
 import type { PayerGroup, UnpaidSummary } from "@/server/compensation/payments";
 import type { UnpaidCompensation } from "@/server/db/payments";
 
@@ -60,7 +59,7 @@ export function UnpaidSummaryCard({ summary, byPayer }: Props) {
           </ul>
           <p className="text-sm break-words text-muted-foreground">
             {t.oldest
-              .replace("{date}", formatIsoDate(toParisIsoDate(summary.oldest.startsAt)))
+              .replace("{date}", formatMatchDay(summary.oldest.startsAt))
               .replace(
                 "{teams}",
                 fr.compensations.list.teams

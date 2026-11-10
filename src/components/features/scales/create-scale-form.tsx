@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { fr } from "@/i18n/fr";
 import type { CreateScaleState } from "@/server/scales/manage-scales";
-import { FormMessage, PRIMARY_BUTTON_CLASS, TextField } from "./form-parts";
+import { FormMessage, SUBMIT_BUTTON_CLASS, TextField } from "./form-parts";
 import { fieldError, scaleStatusMessage } from "./scale-messages";
 import { useScaleForm } from "./use-scale-form";
 
@@ -63,7 +63,7 @@ export function CreateScaleForm({ action }: Props) {
             error={fieldError("ratePerKm", invalid)}
           />
         </div>
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? t.create.submitting : t.create.submit}
         </button>
       </form>

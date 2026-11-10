@@ -12,7 +12,9 @@
 import { Trash2 } from "lucide-react";
 import { useActionState, useState } from "react";
 import {
+  DANGER_BUTTON_CLASS,
   DANGER_ICON_BUTTON_CLASS,
+  DESTRUCTIVE_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
 
@@ -117,7 +119,7 @@ export function ConfirmActionButton({
           onClick={() => {
             setConfirming(true);
           }}
-          className={`${SECONDARY_BUTTON_CLASS} self-start`}
+          className={`${DANGER_BUTTON_CLASS} self-start`}
         >
           {labels.submit}
         </button>
@@ -133,11 +135,7 @@ export function ConfirmActionButton({
       <input type="hidden" name={hidden.name} value={hidden.value} />
       <p className="text-sm">{labels.warning}</p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="min-h-11 rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground disabled:opacity-60"
-        >
+        <button type="submit" disabled={isPending} className={DESTRUCTIVE_BUTTON_CLASS}>
           {labels.confirm}
         </button>
         <button

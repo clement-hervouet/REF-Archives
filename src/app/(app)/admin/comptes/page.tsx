@@ -29,13 +29,14 @@ function AccountRow({
   const name = accountName(account);
   const status = accountStatus(account, now);
   return (
-    <article className="grid items-center gap-x-4 gap-y-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+    // `relative` : le lien du nom couvre toute la carte (cible tactile, bloc 13).
+    <article className="relative grid items-center gap-x-4 gap-y-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
       <div className="flex min-w-0 flex-col gap-0.5">
         <h2 className="font-semibold break-words">
           <Link
             href={accountPath(account.id)}
             aria-label={t.open.replace("{name}", name)}
-            className="underline decoration-border underline-offset-4 hover:decoration-foreground"
+            className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
           >
             {name}
           </Link>

@@ -6,6 +6,7 @@ import { findPendingInvitation } from "@/server/db/invitations";
 import { getDb } from "@/server/db/pool";
 import { hashToken } from "@/server/auth/tokens";
 import { AcceptForm } from "./accept-form";
+import { AppBrand } from "@/components/features/common/app-brand";
 
 // Le jeton est dans l'URL : on évite qu'il fuite par le Referer et qu'une page soit indexée.
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ async function InvitationContent({ params }: InvitationPageProps) {
 export default function InvitationPage({ params }: InvitationPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
+      <AppBrand />
       <h1 className="text-2xl font-semibold">{fr.invitation.title}</h1>
       <Suspense fallback={null}>
         <InvitationContent params={params} />

@@ -3,7 +3,7 @@
  * désactivée pour la saison en cours, et densité. Formulaire HTML simple, comme
  * « Apparence » : un bouton explicite, parcourir les choix au clavier n'applique rien (§7.4).
  */
-import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { SEASONAL_DENSITIES } from "@/lib/seasonal-theme";
 import type { SeasonalState } from "@/lib/seasonal-theme";
@@ -68,7 +68,7 @@ export function SeasonalThemeForm({ state, action }: Props) {
           ))}
         </div>
       </fieldset>
-      <button type="submit" className={`${SECONDARY_BUTTON_CLASS} self-start`}>
+      <button type="submit" className={SUBMIT_BUTTON_CLASS}>
         {t.submit}
       </button>
     </form>

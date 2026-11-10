@@ -46,7 +46,7 @@ export default async function HomePage() {
       )}
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <WeekendSummary saturday={ranges.saturday} matches={weekendMatches} />
+        <WeekendSummary saturday={ranges.saturday} today={today} matches={weekendMatches} />
         <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} byPayer={groupByPayer(unpaid)} />
       </div>
     </div>

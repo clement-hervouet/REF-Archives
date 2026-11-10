@@ -6,7 +6,8 @@
  * ceux de l'indemnité (`MatchFields`, sans barème ni distance).
  */
 import { MatchFields } from "@/components/features/compensations/compensation-form";
-import { FormMessage, PRIMARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { RevealResult } from "@/components/features/common/reveal-result";
+import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import type { CompensationFormData } from "@/server/compensation/form-data";
 import type { Colleague } from "@/server/db/persons";
@@ -43,7 +44,7 @@ export function GameForm(props: Props) {
     keptInput ? valueOf(name) : (initialValues[name] ?? "");
 
   return (
-    <div className="flex flex-col gap-4">
+    <RevealResult submission={formKey} className="flex flex-col gap-4">
       <FormMessage message={gameFormStatusMessage(state)} />
       <form key={formKey} action={formAction} className="flex flex-col gap-6">
         {props.mode === "edit" && <input type="hidden" name="gameId" value={props.gameId} />}
@@ -60,10 +61,10 @@ export function GameForm(props: Props) {
             state={officialsFieldState(state)}
           />
         )}
-        <button type="submit" disabled={isPending} className={`${PRIMARY_BUTTON_CLASS} self-start`}>
+        <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? labels.submitting : labels.submit}
         </button>
       </form>
-    </div>
+    </RevealResult>
   );
 }

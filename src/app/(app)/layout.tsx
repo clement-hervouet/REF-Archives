@@ -6,6 +6,7 @@ import { SeasonalBanner } from "@/components/features/seasonal/seasonal-banner";
 import { SeasonalGarland } from "@/components/features/seasonal/seasonal-garland";
 import { SeasonalLayer } from "@/components/features/seasonal/seasonal-layer";
 import { fr } from "@/i18n/fr";
+import { cn } from "@/lib/utils";
 import { getSeasonalState } from "@/server/account/seasonal-theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { logout } from "./actions";
@@ -57,11 +58,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </a>
       <Sidebar user={navUser} logoutAction={logout} />
       <MobileNav user={navUser} logoutAction={logout} />
-      {/* Marge basse sur téléphone : le contenu ne passe jamais sous la barre d'onglets. */}
+      {/* Marge basse sur téléphone : le contenu ne passe jamais sous la barre d'onglets, ni
+          sous le bandeau saisonnier quand il est affiché (le bas de page doit pouvoir remonter
+          au-dessus, sinon le bouton d'un formulaire y reste caché, bloc 13). */}
       <main
         id="contenu"
         tabIndex={-1}
-        className="px-4 pt-6 pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:ml-60 md:px-8 md:pt-10 md:pb-12"
+        className={cn(
+          "px-4 pt-6 outline-none md:ml-60 md:px-8 md:pt-10 md:pb-12",
+          seasonal.announce
+            ? "pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem+var(--seasonal-banner-height)+1.5rem)]"
+            : "pb-[calc(5rem+env(safe-area-inset-bottom))]",
+        )}
       >
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
