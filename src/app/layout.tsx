@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
+import { PwaSetup } from "@/components/features/pwa/pwa-setup";
 import { fr } from "@/i18n/fr";
+import { themeColorsFor } from "@/lib/pwa";
 import { THEME_COOKIE, themeAttributeFromCookie } from "@/lib/theme";
 import "./globals.css";
 
@@ -20,10 +22,21 @@ const archivo = localFont({
   declarations: [{ prop: "font-stretch", value: "62% 125%" }],
 });
 
+// Icônes : fichiers `favicon.ico`, `icon.svg` et `apple-icon.png` de ce dossier (convention
+// de Next.js, balises ajoutées automatiquement) ; manifeste : `manifest.ts` (bloc 14).
 export const metadata: Metadata = {
   title: fr.app.name,
   description: fr.app.tagline,
+  applicationName: fr.app.name,
+  // iPhone et iPad : plein écran depuis l'écran d'accueil, nom sous l'icône.
+  appleWebApp: { capable: true, title: fr.app.name, statusBarStyle: "default" },
 };
+
+/** Barre d'état et barre de titre de la couleur du fond, selon le thème choisi (bloc 14). */
+export async function generateViewport(): Promise<Viewport> {
+  const theme = themeAttributeFromCookie((await cookies()).get(THEME_COOKIE)?.value);
+  return { themeColor: themeColorsFor(theme) };
+}
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Thème choisi dans les paramètres (cookie) ; sans choix, le CSS suit le système.
@@ -31,7 +44,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="fr" data-theme={theme} className={`${archivo.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <PwaSetup />
+      </body>
     </html>
   );
 }
