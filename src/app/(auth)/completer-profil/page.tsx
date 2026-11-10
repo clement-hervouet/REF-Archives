@@ -7,6 +7,7 @@ import { fr } from "@/i18n/fr";
 import { hasCompleteProfile } from "@/server/auth/current-user";
 import { requireSignedInOrRedirect } from "@/server/auth/session";
 import { completeProfileAction } from "./actions";
+import { AppBrand } from "@/components/features/common/app-brand";
 
 const t = fr.profile.complete;
 
@@ -25,6 +26,7 @@ export default async function CompleteProfilePage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 p-6">
       <div className="flex flex-col gap-2">
+        <AppBrand />
         <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="text-muted-foreground">{t.intro}</p>
       </div>

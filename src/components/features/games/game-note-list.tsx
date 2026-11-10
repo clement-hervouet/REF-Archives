@@ -29,7 +29,8 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
     return value === null ? [] : [{ field, value }];
   });
   return (
-    <article className="grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
+    // `relative` : le lien du titre couvre toute la carte (cible tactile, bloc 13).
+    <article className="relative grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
       <MatchDate startsAt={item.startsAt} />
 
       <div className="flex min-w-0 flex-col gap-1">
@@ -37,7 +38,7 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
           <Link
             href={gamePath(item.gameId)}
             aria-label={`${t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}, ${t.openLabel.replace("{date}", date)}`}
-            className="underline decoration-border underline-offset-4 hover:decoration-foreground"
+            className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
           >
             {t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}
           </Link>
