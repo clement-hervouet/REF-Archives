@@ -9,6 +9,7 @@
  * Champ caché : `compensationId` (création) ou `gameId` (modification).
  */
 import { z } from "zod";
+import { readText } from "@/lib/form-data";
 import { PERSON_NEW, PERSON_NONE, PERSON_SELF, officialFieldName } from "@/lib/game-form-fields";
 import { OFFICIAL_SLOTS, officialsSchema } from "@/lib/schemas/officials";
 import type { OfficialSlot, OfficialsIssueCode } from "@/lib/schemas/officials";
@@ -42,14 +43,8 @@ function isSlot(value: string): value is OfficialSlot {
   return OFFICIAL_SLOTS.some((slot) => slot === value);
 }
 
-/** Valeur texte d'un champ ; un fichier ou un champ absent devient `undefined` (refusé par Zod). */
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 function readSlot(formData: FormData, slot: OfficialSlot): Record<string, unknown> {
-  const person = text(formData, officialFieldName(slot, "Person"));
+  const person = readText(formData, officialFieldName(slot, "Person"));
   switch (person) {
     case PERSON_NONE:
       return { kind: "none" };
@@ -59,9 +54,9 @@ function readSlot(formData: FormData, slot: OfficialSlot): Record<string, unknow
       return {
         kind: "new",
         colleague: {
-          firstname: text(formData, officialFieldName(slot, "Firstname")) ?? "",
-          lastname: text(formData, officialFieldName(slot, "Lastname")),
-          hasAccount: text(formData, officialFieldName(slot, "HasAccount")) === "on",
+          firstname: readText(formData, officialFieldName(slot, "Firstname")) ?? "",
+          lastname: readText(formData, officialFieldName(slot, "Lastname")),
+          hasAccount: readText(formData, officialFieldName(slot, "HasAccount")) === "on",
         },
       };
     default:
@@ -106,7 +101,7 @@ export async function handleCreateGame(
   userId: string,
   formData: FormData,
 ): Promise<OfficialsFormState> {
-  const compensationId = idSchema.safeParse(text(formData, "compensationId"));
+  const compensationId = idSchema.safeParse(readText(formData, "compensationId"));
   if (!compensationId.success) {
     return { status: "not_found", field: "compensation" };
   }
@@ -126,7 +121,7 @@ export async function handleUpdateOfficials(
   userId: string,
   formData: FormData,
 ): Promise<OfficialsFormState> {
-  const gameId = idSchema.safeParse(text(formData, "gameId"));
+  const gameId = idSchema.safeParse(readText(formData, "gameId"));
   if (!gameId.success) {
     return { status: "not_found", field: "game" };
   }

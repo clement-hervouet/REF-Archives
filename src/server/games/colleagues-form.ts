@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
+import { readText } from "@/lib/form-data";
 import { teamChoiceSchema } from "@/lib/schemas/compensations";
 import { newColleagueSchema } from "@/lib/schemas/officials";
 import { isOwnedClub } from "../db/clubs";
@@ -38,16 +39,11 @@ export type ColleagueFormState =
 export type DeleteColleagueState =
   { status: "idle" } | { status: "deleted" } | { status: "in_use" } | { status: "not_found" };
 
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 function parseColleague(formData: FormData) {
   return newColleagueSchema.safeParse({
-    firstname: text(formData, "firstname") ?? "",
-    lastname: text(formData, "lastname"),
-    hasAccount: text(formData, "hasAccount") === "on",
+    firstname: readText(formData, "firstname") ?? "",
+    lastname: readText(formData, "lastname"),
+    hasAccount: readText(formData, "hasAccount") === "on",
   });
 }
 
@@ -88,7 +84,7 @@ function newClubErrors(error: z.ZodError): NewClubField[] {
 
 /** Club choisi : aucun, un club existant (identifiant valide) ou un nouveau club validé. */
 function readClubChoice(formData: FormData): ClubRead {
-  const raw = text(formData, "clubId") ?? "";
+  const raw = readText(formData, "clubId") ?? "";
   if (raw === "") {
     return { ok: true, choice: { kind: "none" } };
   }
@@ -96,13 +92,13 @@ function readClubChoice(formData: FormData): ClubRead {
     // Mêmes règles que le nouveau club d'une indemnité (bloc 6).
     const parsed = teamChoiceSchema.safeParse({
       kind: "new",
-      name: text(formData, "clubName"),
+      name: readText(formData, "clubName"),
       address: {
-        street: text(formData, "clubStreet"),
-        number: text(formData, "clubNumber") ?? "",
-        postalCode: text(formData, "clubPostalCode"),
-        city: text(formData, "clubCity"),
-        country: text(formData, "clubCountry") ?? "",
+        street: readText(formData, "clubStreet"),
+        number: readText(formData, "clubNumber") ?? "",
+        postalCode: readText(formData, "clubPostalCode"),
+        city: readText(formData, "clubCity"),
+        country: readText(formData, "clubCountry") ?? "",
       },
     });
     if (!parsed.success) {
@@ -155,10 +151,22 @@ function settle(result: ColleagueFormState | GameRejection): ColleagueFormState 
   return result;
 }
 
-export async function handleCreateColleague(
+type ParsedColleague = z.infer<typeof newColleagueSchema>;
+
+/**
+ * Lecture et validation communes (collègue puis club), suivies de `write` dans une
+ * transaction qui résout le club à l'utilisateur. Un refus (club introuvable, limite de
+ * clubs ou de collègues) est traduit par `settle`.
+ */
+async function writeColleague(
   deps: GameDeps,
   userId: string,
   formData: FormData,
+  write: (
+    db: Queryable,
+    colleague: ParsedColleague,
+    clubId: string | null,
+  ) => Promise<ColleagueFormState>,
 ): Promise<ColleagueFormState> {
   const parsed = parseColleague(formData);
   if (!parsed.success) {
@@ -173,14 +181,24 @@ export async function handleCreateColleague(
     if (clubId === undefined) {
       return { status: "club_not_found" };
     }
-    const personId = await insertColleague(db, { userId, colleague: parsed.data, clubId });
+    return write(db, parsed.data, clubId);
+  });
+  return settle(result);
+}
+
+export async function handleCreateColleague(
+  deps: GameDeps,
+  userId: string,
+  formData: FormData,
+): Promise<ColleagueFormState> {
+  return writeColleague(deps, userId, formData, async (db, colleague, clubId) => {
+    const personId = await insertColleague(db, { userId, colleague, clubId });
     if (personId === null) {
       // Limite de collègues : annule aussi le club créé juste avant.
       rejectGame({ status: "limit_reached", resource: "colleague" });
     }
     return { status: "created" };
   });
-  return settle(result);
 }
 
 export async function handleUpdateColleague(
@@ -188,27 +206,15 @@ export async function handleUpdateColleague(
   userId: string,
   formData: FormData,
 ): Promise<ColleagueFormState> {
-  const personId = idSchema.safeParse(text(formData, "personId"));
+  const personId = idSchema.safeParse(readText(formData, "personId"));
   if (!personId.success) {
     return { status: "not_found" };
   }
-  const parsed = parseColleague(formData);
-  if (!parsed.success) {
-    return { status: "invalid" };
-  }
-  const club = readClubChoice(formData);
-  if (!club.ok) {
-    return club.state;
-  }
-  const result = await runRejectable(deps, async (db): Promise<ColleagueFormState> => {
-    const clubId = await resolveClubId(db, userId, club.choice);
-    if (clubId === undefined) {
-      return { status: "club_not_found" };
-    }
+  return writeColleague(deps, userId, formData, async (db, colleague, clubId) => {
     const updated = await updateColleague(db, {
       userId,
       personId: personId.data,
-      colleague: parsed.data,
+      colleague,
       clubId,
     });
     if (!updated) {
@@ -217,7 +223,6 @@ export async function handleUpdateColleague(
     }
     return { status: "updated" };
   });
-  return settle(result);
 }
 
 export async function handleDeleteColleague(
@@ -225,7 +230,7 @@ export async function handleDeleteColleague(
   userId: string,
   formData: FormData,
 ): Promise<DeleteColleagueState> {
-  const personId = idSchema.safeParse(text(formData, "personId"));
+  const personId = idSchema.safeParse(readText(formData, "personId"));
   if (!personId.success) {
     return { status: "not_found" };
   }

@@ -18,6 +18,7 @@ import {
   type CompensationField,
 } from "@/lib/compensation-form-fields";
 import { toParisIsoDate } from "@/lib/dates";
+import { readText } from "@/lib/form-data";
 import { oneWayKmInput } from "@/lib/distance";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
@@ -41,12 +42,6 @@ export type CompensationFormState =
 export type DeleteCompensationState =
   { status: "idle" } | { status: "deleted" } | { status: "not_found" };
 
-/** Valeur texte d'un champ ; un fichier ou un champ absent devient `undefined` (refusé par Zod). */
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 /** Nom du champ HTML d'une partie d'adresse : `team1` + `postalCode` → `team1PostalCode`. */
 const ADDRESS_INPUT_SUFFIX: Record<AddressPart, string> = {
   street: "Street",
@@ -58,7 +53,7 @@ const ADDRESS_INPUT_SUFFIX: Record<AddressPart, string> = {
 
 function readAddress(formData: FormData, prefix: Prefix): Record<AddressPart, string | undefined> {
   const field = (part: AddressPart): string | undefined =>
-    text(formData, `${prefix}${ADDRESS_INPUT_SUFFIX[part]}`);
+    readText(formData, `${prefix}${ADDRESS_INPUT_SUFFIX[part]}`);
   return {
     street: field("street"),
     // Champs facultatifs : absents du formulaire, ils valent une saisie vide.
@@ -70,11 +65,11 @@ function readAddress(formData: FormData, prefix: Prefix): Record<AddressPart, st
 }
 
 function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string, unknown> {
-  const club = text(formData, `${prefix}Club`);
+  const club = readText(formData, `${prefix}Club`);
   if (club === NEW_CHOICE) {
     return {
       kind: "new",
-      name: text(formData, `${prefix}Name`),
+      name: readText(formData, `${prefix}Name`),
       address: readAddress(formData, prefix),
     };
   }
@@ -83,10 +78,10 @@ function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string,
 
 function readVenue(formData: FormData): Record<string, unknown> {
   // Case non cochée : l'adresse est celle du club de l'équipe 1 (cas normal).
-  if (text(formData, "venueException") !== "on") {
+  if (readText(formData, "venueException") !== "on") {
     return { kind: "team1" };
   }
-  const address = text(formData, "venueAddress");
+  const address = readText(formData, "venueAddress");
   if (address === NEW_CHOICE) {
     return { kind: "new", address: readAddress(formData, "venue") };
   }
@@ -96,15 +91,15 @@ function readVenue(formData: FormData): Record<string, unknown> {
 /** Reconstruit l'objet attendu par `compensationFormSchema` ; rien n'est validé ici. */
 export function readCompensationFormData(formData: FormData): Record<string, unknown> {
   return {
-    date: text(formData, "date"),
-    time: text(formData, "time"),
-    divisionId: text(formData, "divisionId"),
-    scaleId: text(formData, "scaleId"),
-    payer: text(formData, "payer") ?? "",
+    date: readText(formData, "date"),
+    time: readText(formData, "time"),
+    divisionId: readText(formData, "divisionId"),
+    scaleId: readText(formData, "scaleId"),
+    payer: readText(formData, "payer") ?? "",
     team1: readTeam(formData, "team1"),
     team2: readTeam(formData, "team2"),
     venue: readVenue(formData),
-    oneWayDistance: text(formData, "oneWayDistance"),
+    oneWayDistance: readText(formData, "oneWayDistance"),
   };
 }
 
@@ -169,7 +164,7 @@ export async function handleUpdateCompensation(
   userId: string,
   formData: FormData,
 ): Promise<CompensationFormState> {
-  const compensationId = compensationIdSchema.safeParse(text(formData, "compensationId"));
+  const compensationId = compensationIdSchema.safeParse(readText(formData, "compensationId"));
   if (!compensationId.success) {
     return { status: "not_found", field: "compensation" };
   }
@@ -186,7 +181,7 @@ export async function handleDeleteCompensation(
   userId: string,
   formData: FormData,
 ): Promise<DeleteCompensationState> {
-  const compensationId = compensationIdSchema.safeParse(text(formData, "compensationId"));
+  const compensationId = compensationIdSchema.safeParse(readText(formData, "compensationId"));
   if (!compensationId.success) {
     return { status: "not_found" };
   }

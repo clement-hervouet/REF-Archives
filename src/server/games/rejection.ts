@@ -5,7 +5,7 @@
  */
 import { AppError } from "@/lib/errors";
 import type { OfficialSlot } from "@/lib/schemas/officials";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 
 /** Champ du formulaire d'informations du match (niveau, équipes, adresse). */
 type MatchInfoField = "divisionId" | "team1" | "team2" | "venue";
@@ -21,9 +21,6 @@ export type GameRejection =
    */
   | { status: "no_rate_at_date" }
   | { status: "limit_reached"; resource: "game" | "colleague" | "club" };
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type GameDeps = { transaction: Transaction };
 

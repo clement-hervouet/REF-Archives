@@ -10,6 +10,7 @@
  * Les effets hors base (emails, journal) sont laissés à l'appelant : il reçoit ce qu'il faut.
  */
 import { z } from "zod";
+import { readText } from "@/lib/form-data";
 import {
   ACCOUNT_DELETION_DELAY_DAYS,
   parseAccountEdit,
@@ -30,10 +31,8 @@ import type { AccountSummary } from "../db/accounts";
 import { createPasswordReset, deletePendingPasswordResets } from "../db/password-resets";
 import { revokeAllUserSessions } from "../db/sessions";
 import { EmailAlreadyUsedError } from "../db/users";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 import type { GeneratedToken } from "../auth/tokens";
-
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type AccountDeps = {
   transaction: Transaction;
@@ -44,15 +43,10 @@ export type AccountDeps = {
 /** Refus communs : compte introuvable, action sur soi-même, dernier admin actif. */
 type Guarded = { status: "not_found" } | { status: "self" } | { status: "last_admin" };
 
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 const idSchema = z.uuid();
 
 function readAccountId(formData: FormData): string | null {
-  const parsed = idSchema.safeParse(text(formData, "accountId"));
+  const parsed = idSchema.safeParse(readText(formData, "accountId"));
   return parsed.success ? parsed.data : null;
 }
 
@@ -99,10 +93,10 @@ export async function handleUpdateAccount(
     return { status: "not_found" };
   }
   const parsed = parseAccountEdit({
-    firstname: text(formData, "firstname"),
-    lastname: text(formData, "lastname"),
-    email: text(formData, "email"),
-    role: text(formData, "role"),
+    firstname: readText(formData, "firstname"),
+    lastname: readText(formData, "lastname"),
+    email: readText(formData, "email"),
+    role: readText(formData, "role"),
   });
   if (!parsed.success) {
     return { status: "invalid", issues: parsed.issues };
@@ -158,7 +152,7 @@ export async function handleBlockAccount(
   }
   const now = deps.now();
   const choice = parseBlockChoice(
-    { mode: text(formData, "mode"), date: text(formData, "date") },
+    { mode: readText(formData, "mode"), date: readText(formData, "date") },
     now,
   );
   if (!choice.success) {
@@ -220,7 +214,7 @@ export async function handleScheduleDeletion(
   if (accountId === null) {
     return { status: "not_found" };
   }
-  const typed = (text(formData, "confirmEmail") ?? "").trim().toLowerCase();
+  const typed = (readText(formData, "confirmEmail") ?? "").trim().toLowerCase();
   return deps.transaction(async (db): Promise<ScheduleDeletionResult> => {
     const account = await lockAccount(db, accountId);
     if (account === null) {

@@ -22,14 +22,11 @@ import {
 } from "../db/compensations";
 import type { ApplicableRate, NewCompensation } from "../db/compensations";
 import { syncGameFromCompensation } from "../db/games";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
 import { resolveMatchInfo } from "./resolve-match";
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type CompensationDeps = { transaction: Transaction };
 

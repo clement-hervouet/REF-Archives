@@ -7,6 +7,7 @@
  * par ligne).
  */
 import { z } from "zod";
+import { readText } from "@/lib/form-data";
 import { NOTE_LEVEL_FIELDS } from "@/lib/game-form-fields";
 import type { NoteLevelField } from "@/lib/game-form-fields";
 import { noteFormSchema } from "@/lib/schemas/notes";
@@ -31,18 +32,15 @@ export type NoteFormState =
 
 export type DeleteNoteState = { status: "idle" } | { status: "deleted" } | { status: "not_found" };
 
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 /** Reconstruit l'objet attendu par `noteFormSchema` ; rien n'est validé ici. */
 export function readNoteFormData(formData: FormData): Record<string, unknown> {
-  const clips = text(formData, "clips");
+  const clips = readText(formData, "clips");
   return {
     // Bouton radio : rien de coché = non renseigné.
-    ...Object.fromEntries(NOTE_LEVEL_FIELDS.map((field) => [field, text(formData, field) ?? ""])),
-    body: text(formData, "body") ?? "",
+    ...Object.fromEntries(
+      NOTE_LEVEL_FIELDS.map((field) => [field, readText(formData, field) ?? ""]),
+    ),
+    body: readText(formData, "body") ?? "",
     clips: clips === undefined ? [] : clips.split(/\r\n|\r|\n/),
   };
 }
@@ -90,7 +88,7 @@ export async function handleSaveNote(
   userId: string,
   formData: FormData,
 ): Promise<NoteFormState> {
-  const gameId = idSchema.safeParse(text(formData, "gameId"));
+  const gameId = idSchema.safeParse(readText(formData, "gameId"));
   if (!gameId.success) {
     return { status: "not_found", field: "game" };
   }
@@ -108,7 +106,7 @@ export async function handleDeleteNote(
   userId: string,
   formData: FormData,
 ): Promise<DeleteNoteState> {
-  const gameId = idSchema.safeParse(text(formData, "gameId"));
+  const gameId = idSchema.safeParse(readText(formData, "gameId"));
   if (!gameId.success) {
     return { status: "not_found" };
   }

@@ -11,14 +11,11 @@ import {
 } from "../db/password-resets";
 import { revokeAllUserSessions } from "../db/sessions";
 import { findUserIdByEmail, updateUserPasswordHash } from "../db/users";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 import { hashIdentifier } from "./rate-limit";
 import type { AttemptDecision } from "./rate-limit";
 import { hashToken } from "./tokens";
 import type { GeneratedToken } from "./tokens";
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 // ─── Demande ───────────────────────────────────────────────────────────────
 

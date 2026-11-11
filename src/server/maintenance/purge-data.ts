@@ -21,7 +21,7 @@ import {
   purgeOldReminderDispatches,
   purgeOldSecurityEvents,
 } from "../db/purge";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 import {
   ENDED_INVITATION_RETENTION_DAYS,
   ENDED_SESSION_RETENTION_DAYS,
@@ -29,8 +29,6 @@ import {
   SECURITY_EVENT_RETENTION_DAYS,
   SOFT_DELETE_RETENTION_DAYS,
 } from "./retention";
-
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type PurgeDataDeps = { transaction: Transaction };
 

@@ -24,10 +24,7 @@ import {
   upsertLevelDefault,
 } from "../db/scales";
 import type { DeleteRateResult, DeleteScaleResult, ScaleOwner } from "../db/scales";
-import type { Queryable } from "../db/users";
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
+import type { Queryable, Transaction } from "../db/users";
 
 export type ScaleDeps = {
   db: Queryable;
