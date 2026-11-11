@@ -19,12 +19,12 @@
     "db:seed": "node --env-file=.env.local --experimental-strip-types scripts/db.mts seed",
     "db:reset": "node --env-file=.env.local --experimental-strip-types scripts/db.mts reset",
     "admin:create": "node --env-file=.env.local scripts/admin-create.mts",
-    "email:test": "node --env-file=.env.local scripts/email-test.mts"
+    "email:test": "node --env-file=.env.local scripts/email-test.mts",
+    "knip": "knip"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
     "canvas-confetti": "1.9.4",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.68.0",
     "next": "16.4.3",
@@ -48,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "eslint-config-prettier": "^10.1.8",
+    "knip": "^6.44.2",
     "node-pg-migrate": "^9.0.0",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",

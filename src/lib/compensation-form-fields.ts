@@ -7,7 +7,7 @@
 /** Valeur des listes de club et d'adresse qui demande d'en créer un nouveau. */
 export const NEW_CHOICE = "new";
 
-export const ADDRESS_PARTS = ["street", "number", "postalCode", "city", "country"] as const;
+const ADDRESS_PARTS = ["street", "number", "postalCode", "city", "country"] as const;
 
 export type AddressPart = (typeof ADDRESS_PARTS)[number];
 

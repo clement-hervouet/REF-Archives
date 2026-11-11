@@ -6,6 +6,7 @@ import {
   GameNotesFilters,
   activeFilterCount,
 } from "@/components/features/games/game-notes-filters";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { GAME_NOTES_PATH } from "@/lib/app-paths";
 import { gameNotesSearch, parseGameNotesFilters } from "@/lib/schemas/game-notes-filters";
@@ -40,7 +41,7 @@ export default async function GameNotesPage(props: GameNotesPageProps) {
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
-          <h1 className="text-2xl font-semibold">{t.title}</h1>
+          <PageTitle>{t.title}</PageTitle>
           <p className="text-muted-foreground">{t.intro}</p>
         </div>
         <Link

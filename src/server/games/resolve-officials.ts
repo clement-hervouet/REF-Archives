@@ -9,7 +9,7 @@
  */
 import { OFFICIAL_SLOTS } from "@/lib/schemas/officials";
 import type { Officials } from "@/lib/schemas/officials";
-import type { OfficialIds } from "../db/games";
+import type { OfficialIds } from "../db/game-writes";
 import { ensureSelfPerson, findOwnedColleagueIds, insertColleague } from "../db/persons";
 import type { Queryable } from "../db/users";
 import { rejectGame } from "./rejection";

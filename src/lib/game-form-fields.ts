@@ -33,8 +33,6 @@ export const NOTE_LEVELS = [1, 2, 3, 4, 5] as const;
  */
 export const NOTE_LEVEL_FIELDS = ["confidence", "stress", "management", "judgment"] as const;
 export type NoteLevelField = (typeof NOTE_LEVEL_FIELDS)[number];
-export const NOTE_LEVEL_MIN = 1;
-export const NOTE_LEVEL_MAX = 5;
 
 /** Bornes alignées sur la migration 013 (`note.body`, `note_clip`). */
 export const NOTE_BODY_MAX = 4096;

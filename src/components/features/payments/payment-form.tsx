@@ -23,7 +23,7 @@ import { markPaidMessage, paymentIssueMessages, selectionLabel } from "./payment
 const t = fr.payments;
 
 /** Ligne affichée, préparée côté serveur (montant déjà calculé). */
-export type PayableItem = {
+type PayableItem = {
   id: string;
   dateLabel: string;
   teams: string;

@@ -21,7 +21,7 @@ import {
   updateCompensationFromGame,
   updateGameInfo as updateGameInfoRow,
   updateGameOfficials,
-} from "../db/games";
+} from "../db/game-writes";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { rejectGame, runRejectable } from "./rejection";
 import type { GameDeps, GameRejection } from "./rejection";

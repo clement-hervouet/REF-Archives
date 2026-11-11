@@ -7,14 +7,11 @@ import { parseProfile } from "@/lib/schemas/profile";
 import type { Profile, ProfileIssue } from "@/lib/schemas/profile";
 import { createInvitation, lockPendingInvitation, markInvitationAccepted } from "../db/invitations";
 import { EmailAlreadyUsedError, createUser } from "../db/users";
-import type { Queryable } from "../db/users";
+import type { Queryable, Transaction } from "../db/users";
 import { hashIdentifier } from "./rate-limit";
 import type { AttemptDecision } from "./rate-limit";
 import { hashToken } from "./tokens";
 import type { GeneratedToken } from "./tokens";
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 // ─── Création (admin) ──────────────────────────────────────────────────────
 

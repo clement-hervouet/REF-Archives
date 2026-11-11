@@ -12,6 +12,9 @@ export type Queryable = {
   query: (text: string, values: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
 };
 
+/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
+export type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
+
 export type CreateUserInput = {
   /** Email déjà normalisé (voir `emailSchema`). */
   email: string;

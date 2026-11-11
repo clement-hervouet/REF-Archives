@@ -8,7 +8,7 @@ import { ValidationError } from "./errors";
 import { parisLocalToUtc } from "./paris-time";
 
 /** Premier mois d'une saison (juillet). */
-export const SEASON_FIRST_MONTH = 7;
+const SEASON_FIRST_MONTH = 7;
 
 /** Année de début de la saison d'un mois `AAAA-MM` : juillet 2026 → 2026, juin 2027 → 2026. */
 export function seasonOf(month: string): number {

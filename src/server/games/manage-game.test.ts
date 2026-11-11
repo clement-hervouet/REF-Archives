@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { matchInfoFormSchema } from "@/lib/schemas/compensations";
 import { officialsSchema, type OfficialsInput } from "@/lib/schemas/officials";
 import { makeFakeDb } from "../db/fake-db";
-import { MAX_GAMES_PER_USER } from "../db/games";
+import { MAX_GAMES_PER_USER } from "../db/game-writes";
 import { MAX_COLLEAGUES_PER_USER } from "../db/persons";
 import type { Queryable } from "../db/users";
 import {

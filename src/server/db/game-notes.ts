@@ -7,8 +7,13 @@
 import { z } from "zod";
 import type { NoteLevelField, OfficialSlot } from "@/lib/game-form-fields";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import {
+  MATCH_PARTIES_COLUMNS,
+  matchPartiesFields,
+  matchTeamJoins,
+  toMatchParties,
+} from "./match-info";
+import type { MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Matchs par page. */
@@ -20,7 +25,7 @@ export const NOTE_EXCERPT_LENGTH = 280;
 export type GameNoteListItem = {
   gameId: string;
   startsAt: Date;
-  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  division: MatchDivision;
   team1Name: string;
   team2Name: string;
   /** Place occupée par l'utilisateur (`null` si sa fiche n'est plus parmi les officiels). */
@@ -41,8 +46,7 @@ export type GameNotesPage = { items: GameNoteListItem[]; hasMore: boolean };
 
 // Enumérations comparées en texte : le paramètre reste un simple texte lié.
 // LIMIT + 1 : la ligne en trop indique seulement qu'une page suivante existe.
-const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, d.division, d.type, d.level,
-  club1.name AS team1_name, club2.name AS team2_name,
+const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, ${MATCH_PARTIES_COLUMNS},
   CASE
     WHEN g.referee1_id = s.id THEN 'referee1'
     WHEN g.referee2_id = s.id THEN 'referee2'
@@ -58,10 +62,7 @@ const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, d.division, d.type,
 FROM game g
 LEFT JOIN note n ON n.game_id = g.id AND n.user_id = g.user_id AND n.deleted_at IS NULL
 JOIN division d ON d.id = g.division_id
-JOIN team t1 ON t1.id = g.team1_id AND t1.user_id = g.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = g.user_id
-JOIN team t2 ON t2.id = g.team2_id AND t2.user_id = g.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = g.user_id
+${matchTeamJoins("g")}
 LEFT JOIN person s ON s.user_id = g.user_id AND s.is_self
 WHERE g.user_id = $1 AND g.deleted_at IS NULL
   AND ($2::text IS NULL OR d.division::text = $2::text)
@@ -75,11 +76,7 @@ LIMIT $5::integer OFFSET $6::integer`;
 const rowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
-  division: divisionCategorySchema,
-  type: divisionTypeSchema,
-  level: divisionLevelSchema,
-  team1_name: z.string(),
-  team2_name: z.string(),
+  ...matchPartiesFields,
   self_slot: z.enum(["referee1", "referee2", "referee3", "observer"]).nullable(),
   confidence: z.number().int().nullable(),
   stress: z.number().int().nullable(),
@@ -117,9 +114,7 @@ export async function listGamesWithNotes(
     items: rows.slice(0, GAME_NOTES_PAGE_SIZE).map((row) => ({
       gameId: row.id,
       startsAt: row.starts_at,
-      division: { category: row.division, type: row.type, level: row.level },
-      team1Name: row.team1_name,
-      team2Name: row.team2_name,
+      ...toMatchParties(row),
       selfSlot: row.self_slot,
       confidence: row.confidence,
       stress: row.stress,

@@ -4,7 +4,7 @@
  * se recharge avec le nouveau thème, posé côté serveur. Un bouton explicite plutôt qu'un
  * envoi au changement : parcourir les choix au clavier ne doit rien appliquer (§7.4).
  */
-import { SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { RADIO_INPUT_CLASS, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { THEME_PREFERENCES } from "@/lib/theme";
 import type { ThemePreference } from "@/lib/theme";
@@ -79,7 +79,7 @@ export function ThemeForm({ current, action }: Props) {
                   name="theme"
                   value={theme}
                   defaultChecked={theme === current}
-                  className="size-4 shrink-0 accent-primary"
+                  className={RADIO_INPUT_CLASS}
                 />
                 <span className="leading-tight">{LABELS[theme]}</span>
               </span>

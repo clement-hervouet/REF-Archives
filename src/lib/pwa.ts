@@ -19,9 +19,6 @@ export const PWA_COLORS = {
   darkBackground: "#061a2e",
 } as const;
 
-/** Page affichée par le service worker quand une page ne peut pas être chargée. */
-export const OFFLINE_PATH = "/hors-ligne";
-
 /** Feuille de styles de la page hors ligne (fichier de `public/`, mis en cache avec elle). */
 export const OFFLINE_STYLESHEET_PATH = "/offline.css";
 

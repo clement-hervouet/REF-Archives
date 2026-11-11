@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { CompensationForm } from "@/components/features/compensations/compensation-form";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { compensationFormValues } from "@/server/compensation/compensation-form";
@@ -46,7 +47,7 @@ export default async function EditCompensationPage(props: EditCompensationPagePr
         <Link href="/indemnites" className="inline-flex min-h-11 items-center self-start underline">
           {t.edit.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{t.edit.title}</h1>
+        <PageTitle>{t.edit.title}</PageTitle>
         <p className="text-muted-foreground">{t.edit.intro}</p>
         {!scaleStillSelectable && (
           <p role="status" className="font-medium">

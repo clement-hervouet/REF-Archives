@@ -7,7 +7,7 @@ import { z } from "zod";
 import { isTrivialPassword } from "./common-passwords.ts";
 
 export const EMAIL_MAX_LENGTH = 255;
-export const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MIN_LENGTH = 12;
 export const PASSWORD_MAX_LENGTH = 128;
 
 /** Email normalisé (espaces retirés, minuscules) : l'unicité en base est insensible à la casse. */
@@ -44,5 +44,3 @@ export const loginSchema = z.object({
     .min(1, { error: "password.required" })
     .max(PASSWORD_MAX_LENGTH, { error: "password.too_long" }),
 });
-
-export type LoginInput = z.infer<typeof loginSchema>;

@@ -20,7 +20,7 @@ export const SEASONAL_DENSITIES = ["low", "medium", "high"] as const;
 export type SeasonalDensity = (typeof SEASONAL_DENSITIES)[number];
 
 /** Densité par défaut : la plus discrète (§3.14). */
-export const DEFAULT_SEASONAL_DENSITY: SeasonalDensity = "low";
+const DEFAULT_SEASONAL_DENSITY: SeasonalDensity = "low";
 
 /**
  * Nombre d'éléments animés selon la saison et la densité (§3.14). Peu d'éléments, pour

@@ -7,24 +7,10 @@
  * (§6.4 A10). La validation est purement syntaxique (`URL`), sans aucune requête réseau.
  */
 import { z } from "zod";
-import {
-  CLIP_URL_MAX,
-  MAX_CLIPS_PER_NOTE,
-  NOTE_BODY_MAX,
-  NOTE_LEVEL_MAX,
-  NOTE_LEVEL_MIN,
-  NOTE_LEVELS,
-} from "@/lib/game-form-fields";
+import { CLIP_URL_MAX, MAX_CLIPS_PER_NOTE, NOTE_BODY_MAX } from "@/lib/game-form-fields";
 
-// Constantes sans Zod, aussi utilisées côté client : définies dans `game-form-fields.ts`.
-export {
-  CLIP_URL_MAX,
-  MAX_CLIPS_PER_NOTE,
-  NOTE_BODY_MAX,
-  NOTE_LEVEL_MAX,
-  NOTE_LEVEL_MIN,
-  NOTE_LEVELS,
-};
+// Constante sans Zod, aussi utilisée côté client : définie dans `game-form-fields.ts`.
+export { MAX_CLIPS_PER_NOTE };
 
 const CONTROL_CHAR = /\p{Cc}/u;
 
@@ -129,4 +115,3 @@ export const noteFormSchema = noteFieldsSchema.superRefine((value, ctx) => {
 
 export type NoteFormInput = z.input<typeof noteFormSchema>;
 export type NoteForm = z.output<typeof noteFormSchema>;
-export type NoteFormField = keyof NoteFormInput;

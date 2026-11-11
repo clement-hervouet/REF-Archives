@@ -24,7 +24,7 @@ function nameSchema(field: "firstname" | "lastname") {
     );
 }
 
-export const profileSchema = z.object({
+const profileSchema = z.object({
   firstname: nameSchema("firstname"),
   lastname: nameSchema("lastname"),
 });

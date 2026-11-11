@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { CompensationField } from "@/lib/compensation-form-fields";
 import { toParisIsoDate } from "@/lib/dates";
+import { readText } from "@/lib/form-data";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { matchInfoFormSchema } from "@/lib/schemas/compensations";
 import type { OfficialSlot } from "@/lib/schemas/officials";
@@ -28,11 +29,6 @@ export type GameFormState =
   | GameRejection
   | { status: "created"; gameId: string }
   | { status: "updated" };
-
-function text(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : undefined;
-}
 
 /** Valide informations et officiels ensemble (toutes les erreurs en un envoi), puis crée. */
 export async function handleCreateStandaloneGame(
@@ -62,7 +58,7 @@ export async function handleUpdateGameInfo(
   userId: string,
   formData: FormData,
 ): Promise<GameFormState> {
-  const gameId = z.uuid().safeParse(text(formData, "gameId"));
+  const gameId = z.uuid().safeParse(readText(formData, "gameId"));
   if (!gameId.success) {
     return { status: "not_found", field: "game" };
   }

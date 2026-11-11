@@ -4,9 +4,7 @@
  * passage ne trouve rien. Appelée chaque jour par la route `/api/cron/purge-accounts`.
  */
 import { purgeDueAccounts } from "../db/accounts";
-import type { Queryable } from "../db/users";
-
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
+import type { Transaction } from "../db/users";
 
 export type PurgeAccountsDeps = {
   transaction: Transaction;

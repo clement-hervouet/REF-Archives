@@ -1,23 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "./fake-db";
+import { findCompensationForGame, findGame, findGameForEdit } from "./games";
 import {
   MAX_GAMES_PER_USER,
-  findCompensationForGame,
-  findGame,
-  findGameForEdit,
   insertGame,
-  lockLinkedCompensation,
-  updateCompensationFromGame,
-  updateGameInfo,
   insertGameFromCompensation,
   linkCompensationToGame,
   lockCompensationLink,
   lockGame,
+  lockLinkedCompensation,
   softDeleteGame,
   syncGameFromCompensation,
+  updateCompensationFromGame,
+  updateGameInfo,
   updateGameOfficials,
   type OfficialIds,
-} from "./games";
+} from "./game-writes";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const COMPENSATION_ID = "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01";

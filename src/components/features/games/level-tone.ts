@@ -22,9 +22,3 @@ export const TONE_FILL: Record<LevelTone, string> = {
   medium: "bg-warning",
   bad: "bg-destructive",
 };
-
-export const TONE_BORDER: Record<LevelTone, string> = {
-  good: "border-success",
-  medium: "border-warning",
-  bad: "border-destructive",
-};

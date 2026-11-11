@@ -13,7 +13,7 @@ import { findEffectiveRate } from "@/server/scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
 
-export type PreviewRate = { effectiveFrom: string; gameAmountCents: number; centsPerKm: string };
+type PreviewRate = { effectiveFrom: string; gameAmountCents: number; centsPerKm: string };
 
 export type PreviewInput = {
   date: string;
@@ -29,11 +29,11 @@ export type PreviewInput = {
   venue: { postalCode: string; country: string | null } | null;
 };
 
-export type PayerPreview =
+type PayerPreview =
   /** Pas encore déterminable : niveau ou adresse manquants. */
   { status: "pending" } | { status: "known"; payer: Payer | null; automatic: boolean };
 
-export type AmountPreview =
+type AmountPreview =
   | { status: "incomplete" }
   /** Le barème n'a aucune ligne à la date du match : l'enregistrement serait refusé. */
   | { status: "no_rate" }

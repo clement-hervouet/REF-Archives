@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { tokenSchema } from "@/lib/schemas/auth";
 import { hashToken } from "@/server/auth/tokens";
@@ -47,7 +48,7 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
       <AppBrand />
-      <h1 className="text-2xl font-semibold">{fr.resetPassword.title}</h1>
+      <PageTitle>{fr.resetPassword.title}</PageTitle>
       <Suspense fallback={null}>
         <ResetContent params={params} />
       </Suspense>

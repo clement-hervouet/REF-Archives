@@ -6,6 +6,7 @@ import {
   PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { UNPAID_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -78,7 +79,7 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex max-w-2xl flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{t.list.title}</h1>
+          <PageTitle>{t.list.title}</PageTitle>
           <p className="text-muted-foreground">{t.list.intro}</p>
         </div>
         <div className="flex flex-wrap gap-2">

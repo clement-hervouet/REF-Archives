@@ -8,6 +8,7 @@ import { InstallAppSection } from "@/components/features/pwa/install-app-section
 import { ReminderSettingsForm } from "@/components/features/reminders/reminder-settings-form";
 import { SeasonalThemeForm } from "@/components/features/settings/seasonal-theme-form";
 import { SettingsSection } from "@/components/features/settings/settings-section";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { DATA_EXPORT_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -47,7 +48,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <PageTitle>{t.title}</PageTitle>
 
       <SettingsSection
         id="settings-account"

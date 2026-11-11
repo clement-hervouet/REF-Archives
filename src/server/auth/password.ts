@@ -10,7 +10,7 @@ import { hash, verify } from "@node-rs/argon2";
  * L'algorithme n'est pas passé explicitement : argon2id est le défaut de la
  * bibliothèque, et le préfixe `$argon2id$` du hash est vérifié par les tests.
  */
-export const ARGON2_OPTIONS = {
+const ARGON2_OPTIONS = {
   memoryCost: 65_536, // en Kio, soit 64 Mo
   timeCost: 3,
   parallelism: 4,

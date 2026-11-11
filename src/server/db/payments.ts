@@ -9,15 +9,20 @@ import { z } from "zod";
 import { assertIsoDate } from "@/lib/dates";
 import { effectivePayer } from "@/lib/payers";
 import type { Payer } from "@/lib/payers";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import {
+  MATCH_PARTIES_COLUMNS,
+  matchPartiesFields,
+  matchTeamJoins,
+  toMatchParties,
+} from "./match-info";
+import type { MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Indemnité jouée en attente de paiement, avec ce qu'il faut pour calculer son montant. */
 export type UnpaidCompensation = {
   id: string;
   startsAt: Date;
-  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  division: MatchDivision;
   team1Name: string;
   team2Name: string;
   distanceM: number;
@@ -29,17 +34,13 @@ export type UnpaidCompensation = {
 
 // Index partiel `compensation_unpaid_idx` (migration 015).
 const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m,
-  d.division, d.type, d.level,
-  club1.name AS team1_name, club2.name AS team2_name,
+  ${MATCH_PARTIES_COLUMNS},
   r.game_amount_cents, r.cents_per_km::text AS cents_per_km,
   c.payer AS payer_override, a.postal_code, a.country
 FROM compensation c
 JOIN division d ON d.id = c.division_id
 JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
-JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
-JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+${matchTeamJoins("c")}
 JOIN scale_rate r ON r.id = c.scale_rate_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.paid_on IS NULL AND c.starts_at < $2
 ORDER BY c.starts_at, c.id`;
@@ -59,11 +60,7 @@ const unpaidRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   distance_m: z.number().int(),
-  division: divisionCategorySchema,
-  type: divisionTypeSchema,
-  level: divisionLevelSchema,
-  team1_name: z.string(),
-  team2_name: z.string(),
+  ...matchPartiesFields,
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
   payer_override: z.string().nullable(),
@@ -85,9 +82,7 @@ export async function listUnpaidPlayedCompensations(
     return {
       id: row.id,
       startsAt: row.starts_at,
-      division: { category: row.division, type: row.type, level: row.level },
-      team1Name: row.team1_name,
-      team2Name: row.team2_name,
+      ...toMatchParties(row),
       distanceM: row.distance_m,
       gameAmountCents: row.game_amount_cents,
       centsPerKm: row.cents_per_km,

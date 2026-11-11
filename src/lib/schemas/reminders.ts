@@ -21,7 +21,7 @@ const weeksSchema = z
   .transform(Number)
   .pipe(z.number().int().min(MIN_AVAILABILITY_REMINDER_WEEKS).max(MAX_AVAILABILITY_REMINDER_WEEKS));
 
-export const reminderSettingsFormSchema = z.object({
+const reminderSettingsFormSchema = z.object({
   availabilityReminderEnabled: checkboxSchema,
   availabilityReminderWeeks: weeksSchema,
   weekendRecapEnabled: checkboxSchema,

@@ -15,21 +15,21 @@ import { seasonOf, seasonRange } from "@/lib/seasons";
 import {
   countCompensationsInRange,
   divisionExists,
-  insertCompensation,
   listApplicableRates,
+} from "../db/compensations";
+import type { ApplicableRate } from "../db/compensations";
+import {
+  insertCompensation,
   lockCompensation,
   updateCompensation as updateCompensationRow,
-} from "../db/compensations";
-import type { ApplicableRate, NewCompensation } from "../db/compensations";
-import { syncGameFromCompensation } from "../db/games";
-import type { Queryable } from "../db/users";
+} from "../db/compensation-writes";
+import type { NewCompensation } from "../db/compensation-writes";
+import { syncGameFromCompensation } from "../db/game-writes";
+import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
 import { resolveMatchInfo } from "./resolve-match";
-
-/** Exécute `action` dans une transaction (COMMIT si elle réussit, ROLLBACK si elle lève). */
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type CompensationDeps = { transaction: Transaction };
 
@@ -37,7 +37,7 @@ export type CompensationDeps = { transaction: Transaction };
  * Ressource introuvable (ou pas à l'utilisateur) : un champ du formulaire, ou
  * l'indemnité elle-même pour une modification.
  */
-export type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "compensation";
+type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "compensation";
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }

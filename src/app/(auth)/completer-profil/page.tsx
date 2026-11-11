@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logout } from "@/app/(app)/actions";
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { hasCompleteProfile } from "@/server/auth/current-user";
 import { requireSignedInOrRedirect } from "@/server/auth/session";
@@ -27,7 +28,7 @@ export default async function CompleteProfilePage() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 p-6">
       <div className="flex flex-col gap-2">
         <AppBrand />
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
       </div>
       <ProfileForm

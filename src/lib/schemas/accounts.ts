@@ -24,7 +24,7 @@ export const selfDeletionSchema = z.object({
   password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
 });
 
-export type AccountEdit = Profile & { email: string; role: AccountRole };
+type AccountEdit = Profile & { email: string; role: AccountRole };
 export type AccountEditIssue = ProfileIssue | "email.invalid" | "role.invalid";
 
 export type AccountEditResult =
@@ -53,8 +53,8 @@ export function parseAccountEdit(input: {
 
 // ─── Blocage ────────────────────────────────────────────────────────────────
 
-export const BLOCK_DURATIONS = ["24h", "7d", "30d"] as const;
-export type BlockDuration = (typeof BLOCK_DURATIONS)[number];
+const BLOCK_DURATIONS = ["24h", "7d", "30d"] as const;
+type BlockDuration = (typeof BLOCK_DURATIONS)[number];
 export const BLOCK_MODES = [...BLOCK_DURATIONS, "date", "indefinite"] as const;
 export type BlockMode = (typeof BLOCK_MODES)[number];
 
@@ -65,7 +65,7 @@ const DURATION_MS: Record<BlockDuration, number> = {
 };
 
 /** Une date de fin au-delà serait une erreur de saisie : « sans fin » existe pour ça. */
-export const MAX_BLOCK_DAYS = 5 * 366;
+const MAX_BLOCK_DAYS = 5 * 366;
 
 export type BlockIssue = "mode.invalid" | "date.invalid" | "date.past" | "date.too_far";
 

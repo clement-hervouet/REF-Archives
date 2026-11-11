@@ -26,7 +26,7 @@ import { MENU_ITEM_CLASS } from "./menu-styles";
 
 const t = fr.compensations.list;
 
-export type CompensationWithAmount = CompensationListItem & {
+type CompensationWithAmount = CompensationListItem & {
   amount: CompensationAmount;
   status: PaymentStatus;
 };

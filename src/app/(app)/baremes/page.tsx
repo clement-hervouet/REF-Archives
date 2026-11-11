@@ -2,6 +2,7 @@ import { Disclosure } from "@/components/features/common/disclosure";
 import { CreateScaleForm } from "@/components/features/scales/create-scale-form";
 import { LevelDefaults } from "@/components/features/scales/level-defaults";
 import { ScaleCard } from "@/components/features/scales/scale-card";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { listDivisions } from "@/server/db/divisions";
@@ -32,7 +33,7 @@ export default async function ScalesPage() {
   return (
     <div className="flex flex-col gap-8">
       <section className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 

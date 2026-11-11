@@ -1,22 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_CLUBS_PER_USER,
   MAX_COMPENSATIONS_PER_USER,
   addressBelongsTo,
   divisionExists,
-  ensureTeam,
   findCompensationForEdit,
-  insertAddress,
-  insertClub,
-  insertCompensation,
   listApplicableRates,
   listCompensationAmounts,
   listCompensationsInRange,
+} from "./compensations";
+import {
+  MAX_CLUBS_PER_USER,
+  ensureTeam,
+  insertAddress,
+  insertClub,
+  insertCompensation,
   lockCompensation,
   lockOwnedClubs,
   softDeleteCompensation,
   updateCompensation,
-} from "./compensations";
+} from "./compensation-writes";
 import { makeFakeDb } from "./fake-db";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";

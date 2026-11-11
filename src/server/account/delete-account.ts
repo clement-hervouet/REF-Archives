@@ -16,11 +16,9 @@ import { ACCOUNT_DELETION_DELAY_DAYS, selfDeletionSchema } from "@/lib/schemas/a
 import { wouldLeaveNoAdmin } from "../admin/manage-accounts";
 import { lockAccount, scheduleAccountDeletion } from "../db/accounts";
 import { revokeAllUserSessions } from "../db/sessions";
-import type { Queryable, UserCredentials } from "../db/users";
+import type { Queryable, Transaction, UserCredentials } from "../db/users";
 import { hashIdentifier } from "../auth/rate-limit";
 import type { AttemptDecision } from "../auth/rate-limit";
-
-type Transaction = <T>(action: (db: Queryable) => Promise<T>) => Promise<T>;
 
 export type SelfDeletionDeps = {
   transaction: Transaction;

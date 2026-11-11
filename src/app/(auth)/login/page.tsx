@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { getCurrentUser } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
@@ -54,7 +55,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         <RedirectIfSignedIn />
       </Suspense>
       <AppBrand />
-      <h1 className="text-2xl font-semibold">{fr.auth.login.title}</h1>
+      <PageTitle>{fr.auth.login.title}</PageTitle>
       <Suspense fallback={null}>
         <LoginNotice searchParams={searchParams} />
       </Suspense>
