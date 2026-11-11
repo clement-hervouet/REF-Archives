@@ -19,7 +19,7 @@ import {
 import type { LockedClub } from "../db/compensations";
 import type { Queryable } from "../db/users";
 
-export type MatchRejection =
+type MatchRejection =
   | { status: "not_found"; field: "team1" | "team2" | "venue" }
   | { status: "limit_reached"; resource: "club" };
 

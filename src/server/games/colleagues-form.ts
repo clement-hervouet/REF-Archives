@@ -87,7 +87,7 @@ function newClubErrors(error: z.ZodError): NewClubField[] {
 }
 
 /** Club choisi : aucun, un club existant (identifiant valide) ou un nouveau club validé. */
-export function readClubChoice(formData: FormData): ClubRead {
+function readClubChoice(formData: FormData): ClubRead {
   const raw = text(formData, "clubId") ?? "";
   if (raw === "") {
     return { ok: true, choice: { kind: "none" } };

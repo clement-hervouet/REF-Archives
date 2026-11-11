@@ -14,7 +14,7 @@ import { OFFICIAL_SLOTS, PERSON_NAME_MAX } from "@/lib/game-form-fields";
 import type { OfficialSlot } from "@/lib/game-form-fields";
 
 // Constantes sans Zod, aussi utilisées côté client : définies dans `game-form-fields.ts`.
-export { OFFICIAL_SLOTS, PERSON_NAME_MAX };
+export { OFFICIAL_SLOTS };
 export type { OfficialSlot };
 
 /** Aucun caractère de contrôle (sauts de ligne, tabulations, NUL…). */
@@ -37,14 +37,14 @@ export const newColleagueSchema = z.object({
   hasAccount: z.boolean(),
 });
 
-export const officialChoiceSchema = z.discriminatedUnion("kind", [
+const officialChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("none") }),
   z.object({ kind: z.literal("self") }),
   z.object({ kind: z.literal("existing"), personId: z.uuid() }),
   z.object({ kind: z.literal("new"), colleague: newColleagueSchema }),
 ]);
 
-export type OfficialChoice = z.output<typeof officialChoiceSchema>;
+type OfficialChoice = z.output<typeof officialChoiceSchema>;
 export type Officials = Record<OfficialSlot, OfficialChoice>;
 
 /** Codes d'erreur, traduits par l'interface (`src/i18n/fr.ts`). */

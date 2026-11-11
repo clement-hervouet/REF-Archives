@@ -37,7 +37,7 @@ export type CompensationDeps = { transaction: Transaction };
  * Ressource introuvable (ou pas à l'utilisateur) : un champ du formulaire, ou
  * l'indemnité elle-même pour une modification.
  */
-export type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "compensation";
+type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "compensation";
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }

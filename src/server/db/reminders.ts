@@ -13,8 +13,7 @@ import { assertIsoDate } from "@/lib/dates";
 import type { ReminderSettings } from "@/server/reminders/schedule";
 import type { Queryable } from "./users";
 
-export const reminderKindSchema = z.enum(["availability", "weekend_recap"]);
-export type ReminderKind = z.infer<typeof reminderKindSchema>;
+type ReminderKind = "availability" | "weekend_recap";
 
 /** Taille d'une page de destinataires lue par le job. */
 export const REMINDER_RECIPIENTS_PAGE_SIZE = 500;

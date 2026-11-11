@@ -10,8 +10,8 @@ import { toParisIsoDate } from "@/lib/dates";
 import { getSecurityHeaders } from "@/lib/security-headers";
 import type { UserDataExport } from "../db/data-export";
 
-export const DATA_EXPORT_FORMAT = "ref-archives-export";
-export const DATA_EXPORT_VERSION = 1;
+const DATA_EXPORT_FORMAT = "ref-archives-export";
+const DATA_EXPORT_VERSION = 1;
 
 // Le fichier n'est jamais interprété comme une page : aucune ressource, aucun cadre.
 const EXPORT_CSP = "default-src 'none'; frame-ancestors 'none'";

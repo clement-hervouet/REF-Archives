@@ -5,7 +5,7 @@
  */
 
 /** Ligne `level_default_scale` : un niveau (division) associé à un barème de l'utilisateur. */
-export type LevelDefault = {
+type LevelDefault = {
   divisionId: string;
   scaleId: string;
 };

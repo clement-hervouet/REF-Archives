@@ -35,7 +35,7 @@ export type ScaleDeps = {
 };
 
 /** État initial commun à tous les formulaires (`useActionState`). */
-export type IdleState = { status: "idle" };
+type IdleState = { status: "idle" };
 
 export type CreateScaleState =
   | IdleState

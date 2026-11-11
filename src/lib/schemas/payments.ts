@@ -10,12 +10,12 @@ import { isIsoDate } from "@/lib/dates";
 export const MAX_PAYMENT_SELECTION = 500;
 
 /** Aucune date de paiement antérieure (même borne que la contrainte en base). */
-export const MIN_PAYMENT_DATE = "2000-01-01";
+const MIN_PAYMENT_DATE = "2000-01-01";
 
 export type PaymentIssue =
   "no_selection" | "too_many" | "invalid_selection" | "invalid_date" | "future_date";
 
-export type PaymentSelection = {
+type PaymentSelection = {
   compensationIds: string[];
   /** Jour du paiement, `AAAA-MM-JJ` (Paris). */
   paidOn: string;

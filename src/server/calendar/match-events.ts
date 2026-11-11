@@ -18,13 +18,13 @@ const t = fr.calendar;
 const HOUR_MS = 60 * 60 * 1000;
 
 /** Avance du début de l'événement sur le coup d'envoi. */
-export const ARRIVAL_BEFORE_MS = HOUR_MS;
+const ARRIVAL_BEFORE_MS = HOUR_MS;
 /** Durée totale de l'événement, arrivée comprise. */
-export const EVENT_DURATION_MS = 3 * HOUR_MS;
+const EVENT_DURATION_MS = 3 * HOUR_MS;
 /** Profondeur d'historique du flux : un match plus ancien disparaît de l'agenda abonné. */
-export const FEED_HISTORY_MONTHS = 12;
+const FEED_HISTORY_MONTHS = 12;
 /** Rafraîchissement suggéré aux agendas (indicatif). */
-export const FEED_REFRESH_HOURS = 6;
+const FEED_REFRESH_HOURS = 6;
 
 /** UID iCal d'un match : identifiant de l'indemnité et suffixe fixe (indépendant du domaine). */
 export function matchUid(compensationId: string): string {

@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const FEED_FILE_PATTERN = /^([A-Za-z0-9_-]{43})\.ics$/;
 
-export const calendarFeedFileSchema = z
+const calendarFeedFileSchema = z
   .string()
   .regex(FEED_FILE_PATTERN)
   .transform((file) => file.slice(0, -".ics".length));
@@ -21,7 +21,7 @@ export function parseCalendarFeedFile(file: string): string | null {
 }
 
 /** `create` crée le lien ou le remplace (régénération) ; `revoke` le supprime. */
-export const calendarFeedIntentSchema = z.enum(["create", "revoke"]);
+const calendarFeedIntentSchema = z.enum(["create", "revoke"]);
 export type CalendarFeedIntent = z.infer<typeof calendarFeedIntentSchema>;
 
 /** Intention envoyée par le formulaire, ou `null` si elle est absente ou inconnue. */

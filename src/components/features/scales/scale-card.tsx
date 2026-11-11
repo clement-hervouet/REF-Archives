@@ -23,7 +23,7 @@ import { RenameScaleForm } from "./rename-scale-form";
 
 const t = fr.scales;
 
-export type ScaleCardActions = {
+type ScaleCardActions = {
   addRate?: (previous: AddRateState, formData: FormData) => Promise<AddRateState>;
   deleteRate?: (previous: DeleteRateState, formData: FormData) => Promise<DeleteRateState>;
   rename?: (previous: RenameScaleState, formData: FormData) => Promise<RenameScaleState>;

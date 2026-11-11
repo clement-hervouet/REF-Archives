@@ -13,7 +13,7 @@ import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions"
 import type { Queryable } from "./users";
 
 /** Personne à une place, réduite à ce qui s'affiche. */
-export type UpcomingOfficial = {
+type UpcomingOfficial = {
   slot: OfficialSlot;
   isSelf: boolean;
   firstname: string | null;

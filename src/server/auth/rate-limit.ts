@@ -16,7 +16,7 @@ export type RateLimitStore = {
 };
 
 /** Clé dont le blocage vient de commencer, avec la durée de ce blocage. */
-export type BlockedKey = {
+type BlockedKey = {
   key: string;
   retryAfterSeconds: number;
 };

@@ -8,7 +8,7 @@ import type { OfficialSlot } from "@/lib/schemas/officials";
 import type { Queryable } from "../db/users";
 
 /** Champ du formulaire d'informations du match (niveau, équipes, adresse). */
-export type MatchInfoField = "divisionId" | "team1" | "team2" | "venue";
+type MatchInfoField = "divisionId" | "team1" | "team2" | "venue";
 
 export type GameRejection =
   /** Indemnité, match, collègue ou élément du match introuvable (ou pas à l'utilisateur). */

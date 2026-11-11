@@ -17,11 +17,9 @@ import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
 import { parsePayerKey } from "@/lib/payers";
 
 /** Bornes raisonnables pour la date d'un match. */
-export const MATCH_DATE_MIN = "2000-01-01";
-export const MATCH_DATE_MAX = "2100-12-31";
+const MATCH_DATE_MIN = "2000-01-01";
+const MATCH_DATE_MAX = "2100-12-31";
 
-// Règles de la distance partagées avec l'aperçu du formulaire (`src/lib/distance.ts`).
-export { MAX_ONE_WAY_DISTANCE_M };
 /** Aucun caractère de contrôle (sauts de ligne, tabulations, NUL…). */
 const NO_CONTROL_CHARS = /^[^\p{Cc}]*$/u;
 /** Code postal générique (France et étranger) : lettres, chiffres, espace, tiret. */
@@ -68,7 +66,7 @@ export const teamChoiceSchema = z.discriminatedUnion("kind", [
  * Adresse du match : celle du club de l'équipe 1 (cas normal), ou une exception
  * (adresse déjà connue ou nouvelle).
  */
-export const venueChoiceSchema = z.discriminatedUnion("kind", [
+const venueChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("team1") }),
   z.object({ kind: z.literal("existing"), addressId: z.uuid() }),
   z.object({ kind: z.literal("new"), address: newAddressSchema }),
@@ -185,6 +183,3 @@ export type MatchInfo = z.output<typeof matchInfoFormSchema>;
 
 export type CompensationFormInput = z.input<typeof compensationFormSchema>;
 export type CompensationForm = z.output<typeof compensationFormSchema>;
-
-/** Champs du formulaire d'indemnité, pour signaler précisément ceux qui sont invalides. */
-export type CompensationFormField = keyof z.input<typeof compensationFieldsSchema>;

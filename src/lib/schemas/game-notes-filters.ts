@@ -11,11 +11,11 @@ export const GAME_NOTE_TYPES = ["Masculin", "Feminin"] as const;
 export const GAME_NOTE_LEVELS = ["U13", "U15", "U18", "U21", "1", "2", "3"] as const;
 
 /** Borne haute de pagination : au-delà, une URL bricolée ferait des OFFSET inutiles. */
-export const MAX_GAME_NOTES_PAGE = 1000;
+const MAX_GAME_NOTES_PAGE = 1000;
 
-export type GameNoteCategory = (typeof GAME_NOTE_CATEGORIES)[number];
-export type GameNoteType = (typeof GAME_NOTE_TYPES)[number];
-export type GameNoteLevel = (typeof GAME_NOTE_LEVELS)[number];
+type GameNoteCategory = (typeof GAME_NOTE_CATEGORIES)[number];
+type GameNoteType = (typeof GAME_NOTE_TYPES)[number];
+type GameNoteLevel = (typeof GAME_NOTE_LEVELS)[number];
 
 export type GameNotesFilters = {
   /** Catégorie de la division : Départemental, Régional, National, Pro. */

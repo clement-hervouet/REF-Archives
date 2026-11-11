@@ -22,7 +22,7 @@ import { relativeDay } from "@/server/reminders/upcoming";
 
 const t = fr.reminders.upcoming;
 
-export type UpcomingMatch = UpcomingMatchRow;
+type UpcomingMatch = UpcomingMatchRow;
 
 /** Au-delà, le titre de la semaine suffit : la mention ne dirait rien de plus. */
 const RELATIVE_LABEL_MAX_DAYS = 6;

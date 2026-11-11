@@ -14,9 +14,9 @@ export const MIN_AVAILABILITY_REMINDER_WEEKS = 1;
 export const MAX_AVAILABILITY_REMINDER_WEEKS = 12;
 
 /** Le récapitulatif du weekend part à partir du jeudi… */
-export const WEEKEND_RECAP_FIRST_WEEKDAY = 4;
+const WEEKEND_RECAP_FIRST_WEEKDAY = 4;
 /** … et au plus tard le samedi : après, il n'a plus d'intérêt. */
-export const WEEKEND_RECAP_LAST_WEEKDAY = 6;
+const WEEKEND_RECAP_LAST_WEEKDAY = 6;
 
 export type ReminderSettings = {
   availabilityReminderEnabled: boolean;

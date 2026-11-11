@@ -7,8 +7,8 @@ import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
 
 /** Bornes raisonnables pour une date d'application (dates passées autorisées). */
-export const EFFECTIVE_FROM_MIN = "2000-01-01";
-export const EFFECTIVE_FROM_MAX = "2100-12-31";
+const EFFECTIVE_FROM_MIN = "2000-01-01";
+const EFFECTIVE_FROM_MAX = "2100-12-31";
 
 /** Montant de match : jusqu'à 99 999,99 €, au plus deux décimales. */
 const EURO_AMOUNT_PATTERN = /^(\d{1,5})(?:[.,](\d{1,2}))?$/;
@@ -54,7 +54,7 @@ export const ratePerKmSchema = z
   .transform(eurosPerKmToCentsPerKm);
 
 /** Champs d'une ligne de barème (montant de match + taux km, datés). */
-export const scaleRateFormSchema = z.object({
+const scaleRateFormSchema = z.object({
   effectiveFrom: effectiveFromSchema,
   gameAmount: gameAmountSchema,
   ratePerKm: ratePerKmSchema,
