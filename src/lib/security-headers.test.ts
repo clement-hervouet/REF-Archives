@@ -43,6 +43,11 @@ describe("buildContentSecurityPolicy en production", () => {
     expect(directive(csp, "font-src")).toBe("font-src 'self'");
   });
 
+  it("n'autorise le service worker et le manifeste que depuis le site", () => {
+    expect(directive(csp, "worker-src")).toBe("worker-src 'self'");
+    expect(directive(csp, "manifest-src")).toBe("manifest-src 'self'");
+  });
+
   it("interdit les objets, les <base> externes, les cadres et les formulaires vers l'extérieur", () => {
     expect(directive(csp, "object-src")).toBe("object-src 'none'");
     expect(directive(csp, "base-uri")).toBe("base-uri 'self'");

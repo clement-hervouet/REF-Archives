@@ -239,6 +239,39 @@ export const fr = {
       disable: "Désactiver",
     },
   },
+  // Application installable (bloc 14).
+  pwa: {
+    install: {
+      title: "Installer l'application",
+      description:
+        "Ajoutez REF-Archives à l'écran d'accueil de votre téléphone, ou comme application sur votre ordinateur : elle s'ouvre en plein écran, sans la barre du navigateur. Une connexion à Internet reste nécessaire pour l'utiliser.",
+      button: "Installer l'application",
+      buttonHint: "Votre navigateur vous demandera de confirmer.",
+      standalone: "Vous utilisez l'application installée sur cet appareil.",
+      installed:
+        "Application installée : elle se trouve sur votre écran d'accueil ou parmi vos applications.",
+      dismissed:
+        "Installation annulée. Vous pourrez la relancer plus tard depuis le menu du navigateur.",
+      browserMenu:
+        "Pour installer l'application, ouvrez le menu de votre navigateur et choisissez « Installer l'application » ou « Ajouter à l'écran d'accueil ». Si ce choix n'apparaît pas, ce navigateur ne permet pas l'installation (c'est le cas de Firefox sur ordinateur) : ouvrez REF-Archives dans Chrome, Edge ou Safari.",
+      ios: {
+        intro: "Sur iPhone et iPad, l'installation se fait depuis Safari :",
+        steps: [
+          "Touchez le bouton Partager (le carré avec une flèche vers le haut, parfois dans le menu « … »).",
+          "Choisissez « Sur l'écran d'accueil » (faites défiler la liste si besoin).",
+          "Touchez « Ajouter » : l'icône REF-Archives apparaît sur l'écran d'accueil.",
+        ],
+      },
+    },
+    // Page servie par le service worker sans réseau (src/lib/offline-page.ts).
+    offline: {
+      title: "Hors ligne",
+      heading: "Pas de connexion",
+      body: "REF-Archives a besoin d'Internet pour afficher vos indemnités, vos matchs et vos notes.",
+      hint: "Vérifiez votre connexion, puis réessayez. Aucune de vos données n'est gardée sur cet appareil.",
+      retry: "Réessayer",
+    },
+  },
   forgotPassword: {
     title: "Mot de passe oublié",
     intro:

@@ -33,6 +33,10 @@ export function buildContentSecurityPolicy({ nonce, isDevelopment }: CspOptions)
     "img-src 'self' blob: data:",
     "font-src 'self'",
     `connect-src 'self'${isDevelopment ? " ws: wss:" : ""}`,
+    // Service worker de l'application installable (bloc 14) et manifeste : explicites, sans
+    // dépendre de la façon dont chaque navigateur combine `script-src` et 'strict-dynamic'.
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
