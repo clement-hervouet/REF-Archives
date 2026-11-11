@@ -3,7 +3,7 @@
  * l'identifiant vient du formulaire et la requête filtre sur le propriétaire.
  */
 import { z } from "zod";
-import { softDeleteGame } from "../db/games";
+import { softDeleteGame } from "../db/game-writes";
 import type { GameDeps } from "./rejection";
 
 export type DeleteGameState = { status: "idle" } | { status: "deleted" } | { status: "not_found" };

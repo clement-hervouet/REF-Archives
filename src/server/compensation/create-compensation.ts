@@ -15,13 +15,16 @@ import { seasonOf, seasonRange } from "@/lib/seasons";
 import {
   countCompensationsInRange,
   divisionExists,
-  insertCompensation,
   listApplicableRates,
+} from "../db/compensations";
+import type { ApplicableRate } from "../db/compensations";
+import {
+  insertCompensation,
   lockCompensation,
   updateCompensation as updateCompensationRow,
-} from "../db/compensations";
-import type { ApplicableRate, NewCompensation } from "../db/compensations";
-import { syncGameFromCompensation } from "../db/games";
+} from "../db/compensation-writes";
+import type { NewCompensation } from "../db/compensation-writes";
+import { syncGameFromCompensation } from "../db/game-writes";
 import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";

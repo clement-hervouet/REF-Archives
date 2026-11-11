@@ -9,14 +9,9 @@
  * fournit pour annuler sa propre transaction.
  */
 import type { MatchInfo } from "@/lib/schemas/compensations";
-import {
-  addressBelongsTo,
-  ensureTeam,
-  insertAddress,
-  insertClub,
-  lockOwnedClubs,
-} from "../db/compensations";
-import type { LockedClub } from "../db/compensations";
+import { addressBelongsTo } from "../db/compensations";
+import { ensureTeam, insertAddress, insertClub, lockOwnedClubs } from "../db/compensation-writes";
+import type { LockedClub } from "../db/compensation-writes";
 import type { Queryable } from "../db/users";
 
 type MatchRejection =

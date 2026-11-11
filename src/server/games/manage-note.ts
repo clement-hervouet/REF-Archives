@@ -4,7 +4,7 @@
  * La Server Action valide le formulaire (`noteFormSchema`) AVANT d'appeler ce service.
  */
 import type { NoteForm } from "@/lib/schemas/notes";
-import { lockGame } from "../db/games";
+import { lockGame } from "../db/game-writes";
 import { saveNote } from "../db/notes";
 import { rejectGame, runRejectable } from "./rejection";
 import type { GameDeps, GameRejection } from "./rejection";

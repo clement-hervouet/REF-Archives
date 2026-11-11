@@ -22,7 +22,7 @@ import { readText } from "@/lib/form-data";
 import { oneWayKmInput } from "@/lib/distance";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
-import { softDeleteCompensation } from "../db/compensations";
+import { softDeleteCompensation } from "../db/compensation-writes";
 import type { CompensationForEdit } from "../db/compensations";
 import type { CompensationAmount } from "./amount";
 import { createCompensation, updateCompensation } from "./create-compensation";
