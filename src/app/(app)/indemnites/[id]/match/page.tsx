@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { OfficialsForm } from "@/components/features/games/officials-form";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { gamePath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -47,7 +48,7 @@ export default async function CompleteGamePage(props: CompleteGamePageProps) {
         <Link href="/indemnites" className="inline-flex min-h-11 items-center self-start underline">
           {t.complete.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{t.complete.title}</h1>
+        <PageTitle>{t.complete.title}</PageTitle>
         <p className="font-medium break-words">
           {t.complete.matchOf
             .replace(

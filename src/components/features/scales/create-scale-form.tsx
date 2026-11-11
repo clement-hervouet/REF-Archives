@@ -4,6 +4,7 @@ import { useId } from "react";
 import { fr } from "@/i18n/fr";
 import type { CreateScaleState } from "@/server/scales/manage-scales";
 import { FormMessage, SUBMIT_BUTTON_CLASS, TextField } from "./form-parts";
+import { RateFields } from "./rate-fields";
 import { fieldError, scaleStatusMessage } from "./scale-messages";
 import { useScaleForm } from "./use-scale-form";
 
@@ -35,34 +36,7 @@ export function CreateScaleForm({ action }: Props) {
           defaultValue={valueOf("name")}
           error={fieldError("name", invalid)}
         />
-        <div className="grid gap-4 md:grid-cols-3">
-          <TextField
-            id={`${id}-from`}
-            name="effectiveFrom"
-            type="date"
-            label={t.fields.effectiveFrom}
-            defaultValue={valueOf("effectiveFrom")}
-            error={fieldError("effectiveFrom", invalid)}
-          />
-          <TextField
-            id={`${id}-amount`}
-            name="gameAmount"
-            inputMode="decimal"
-            label={t.fields.gameAmount}
-            hint={t.fields.gameAmountHint}
-            defaultValue={valueOf("gameAmount")}
-            error={fieldError("gameAmount", invalid)}
-          />
-          <TextField
-            id={`${id}-rate`}
-            name="ratePerKm"
-            inputMode="decimal"
-            label={t.fields.ratePerKm}
-            hint={t.fields.ratePerKmHint}
-            defaultValue={valueOf("ratePerKm")}
-            error={fieldError("ratePerKm", invalid)}
-          />
-        </div>
+        <RateFields idBase={id} valueOf={valueOf} invalid={invalid} />
         <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
           {isPending ? t.create.submitting : t.create.submit}
         </button>

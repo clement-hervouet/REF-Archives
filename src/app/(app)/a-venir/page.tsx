@@ -1,4 +1,5 @@
 import { UpcomingMatchList } from "@/components/features/reminders/upcoming-match-list";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { addDays, formatShortDate } from "@/lib/weeks";
@@ -28,7 +29,7 @@ export default async function UpcomingPage() {
   return (
     <div className="flex flex-col gap-10">
       <section className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { GameForm } from "@/components/features/games/game-form";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { gamePath } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
@@ -41,7 +42,7 @@ export default async function EditGamePage(props: EditGamePageProps) {
         >
           {t.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">
           {game.compensationId === null ? t.introAlone : t.introLinked}
         </p>

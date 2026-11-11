@@ -4,6 +4,7 @@ import { ColleagueDirectory } from "@/components/features/games/colleague-direct
 import { ColleagueForm } from "@/components/features/games/colleague-form";
 import { colleagueSearchText } from "@/components/features/games/colleague-search";
 import { personLabel } from "@/components/features/games/person-label";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { listClubs } from "@/server/db/clubs";
@@ -30,7 +31,7 @@ export default async function ColleaguesPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 

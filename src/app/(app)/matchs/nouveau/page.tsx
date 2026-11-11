@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GameForm } from "@/components/features/games/game-form";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { GAME_NOTES_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
@@ -29,7 +30,7 @@ export default async function NewGamePage() {
         >
           {t.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
       <GameForm

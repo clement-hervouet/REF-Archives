@@ -3,7 +3,7 @@
  * désactivée pour la saison en cours, et densité. Formulaire HTML simple, comme
  * « Apparence » : un bouton explicite, parcourir les choix au clavier n'applique rien (§7.4).
  */
-import { SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import { RADIO_INPUT_CLASS, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { SEASONAL_DENSITIES } from "@/lib/seasonal-theme";
 import type { SeasonalState } from "@/lib/seasonal-theme";
@@ -36,7 +36,7 @@ export function SeasonalThemeForm({ state, action }: Props) {
             name="seasonal"
             value="on"
             defaultChecked={state.enabled}
-            className="size-4 shrink-0 accent-primary"
+            className={RADIO_INPUT_CLASS}
           />
           <span className="leading-tight">{t.on}</span>
         </label>
@@ -46,7 +46,7 @@ export function SeasonalThemeForm({ state, action }: Props) {
             name="seasonal"
             value="off"
             defaultChecked={!state.enabled}
-            className="size-4 shrink-0 accent-primary"
+            className={RADIO_INPUT_CLASS}
           />
           <span className="leading-tight">{t.off}</span>
         </label>
@@ -61,7 +61,7 @@ export function SeasonalThemeForm({ state, action }: Props) {
                 name="density"
                 value={density}
                 defaultChecked={density === state.density}
-                className="size-4 shrink-0 accent-primary"
+                className={RADIO_INPUT_CLASS}
               />
               <span className="leading-tight">{t.densities[density]}</span>
             </label>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CompensationForm } from "@/components/features/compensations/compensation-form";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { loadCompensationFormData } from "@/server/compensation/form-data";
@@ -19,7 +20,7 @@ export default async function NewCompensationPage() {
         <Link href="/indemnites" className="inline-flex min-h-11 items-center self-start underline">
           {t.edit.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{t.new.title}</h1>
+        <PageTitle>{t.new.title}</PageTitle>
         <p className="text-muted-foreground">{t.new.intro}</p>
       </section>
       <CompensationForm action={createCompensationAction} {...data} />

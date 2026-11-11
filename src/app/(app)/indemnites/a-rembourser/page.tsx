@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PaymentForm } from "@/components/features/payments/payment-form";
 import type { PayableGroup } from "@/components/features/payments/payment-form";
 import { divisionLabel } from "@/components/features/scales/division-label";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatCents, formatMatchDay } from "@/lib/format";
@@ -49,7 +50,7 @@ export default async function UnpaidCompensationsPage() {
         {t.back}
       </Link>
       <section className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
         {summary.count > 0 && (
           <p className="font-medium tabular-nums">

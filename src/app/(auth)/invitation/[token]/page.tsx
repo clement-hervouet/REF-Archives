@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { tokenSchema } from "@/lib/schemas/auth";
 import { findPendingInvitation } from "@/server/db/invitations";
@@ -36,7 +37,7 @@ export default function InvitationPage({ params }: InvitationPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
       <AppBrand />
-      <h1 className="text-2xl font-semibold">{fr.invitation.title}</h1>
+      <PageTitle>{fr.invitation.title}</PageTitle>
       <Suspense fallback={null}>
         <InvitationContent params={params} />
       </Suspense>
