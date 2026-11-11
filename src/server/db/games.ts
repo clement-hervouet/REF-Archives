@@ -8,8 +8,16 @@
  */
 import { z } from "zod";
 import type { OfficialSlot } from "@/lib/schemas/officials";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import {
+  MATCH_ADDRESS_COLUMNS,
+  MATCH_PARTIES_COLUMNS,
+  matchAddressFields,
+  matchPartiesFields,
+  matchTeamJoins,
+  toMatchAddress,
+  toMatchParties,
+} from "./match-info";
+import type { MatchAddress, MatchDivision } from "./match-info";
 import { personSummaryRowSchema, toPersonSummary } from "./persons";
 import type { PersonSummary } from "./persons";
 import type { Queryable } from "./users";
@@ -23,10 +31,10 @@ export type OfficialIds = Record<OfficialSlot, string | null>;
 export type GameDetail = {
   id: string;
   startsAt: Date;
-  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  division: MatchDivision;
   team1Name: string;
   team2Name: string;
-  address: { street: string; number: string | null; postalCode: string; city: string };
+  address: MatchAddress;
   /** Indemnité active liée, s'il y en a une. */
   compensationId: string | null;
   officials: Record<OfficialSlot, PersonSummary | null>;
@@ -125,10 +133,7 @@ export async function linkCompensationToGame(
 const FIND_COMPENSATION_FOR_GAME_SQL = `SELECT c.id, c.starts_at, c.game_id,
   club1.name AS team1_name, club2.name AS team2_name
 FROM compensation c
-JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
-JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+${matchTeamJoins("c")}
 WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
 
 const compensationForGameRowSchema = z.object({
@@ -426,9 +431,8 @@ function personJson(alias: string): string {
     'lastname', ${alias}.lastname, 'has_account', ${alias}.has_account) END`;
 }
 
-const FIND_GAME_SQL = `SELECT g.id, g.starts_at, d.division, d.type, d.level,
-  club1.name AS team1_name, club2.name AS team2_name,
-  a.street, a.number, a.postal_code, a.city,
+const FIND_GAME_SQL = `SELECT g.id, g.starts_at, ${MATCH_PARTIES_COLUMNS},
+  ${MATCH_ADDRESS_COLUMNS},
   c.id AS compensation_id,
   ${personJson("r1")} AS referee1,
   ${personJson("r2")} AS referee2,
@@ -436,10 +440,7 @@ const FIND_GAME_SQL = `SELECT g.id, g.starts_at, d.division, d.type, d.level,
   ${personJson("o")} AS observer
 FROM game g
 JOIN division d ON d.id = g.division_id
-JOIN team t1 ON t1.id = g.team1_id AND t1.user_id = g.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = g.user_id
-JOIN team t2 ON t2.id = g.team2_id AND t2.user_id = g.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = g.user_id
+${matchTeamJoins("g")}
 JOIN address a ON a.id = g.address_id AND a.user_id = g.user_id
 LEFT JOIN person r1 ON r1.id = g.referee1_id AND r1.user_id = g.user_id
 LEFT JOIN person r2 ON r2.id = g.referee2_id AND r2.user_id = g.user_id
@@ -453,15 +454,8 @@ const officialSchema = personSummaryRowSchema.nullable();
 const gameRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
-  division: divisionCategorySchema,
-  type: divisionTypeSchema,
-  level: divisionLevelSchema,
-  team1_name: z.string(),
-  team2_name: z.string(),
-  street: z.string(),
-  number: z.string().nullable(),
-  postal_code: z.string(),
-  city: z.string(),
+  ...matchPartiesFields,
+  ...matchAddressFields,
   compensation_id: z.uuid().nullable(),
   referee1: officialSchema,
   referee2: officialSchema,
@@ -487,15 +481,8 @@ export async function findGame(
   return {
     id: row.id,
     startsAt: row.starts_at,
-    division: { category: row.division, type: row.type, level: row.level },
-    team1Name: row.team1_name,
-    team2Name: row.team2_name,
-    address: {
-      street: row.street,
-      number: row.number,
-      postalCode: row.postal_code,
-      city: row.city,
-    },
+    ...toMatchParties(row),
+    address: toMatchAddress(row),
     compensationId: row.compensation_id,
     officials: {
       referee1: toOfficial(row.referee1),

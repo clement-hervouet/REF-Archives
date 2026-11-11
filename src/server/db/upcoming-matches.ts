@@ -8,8 +8,16 @@
 import { z } from "zod";
 import { OFFICIAL_SLOTS } from "@/lib/game-form-fields";
 import type { OfficialSlot } from "@/lib/game-form-fields";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import {
+  MATCH_ADDRESS_COLUMNS,
+  MATCH_PARTIES_COLUMNS,
+  matchAddressFields,
+  matchPartiesFields,
+  matchTeamJoins,
+  toMatchAddress,
+  toMatchParties,
+} from "./match-info";
+import type { MatchAddress, MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Personne à une place, réduite à ce qui s'affiche. */
@@ -24,10 +32,10 @@ export type UpcomingMatchRow = {
   /** Identifiant de l'indemnité (export `.ics`, modification). */
   id: string;
   startsAt: Date;
-  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  division: MatchDivision;
   team1Name: string;
   team2Name: string;
-  address: { street: string; number: string | null; postalCode: string; city: string };
+  address: MatchAddress;
   /** Match complet lié, s'il existe. */
   gameId: string | null;
   /** Officiels dans l'ordre officiel ; vide sans match complet. */
@@ -37,9 +45,8 @@ export type UpcomingMatchRow = {
 // Les quatre places deviennent des lignes (VALUES latéral) pour être agrégées dans l'ordre
 // officiel. Le match lié doit être actif et au même utilisateur.
 const LIST_UPCOMING_SQL = `SELECT c.id, c.starts_at, c.game_id,
-  d.division, d.type, d.level,
-  club1.name AS team1_name, club2.name AS team2_name,
-  a.street, a.number, a.postal_code, a.city,
+  ${MATCH_PARTIES_COLUMNS},
+  ${MATCH_ADDRESS_COLUMNS},
   coalesce((
     SELECT json_agg(json_build_object(
       'slot', o.slot, 'is_self', p.is_self, 'firstname', p.firstname, 'lastname', p.lastname
@@ -56,10 +63,7 @@ const LIST_UPCOMING_SQL = `SELECT c.id, c.starts_at, c.game_id,
   ), '[]'::json) AS officials
 FROM compensation c
 JOIN division d ON d.id = c.division_id
-JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
-JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+${matchTeamJoins("c")}
 JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
 ORDER BY c.starts_at, c.id`;
@@ -75,15 +79,8 @@ const rowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   game_id: z.uuid().nullable(),
-  division: divisionCategorySchema,
-  type: divisionTypeSchema,
-  level: divisionLevelSchema,
-  team1_name: z.string(),
-  team2_name: z.string(),
-  street: z.string(),
-  number: z.string().nullable(),
-  postal_code: z.string(),
-  city: z.string(),
+  ...matchPartiesFields,
+  ...matchAddressFields,
   officials: z.array(officialRowSchema),
 });
 
@@ -98,15 +95,8 @@ export async function listUpcomingMatches(
     return {
       id: row.id,
       startsAt: row.starts_at,
-      division: { category: row.division, type: row.type, level: row.level },
-      team1Name: row.team1_name,
-      team2Name: row.team2_name,
-      address: {
-        street: row.street,
-        number: row.number,
-        postalCode: row.postal_code,
-        city: row.city,
-      },
+      ...toMatchParties(row),
+      address: toMatchAddress(row),
       gameId: row.game_id,
       officials: row.officials.map((official) => ({
         slot: official.slot,

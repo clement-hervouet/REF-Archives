@@ -10,7 +10,14 @@ import { z } from "zod";
 import { effectivePayer } from "@/lib/payers";
 import type { Payer } from "@/lib/payers";
 import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import {
+  MATCH_ADDRESS_COLUMNS,
+  MATCH_PARTIES_COLUMNS,
+  matchTeamJoins,
+  toMatchAddress,
+  toMatchParties,
+} from "./match-info";
+import type { MatchAddress, MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Limites anti-abus (application potentiellement publique). */
@@ -319,10 +326,10 @@ export type CompensationAmountRow = {
 
 export type CompensationListItem = CompensationAmountRow & {
   id: string;
-  division: { category: DivisionCategory; type: DivisionType; level: DivisionLevel };
+  division: MatchDivision;
   team1Name: string;
   team2Name: string;
-  address: { street: string; number: string | null; postalCode: string; city: string };
+  address: MatchAddress;
   scaleName: string;
   /** Match complet lié (bloc 9), s'il existe. */
   gameId: string | null;
@@ -359,16 +366,12 @@ WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 // minuit dans le fuseau du serveur, et pourrait changer de jour.
 const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.game_id, c.paid_on::text AS paid_on,
   c.payer AS payer_override,
-  d.division, d.type, d.level,
-  club1.name AS team1_name, club2.name AS team2_name,
-  a.street, a.number, a.postal_code, a.city, a.country,
+  ${MATCH_PARTIES_COLUMNS},
+  ${MATCH_ADDRESS_COLUMNS}, a.country,
   s.name AS scale_name, r.game_amount_cents, r.cents_per_km::text AS cents_per_km
 FROM compensation c
 JOIN division d ON d.id = c.division_id
-JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
-JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
-JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
-JOIN club club2 ON club2.id = t2.club_id AND club2.user_id = c.user_id
+${matchTeamJoins("c")}
 JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
 JOIN scale_rate r ON r.id = c.scale_rate_id
 JOIN scale s ON s.id = r.scale_id
@@ -459,15 +462,8 @@ export async function listCompensationsInRange(
     return {
       ...toAmountRow(row),
       id: row.id,
-      division: { category: row.division, type: row.type, level: row.level },
-      team1Name: row.team1_name,
-      team2Name: row.team2_name,
-      address: {
-        street: row.street,
-        number: row.number,
-        postalCode: row.postal_code,
-        city: row.city,
-      },
+      ...toMatchParties(row),
+      address: toMatchAddress(row),
       scaleName: row.scale_name,
       gameId: row.game_id,
     };
