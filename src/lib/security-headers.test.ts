@@ -112,6 +112,19 @@ describe("getSecurityHeaders", () => {
     expect(getSecurityHeaders("/api/ical/abc.ics")["Referrer-Policy"]).toBe("no-referrer");
   });
 
+  it("supprime le Referer sur la page de réinitialisation (jeton dans l'URL)", () => {
+    // Le jeton de reset vit dans le chemin, comme pour /invitation : il ne doit jamais
+    // fuiter par le Referer (intention déclarée dans security-headers.ts).
+    expect(getSecurityHeaders("/reset-password/abc123")["Referrer-Policy"]).toBe("no-referrer");
+    expect(getSecurityHeaders("/reset-password")["Referrer-Policy"]).toBe("no-referrer");
+  });
+
+  it("ne confond pas /reset-password avec un chemin voisin", () => {
+    expect(getSecurityHeaders("/reset-passwords/x")["Referrer-Policy"]).toBe(
+      "strict-origin-when-cross-origin",
+    );
+  });
+
   it("ne confond pas un préfixe avec un chemin voisin", () => {
     expect(getSecurityHeaders("/invitations")["Referrer-Policy"]).toBe(
       "strict-origin-when-cross-origin",
