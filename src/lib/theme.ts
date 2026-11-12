@@ -17,10 +17,6 @@ export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 /** Thème imposé à la page, ou `undefined` pour suivre le système. */
 export type ThemeAttribute = "light" | "dark" | undefined;
 
-function isThemePreference(value: unknown): value is ThemePreference {
-  return typeof value === "string" && THEME_PREFERENCES.some((theme) => theme === value);
-}
-
 /** Valeur de `data-theme` à partir du cookie (absent, inconnu ou `system` = `undefined`). */
 export function themeAttributeFromCookie(cookieValue: string | undefined): ThemeAttribute {
   return cookieValue === "light" || cookieValue === "dark" ? cookieValue : undefined;
@@ -29,10 +25,4 @@ export function themeAttributeFromCookie(cookieValue: string | undefined): Theme
 /** Préférence affichée dans le formulaire à partir du cookie. */
 export function themePreferenceFromCookie(cookieValue: string | undefined): ThemePreference {
   return themeAttributeFromCookie(cookieValue) ?? "system";
-}
-
-/** Lit la préférence envoyée par le formulaire, ou `null` si elle est absente ou inconnue. */
-export function parseThemeForm(formData: FormData): ThemePreference | null {
-  const value = formData.get("theme");
-  return isThemePreference(value) ? value : null;
 }

@@ -1,3 +1,10 @@
 allowBuilds:
   sharp: false
   unrs-resolver: false
+
+# Audit bloc 16 (F9/F10) : forcer les versions corrigées de deux dépendances de dev
+# transitives (glob via node-pg-migrate, minimatch via la chaîne ESLint). Overrides limités
+# aux plages vulnérables (GHSA-3g3m-2fjr-6pw4, GHSA-g3hv-75wg-m249).
+overrides:
+  glob@>=9.0.0 <14.0.2: ^14.0.2
+  minimatch@>=7.0.0 <11.0.1: ^11.0.1

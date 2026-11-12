@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildContentSecurityPolicy, generateNonce, getSecurityHeaders } from "./security-headers";
+import {
+  buildContentSecurityPolicy,
+  expectedHostFromAppUrl,
+  generateNonce,
+  getSecurityHeaders,
+  isAllowedHost,
+} from "./security-headers";
 
 const NONCE = "bm9uY2UtZGUtdGVzdA==";
 
@@ -112,6 +118,19 @@ describe("getSecurityHeaders", () => {
     expect(getSecurityHeaders("/api/ical/abc.ics")["Referrer-Policy"]).toBe("no-referrer");
   });
 
+  it("supprime le Referer sur la page de réinitialisation (jeton dans l'URL)", () => {
+    // Le jeton de reset vit dans le chemin, comme pour /invitation : il ne doit jamais
+    // fuiter par le Referer (intention déclarée dans security-headers.ts).
+    expect(getSecurityHeaders("/reset-password/abc123")["Referrer-Policy"]).toBe("no-referrer");
+    expect(getSecurityHeaders("/reset-password")["Referrer-Policy"]).toBe("no-referrer");
+  });
+
+  it("ne confond pas /reset-password avec un chemin voisin", () => {
+    expect(getSecurityHeaders("/reset-passwords/x")["Referrer-Policy"]).toBe(
+      "strict-origin-when-cross-origin",
+    );
+  });
+
   it("ne confond pas un préfixe avec un chemin voisin", () => {
     expect(getSecurityHeaders("/invitations")["Referrer-Policy"]).toBe(
       "strict-origin-when-cross-origin",
@@ -119,5 +138,51 @@ describe("getSecurityHeaders", () => {
     expect(getSecurityHeaders("/invitationx/abc")["Referrer-Policy"]).toBe(
       "strict-origin-when-cross-origin",
     );
+  });
+});
+
+describe("expectedHostFromAppUrl", () => {
+  it("extrait l'hôte sans le port, en minuscules", () => {
+    expect(expectedHostFromAppUrl("https://REF.example.com:8443")).toBe("ref.example.com");
+    expect(expectedHostFromAppUrl("http://localhost:3000")).toBe("localhost");
+  });
+
+  it("renvoie null si APP_URL est absent ou invalide", () => {
+    expect(expectedHostFromAppUrl(undefined)).toBeNull();
+    expect(expectedHostFromAppUrl("")).toBeNull();
+    expect(expectedHostFromAppUrl("pas-une-url")).toBeNull();
+  });
+});
+
+describe("isAllowedHost", () => {
+  const prod = { expectedHost: "ref.example.com", isDevelopment: false };
+
+  it("accepte l'hôte attendu, quel que soit le port ou la casse", () => {
+    expect(isAllowedHost("ref.example.com", prod)).toBe(true);
+    expect(isAllowedHost("ref.example.com:443", prod)).toBe(true);
+    expect(isAllowedHost("REF.Example.com", prod)).toBe(true);
+  });
+
+  it("accepte les hôtes loopback (healthcheck Docker interne)", () => {
+    expect(isAllowedHost("localhost:3000", prod)).toBe(true);
+    expect(isAllowedHost("127.0.0.1", prod)).toBe(true);
+    expect(isAllowedHost("[::1]:3000", prod)).toBe(true);
+  });
+
+  it("refuse en production un Host inattendu ou absent", () => {
+    expect(isAllowedHost("evil.example", prod)).toBe(false);
+    expect(isAllowedHost("203.0.113.9", prod)).toBe(false);
+    expect(isAllowedHost(null, prod)).toBe(false);
+    expect(isAllowedHost("", prod)).toBe(false);
+  });
+
+  it("ne bloque jamais en développement", () => {
+    expect(
+      isAllowedHost("evil.example", { expectedHost: "ref.example.com", isDevelopment: true }),
+    ).toBe(true);
+  });
+
+  it("laisse passer (fail open) si l'hôte attendu est inconnu", () => {
+    expect(isAllowedHost("evil.example", { expectedHost: null, isDevelopment: false })).toBe(true);
   });
 });

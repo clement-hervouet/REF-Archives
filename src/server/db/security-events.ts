@@ -26,6 +26,12 @@ export const securityEventTypeSchema = z.enum([
   "account_deleted",
   // Export de ses données par l'utilisateur (bloc 11, migration 019).
   "data_exported",
+  // Écritures du barème commun par un admin (bloc 16, migration 020).
+  "common_scale_rate_added",
+  "common_scale_renamed",
+  "common_scale_rate_deleted",
+  // Changement de mot de passe par un utilisateur connecté (bloc 16, migration 021).
+  "password_changed",
 ]);
 export type SecurityEventType = z.infer<typeof securityEventTypeSchema>;
 

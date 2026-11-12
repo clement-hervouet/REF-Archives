@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import { AccountDetailsForm } from "@/components/features/accounts/account-details-form";
 import {
   accountContentsLabel,
@@ -31,7 +32,7 @@ import {
 
 const t = fr.admin.accounts;
 const s = t.sections;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const idSchema = z.uuid();
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type AccountPageProps = { params: Promise<{ id: string }> };
@@ -40,7 +41,7 @@ export default async function AccountPage(props: AccountPageProps) {
   // Page réservée aux admins : 404 pour un utilisateur simple (§6.2).
   const admin = await requireAdminOrRedirect();
   const { id } = await props.params;
-  if (!UUID.test(id)) {
+  if (!idSchema.safeParse(id).success) {
     notFound();
   }
   const account = await findAccount(getDb(), id);

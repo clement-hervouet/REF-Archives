@@ -105,6 +105,27 @@ export const fr = {
       notFound: "Votre compte est introuvable. Reconnectez-vous.",
     },
   },
+  changePassword: {
+    title: "Mot de passe",
+    description: "Changez votre mot de passe. Vos autres appareils seront déconnectés.",
+    open: "Changer mon mot de passe",
+    currentPassword: "Mot de passe actuel",
+    currentPasswordHint: "Pour confirmer que c'est bien vous.",
+    newPassword: "Nouveau mot de passe",
+    newPasswordHint: "12 caractères minimum. Une phrase de passe fonctionne très bien.",
+    confirmation: "Confirmer le nouveau mot de passe",
+    submit: "Changer mon mot de passe",
+    submitting: "Modification en cours…",
+    success: "Mot de passe modifié. Vos autres appareils ont été déconnectés.",
+    errors: {
+      invalid: "Saisissez votre mot de passe actuel.",
+      wrongPassword: "Mot de passe actuel incorrect.",
+      samePassword: "Le nouveau mot de passe doit être différent de l'actuel.",
+      mismatch: "Les deux mots de passe ne correspondent pas.",
+      rateLimited: "Trop de tentatives. Réessayez dans {minutes} min.",
+      notFound: "Votre compte est introuvable. Reconnectez-vous.",
+    },
+  },
   myData: {
     title: "Mes données",
     description:

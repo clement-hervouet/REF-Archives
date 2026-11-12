@@ -4,20 +4,11 @@ import {
   SEASONAL_PARTICLE_COUNTS,
   WEATHER_SEASONS,
   currentSeasonalPeriod,
-  parseSeasonalForm,
   resolveSeasonalState,
   seasonalDensityFromCookie,
   seasonalPeriodOn,
   seasonalStateCookieValue,
 } from "./seasonal-theme";
-
-function form(values: Record<string, string>): FormData {
-  const data = new FormData();
-  for (const [key, value] of Object.entries(values)) {
-    data.set(key, value);
-  }
-  return data;
-}
 
 describe("seasonalPeriodOn", () => {
   it("suit les dates météorologiques (1er mars, juin, septembre, décembre)", () => {
@@ -121,33 +112,6 @@ describe("seasonalStateCookieValue", () => {
     const period = seasonalPeriodOn("2027-04-02");
     expect(seasonalStateCookieValue(period, true)).toBe("spring-2027:on");
     expect(seasonalStateCookieValue(period, false)).toBe("spring-2027:off");
-  });
-});
-
-describe("parseSeasonalForm", () => {
-  it("lit l'état et la densité", () => {
-    expect(parseSeasonalForm(form({ seasonal: "on", density: "high" }))).toEqual({
-      enabled: true,
-      density: "high",
-    });
-    expect(parseSeasonalForm(form({ seasonal: "off", density: "low" }))).toEqual({
-      enabled: false,
-      density: "low",
-    });
-  });
-
-  it("accepte l'état seul (bandeau) sans toucher à la densité", () => {
-    expect(parseSeasonalForm(form({ seasonal: "off" }))).toEqual({
-      enabled: false,
-      density: null,
-    });
-  });
-
-  it("refuse un formulaire incomplet ou forgé", () => {
-    expect(parseSeasonalForm(form({}))).toBeNull();
-    expect(parseSeasonalForm(form({ density: "high" }))).toBeNull();
-    expect(parseSeasonalForm(form({ seasonal: "yes" }))).toBeNull();
-    expect(parseSeasonalForm(form({ seasonal: "on", density: "max" }))).toBeNull();
   });
 });
 

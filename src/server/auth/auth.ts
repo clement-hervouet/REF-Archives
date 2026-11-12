@@ -13,6 +13,14 @@ import { getClientIp } from "./client-ip";
 import { authenticate } from "./login";
 import { createLoginDeps } from "./login-deps";
 import { recordSecurityEvent } from "./record-security-event";
+import { buildSessionCookie } from "./session-cookie";
+
+// Attributs du cookie de session figés explicitement (§6.1, AUTH-2), cohérents avec
+// SESSION_COOKIE_NAMES (`public-paths.ts`). `secure`/`__Secure-` seulement en prod ou en https.
+const sessionCookie = buildSessionCookie({
+  nodeEnv: process.env.NODE_ENV,
+  appUrl: process.env.APP_URL,
+});
 
 /** Trop de tentatives : transporte le délai restant jusqu'à la Server Action de connexion. */
 export class RateLimitedError extends CredentialsSignin {
@@ -76,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS },
+  cookies: { sessionToken: sessionCookie },
   pages: { signIn: "/login" },
   // Derrière Caddy, l'hôte public vient de X-Forwarded-Host.
   trustHost: true,

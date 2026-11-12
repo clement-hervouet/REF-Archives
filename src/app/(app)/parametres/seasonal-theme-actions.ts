@@ -7,7 +7,7 @@
  * cookies ne contiennent rien de sensible.
  */
 import { revalidatePath } from "next/cache";
-import { parseSeasonalForm } from "@/lib/seasonal-theme";
+import { parseSeasonalForm } from "@/lib/schemas/seasonal";
 import { saveSeasonalChoice } from "@/server/account/seasonal-theme";
 import { requireUser } from "@/server/auth/session";
 
