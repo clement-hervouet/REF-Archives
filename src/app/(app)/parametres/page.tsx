@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { AccountDeletionForm } from "@/components/features/account/account-deletion-form";
+import { PasswordChangeForm } from "@/components/features/account/password-change-form";
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { ThemeForm } from "@/components/features/account/theme-form";
 import { CalendarFeedSection } from "@/components/features/calendar/calendar-feed-section";
@@ -23,12 +24,14 @@ import { getReminderSettings } from "@/server/db/reminders";
 import { requestAccountDeletionAction } from "./account-deletion-actions";
 import { updateReminderSettingsAction } from "./actions";
 import { manageCalendarFeedAction } from "./calendar-actions";
+import { changePasswordAction } from "./password-actions";
 import { updateProfileAction } from "./profile-actions";
 import { updateSeasonalThemeAction } from "./seasonal-theme-actions";
 import { updateThemeAction } from "./theme-actions";
 
 const t = fr.reminders.settings;
 const account = fr.profile.settings;
+const password = fr.changePassword;
 const calendar = fr.calendar.settings;
 const myData = fr.myData;
 
@@ -68,6 +71,14 @@ export default async function SettingsPage() {
           submitLabel={account.submit}
           submittingLabel={account.submitting}
         />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-password"
+        title={password.title}
+        description={password.description}
+      >
+        <PasswordChangeForm action={changePasswordAction} />
       </SettingsSection>
 
       <SettingsSection id="settings-theme" title={fr.theme.title} description={fr.theme.hint}>

@@ -73,12 +73,16 @@ describe("securityEventTypeSchema", () => {
       "account_deletion_cancelled",
       "account_deleted",
       "data_exported",
+      "common_scale_rate_added",
+      "common_scale_renamed",
+      "common_scale_rate_deleted",
+      "password_changed",
     ]) {
       expect(securityEventTypeSchema.safeParse(type).success).toBe(true);
     }
   });
 
   it("refuse un type inconnu", () => {
-    expect(securityEventTypeSchema.safeParse("password_changed").success).toBe(false);
+    expect(securityEventTypeSchema.safeParse("totally_unknown_event").success).toBe(false);
   });
 });
