@@ -11,9 +11,12 @@ import { headers } from "next/headers";
 import {
   dataExportHeaders,
   dataExportNotFoundHeaders,
+  dataExportRateLimitedHeaders,
+  exportRateLimitKeys,
   handleDataExport,
 } from "@/server/account/data-export";
 import { getClientIp } from "@/server/auth/client-ip";
+import { admitAttemptInTransaction } from "@/server/auth/login-deps";
 import { recordSecurityEvent } from "@/server/auth/record-security-event";
 import { getCurrentUser } from "@/server/auth/session";
 import { readUserDataExport } from "@/server/db/data-export";
@@ -31,6 +34,15 @@ export async function GET(request: Request): Promise<Response> {
     return notFound();
   }
   const ip = getClientIp(await headers());
+  // Un export sort toutes les données d'un coup : on borne sa fréquence (§6.6, F7), comme la
+  // connexion. La tentative est comptée AVANT la lecture ; dépassement = 429 avec Retry-After.
+  const admission = await admitAttemptInTransaction(exportRateLimitKeys(user.id, ip), new Date());
+  if (!admission.admitted) {
+    return new Response(null, {
+      status: 429,
+      headers: dataExportRateLimitedHeaders(pathname, admission.retryAfterSeconds),
+    });
+  }
   const result = await handleDataExport(
     {
       read: (userId) => readUserDataExport(getDb(), userId),

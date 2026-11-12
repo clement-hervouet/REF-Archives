@@ -10,18 +10,31 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   buildContentSecurityPolicy,
+  expectedHostFromAppUrl,
   generateNonce,
   getSecurityHeaders,
+  isAllowedHost,
 } from "@/lib/security-headers";
 import { SESSION_COOKIE_NAMES, isPublicPath } from "@/server/auth/public-paths";
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
+  const isDevelopment = process.env.NODE_ENV !== "production";
+
+  // Défense en profondeur (M1) : en production, refuser un en-tête Host inattendu, signe d'une
+  // requête qui n'est pas passée par Caddy (le port de l'app ne doit jamais être publié,
+  // docs/deploy.md). APP_URL est lu à l'exécution ; hôte attendu inconnu = laissé passer.
+  if (
+    !isAllowedHost(request.headers.get("host"), {
+      expectedHost: expectedHostFromAppUrl(process.env.APP_URL),
+      isDevelopment,
+    })
+  ) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   const nonce = generateNonce();
-  const csp = buildContentSecurityPolicy({
-    nonce,
-    isDevelopment: process.env.NODE_ENV !== "production",
-  });
+  const csp = buildContentSecurityPolicy({ nonce, isDevelopment });
 
   const hasSessionCookie = SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name));
   let response: NextResponse;

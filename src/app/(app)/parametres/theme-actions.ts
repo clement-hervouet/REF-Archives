@@ -7,7 +7,8 @@
  */
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { THEME_COOKIE, THEME_COOKIE_MAX_AGE_SECONDS, parseThemeForm } from "@/lib/theme";
+import { parseThemeForm } from "@/lib/schemas/theme";
+import { THEME_COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "@/lib/theme";
 import { requireUser } from "@/server/auth/session";
 
 export async function updateThemeAction(formData: FormData): Promise<void> {

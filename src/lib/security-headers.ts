@@ -55,6 +55,46 @@ function isTokenPath(pathname: string): boolean {
   );
 }
 
+/** Hôtes loopback : le healthcheck Docker interne frappe l'app via localhost. */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/** Hôte attendu (sans port, minuscules) déduit d'`APP_URL` ; `null` si absent ou invalide. */
+export function expectedHostFromAppUrl(appUrl: string | undefined): string | null {
+  if (appUrl === undefined || appUrl === "") {
+    return null;
+  }
+  try {
+    return new URL(appUrl).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * La requête vise-t-elle bien l'application (M1, défense en profondeur) ? Derrière Caddy,
+ * l'en-tête `Host` vaut le domaine public (= hôte d'`APP_URL`). Une requête qui atteindrait
+ * le port de l'app SANS passer par Caddy (port qui ne doit jamais être publié,
+ * docs/deploy.md) porterait un autre `Host` et pourrait forger `X-Forwarded-For`.
+ *
+ * On refuse donc un `Host` inattendu, mais sans jamais risquer de couper la production :
+ *  - en développement : jamais bloqué ;
+ *  - hôte attendu inconnu (`APP_URL` absent ou invalide) : laissé passer (fail open) ;
+ *  - sinon : `Host` égal à l'hôte attendu, ou un hôte loopback (healthcheck interne).
+ */
+export function isAllowedHost(
+  hostHeader: string | null,
+  options: { expectedHost: string | null; isDevelopment: boolean },
+): boolean {
+  if (options.isDevelopment || options.expectedHost === null) {
+    return true;
+  }
+  if (hostHeader === null || hostHeader === "") {
+    return false;
+  }
+  const hostname = hostHeader.replace(/:\d+$/, "").toLowerCase();
+  return hostname === options.expectedHost || LOOPBACK_HOSTS.has(hostname);
+}
+
 /** En-têtes de sécurité autres que la CSP. */
 export function getSecurityHeaders(pathname: string): Record<string, string> {
   return {

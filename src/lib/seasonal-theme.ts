@@ -130,22 +130,3 @@ export type SeasonalChoice = {
   /** `null` : densité non envoyée (bandeau), la valeur actuelle est gardée. */
   density: SeasonalDensity | null;
 };
-
-/**
- * Lit le formulaire : `seasonal` (`on` | `off`, obligatoire) et `density` (facultatif).
- * Renvoie `null` si une valeur est absente ou inconnue (formulaire forgé).
- */
-export function parseSeasonalForm(formData: FormData): SeasonalChoice | null {
-  const enabled = formData.get("seasonal");
-  if (enabled !== "on" && enabled !== "off") {
-    return null;
-  }
-  const density = formData.get("density");
-  if (density === null) {
-    return { enabled: enabled === "on", density: null };
-  }
-  if (!isSeasonalDensity(density)) {
-    return null;
-  }
-  return { enabled: enabled === "on", density };
-}

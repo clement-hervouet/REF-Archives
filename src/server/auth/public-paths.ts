@@ -7,7 +7,7 @@
 export const SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.session-token"];
 
 // /api/ical : flux iCal protégé par son jeton, vérifié dans la route (bloc 8).
-// /api/health anticipe le healthcheck Docker. /api/cron est protégé par CRON_SECRET,
+// /api/health : healthcheck Docker, public et sans donnée. /api/cron est protégé par CRON_SECRET,
 // vérifié dans chaque route. /hors-ligne : page sans donnée, mise en cache par le service
 // worker même sans session (bloc 14).
 //

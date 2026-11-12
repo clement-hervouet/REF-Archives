@@ -8,6 +8,7 @@
  */
 import { toParisIsoDate } from "@/lib/dates";
 import { getSecurityHeaders } from "@/lib/security-headers";
+import { hashIdentifier } from "../auth/rate-limit";
 import type { UserDataExport } from "../db/data-export";
 
 const DATA_EXPORT_FORMAT = "ref-archives-export";
@@ -47,6 +48,26 @@ export function dataExportNotFoundHeaders(pathname: string): Record<string, stri
     ...getSecurityHeaders(pathname),
     "Content-Security-Policy": EXPORT_CSP,
     "Cache-Control": "no-store",
+  };
+}
+
+/**
+ * Clés de rate limiting de l'export (§6.6, F7), hachées comme la connexion (jamais d'IP ni
+ * d'identifiant en clair) : un export sort toutes les données, on borne sa fréquence par
+ * compte et par IP. Mêmes compteurs `rate_limit` que la connexion et la suppression de compte.
+ */
+export function exportRateLimitKeys(userId: string, ip: string): string[] {
+  return [`export:user:${hashIdentifier(userId)}`, `export:ip:${hashIdentifier(ip)}`];
+}
+
+/** En-têtes d'un refus pour trop d'exports (429) : comme un 404, plus `Retry-After`. */
+export function dataExportRateLimitedHeaders(
+  pathname: string,
+  retryAfterSeconds: number,
+): Record<string, string> {
+  return {
+    ...dataExportNotFoundHeaders(pathname),
+    "Retry-After": String(Math.max(1, Math.ceil(retryAfterSeconds))),
   };
 }
 
