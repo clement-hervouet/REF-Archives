@@ -1,0 +1,30 @@
+# Contexte de build de docker/Dockerfile : seulement ce qui sert à construire l'image.
+
+# Dépendances et builds locaux (reconstruits dans l'image, et ceux de Windows n'y servent pas)
+node_modules
+.next
+out
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets et fichiers locaux : jamais dans une image
+.env*
+!.env.example
+*.pem
+CLAUDE.md
+claude.md
+.claude
+audit-securite
+
+# Dépôt, CI et déploiement
+.git
+.github
+.gitignore
+.gitattributes
+docker
+compose.prod.yml
+docker-compose.yml
+docs
+README.md
+AGENTS.md

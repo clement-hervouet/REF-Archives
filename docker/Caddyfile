@@ -1,0 +1,29 @@
+# Bloc de site REF-Archives, à AJOUTER au Caddyfile du projet Compose de Caddy
+# (/etc/docker/volumes/caddy/…), puis : docker exec <conteneur caddy> caddy reload --config /etc/caddy/Caddyfile
+# Caddy et l'app partagent le réseau Docker `caddy_default` : l'alias `ref-archives-app` (compose.prod.yml)
+# est résolu par le DNS de Docker.
+
+ref.clement-hervouet.fr {
+	encode zstd gzip
+
+	# HSTS : à la charge de Caddy (CLAUDE.md §3.5, §6.4). Les autres en-têtes de sécurité et la
+	# CSP à nonce sont posés par l'application (proxy.ts, next.config.ts).
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	# Caddy annonce sinon `Server: Caddy` : inutile de divulguer la pile.
+	header -Server
+
+	reverse_proxy ref-archives-app:3000 {
+		# IP du client fixée par Caddy (audit 16c, M1) : `X-Forwarded-For` et `X-Real-IP` envoyés
+		# par le navigateur sont REMPLACÉS, jamais complétés. `client-ip.ts` lit la première
+		# valeur de X-Forwarded-For : elle vaut donc toujours l'IP vue par Caddy, et le rate
+		# limiting par IP ne peut pas être contourné en forgeant l'en-tête.
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Real-IP {client_ip}
+		# L'en-tête `Host` d'origine est transmis tel quel (défaut de Caddy) : ne pas le réécrire,
+		# le garde-fou de proxy.ts refuse tout autre hôte que celui d'APP_URL.
+	}
+
+	# Pas de directive `log` (journal d'accès désactivé, défaut de Caddy) : les URL du flux iCal
+	# contiennent le jeton secret (/api/ical/<jeton>.ics), qui ne doit jamais être journalisé
+	# (CLAUDE.md §5.4). Pour activer un journal d'accès, filtrer ce chemin (docs/deploy.md).
+}

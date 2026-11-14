@@ -1,0 +1,20 @@
+# Crons de l'hôte pour REF-Archives (docs/deploy.md).
+# À installer avec `crontab -e` pour l'utilisateur qui gère le déploiement (membre du groupe
+# docker, propriétaire de /opt/ref-archives et de /var/backups/ref-archives).
+# Les heures sont celles du fuseau du SERVEUR (vérifier avec `timedatectl`) ; les valeurs
+# ci-dessous supposent Europe/Paris. Les jobs sont idempotents : un passage manqué est rattrapé
+# le lendemain (§3.9).
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# 02:30 — sauvegarde de la base (avant les purges)
+30 2 * * * bash /opt/ref-archives/docker/backup.sh >> /var/log/ref-archives/backup.log 2>&1
+# 03:00 — purge des données en soft delete et des lignes techniques anciennes
+0 3 * * * bash /opt/ref-archives/docker/cron-job.sh purge-data >> /var/log/ref-archives/cron.log 2>&1
+# 03:15 — effacement des comptes dont la suppression différée est due
+15 3 * * * bash /opt/ref-archives/docker/cron-job.sh purge-accounts >> /var/log/ref-archives/cron.log 2>&1
+# 08:00 — rappels (indisponibilités le lundi, récapitulatif du jeudi au samedi ; la route décide)
+0 8 * * * bash /opt/ref-archives/docker/cron-job.sh reminders >> /var/log/ref-archives/cron.log 2>&1
+# 1er du mois, 04:00 — test de restauration de la dernière sauvegarde
+0 4 1 * * /opt/ref-archives/docker/restore-test.sh >> /var/log/ref-archives/restore-test.log 2>&1
