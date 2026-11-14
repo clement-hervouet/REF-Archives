@@ -15,6 +15,8 @@ export type SmtpConfig = {
   host: string;
   port: number;
   secure: boolean;
+  /** Ne jamais tenter STARTTLS (relais privé sans authentification, voir `SMTP_IGNORE_TLS`). */
+  ignoreTls?: boolean;
   auth?: { user: string; password: string };
 };
 
@@ -33,6 +35,8 @@ export function buildTransportOptions(config: SmtpConfig): SMTPTransport.Options
     secure: config.secure,
     // Jamais d'identifiants en clair : avec authentification et sans TLS implicite, STARTTLS est exigé.
     requireTLS: config.auth !== undefined && !config.secure,
+    // Défense en profondeur (env.ts l'interdit déjà) : jamais sans STARTTLS avec des identifiants.
+    ignoreTLS: config.ignoreTls === true && config.auth === undefined && !config.secure,
     tls: { minVersion: "TLSv1.2" },
     // Un relais qui ne répond pas ne doit pas bloquer une requête indéfiniment.
     connectionTimeout: 10_000,

@@ -19,6 +19,7 @@ function getTransport(): SmtpTransport {
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE,
+    ignoreTls: env.SMTP_IGNORE_TLS,
     ...(env.SMTP_USER !== undefined && env.SMTP_PASSWORD !== undefined
       ? { auth: { user: env.SMTP_USER, password: env.SMTP_PASSWORD } }
       : {}),
