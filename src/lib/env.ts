@@ -30,6 +30,13 @@ const EnvSchema = z
       .enum(["true", "false"])
       .default("false")
       .transform((value) => value === "true"),
+    // true = ne jamais tenter STARTTLS, même si le relais le propose. Réservé à un relais SANS
+    // authentification joint sur un réseau privé (postfix de production, certificat auto-signé
+    // `CN=localhost` invérifiable) : le trafic reste dans le réseau Docker (docs/deploy.md §3.7).
+    SMTP_IGNORE_TLS: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
     SMTP_USER: optionalString,
     SMTP_PASSWORD: optionalString,
     EMAIL_FROM: z
@@ -48,6 +55,15 @@ const EnvSchema = z
   .refine((env) => env.SMTP_PASSWORD === undefined || env.SMTP_USER !== undefined, {
     message: "obligatoire quand SMTP_PASSWORD est défini",
     path: ["SMTP_USER"],
+  })
+  // Des identifiants ne partent jamais sur une connexion non chiffrée (§3.6).
+  .refine((env) => !env.SMTP_IGNORE_TLS || env.SMTP_USER === undefined, {
+    message: "interdit quand SMTP_USER est défini (les identifiants partiraient en clair)",
+    path: ["SMTP_IGNORE_TLS"],
+  })
+  .refine((env) => !env.SMTP_IGNORE_TLS || !env.SMTP_SECURE, {
+    message: "incompatible avec SMTP_SECURE=true (TLS implicite)",
+    path: ["SMTP_IGNORE_TLS"],
   })
   .refine((env) => env.NODE_ENV !== "production" || env.APP_URL.startsWith("https://"), {
     message: "doit commencer par https:// en production",

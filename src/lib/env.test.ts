@@ -41,4 +41,30 @@ describe("parseEnv", () => {
     expect(message).toContain("AUTH_SECRET");
     expect(message).not.toContain("court");
   });
+
+  it("SMTP_IGNORE_TLS vaut false par défaut", () => {
+    expect(parseEnv(valid).SMTP_IGNORE_TLS).toBe(false);
+  });
+
+  it("accepte SMTP_IGNORE_TLS=true pour un relais sans authentification", () => {
+    expect(parseEnv({ ...valid, SMTP_IGNORE_TLS: "true" }).SMTP_IGNORE_TLS).toBe(true);
+  });
+
+  it("refuse SMTP_IGNORE_TLS=true avec des identifiants SMTP", () => {
+    const message = messageOf(() =>
+      parseEnv({ ...valid, SMTP_IGNORE_TLS: "true", SMTP_USER: "u", SMTP_PASSWORD: "secret-p" }),
+    );
+    expect(message).toContain("SMTP_IGNORE_TLS");
+    expect(message).not.toContain("secret-p");
+  });
+
+  it("refuse SMTP_IGNORE_TLS=true avec SMTP_SECURE=true", () => {
+    expect(() => parseEnv({ ...valid, SMTP_IGNORE_TLS: "true", SMTP_SECURE: "true" })).toThrow(
+      ConfigError,
+    );
+  });
+
+  it("refuse une valeur de SMTP_IGNORE_TLS autre que true ou false", () => {
+    expect(() => parseEnv({ ...valid, SMTP_IGNORE_TLS: "oui" })).toThrow(ConfigError);
+  });
 });

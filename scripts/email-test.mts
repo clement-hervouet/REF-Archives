@@ -32,6 +32,7 @@ const transport = createSmtpTransport({
   host: requireVar("SMTP_HOST"),
   port: Number.parseInt(requireVar("SMTP_PORT"), 10),
   secure: process.env.SMTP_SECURE === "true",
+  ignoreTls: process.env.SMTP_IGNORE_TLS === "true",
   ...(user !== undefined && user !== "" && password !== undefined && password !== ""
     ? { auth: { user, password } }
     : {}),

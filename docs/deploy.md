@@ -106,7 +106,7 @@ nano .env
 ```
 
 À renseigner : `POSTGRES_PASSWORD`, `AUTH_SECRET`, `CRON_SECRET`, `SMTP_HOST` (nom du conteneur
-postfix, voir §1), `EMAIL_FROM` (l'alias Gmail « Envoyer en tant que »), `BACKUP_REMOTE`.
+postfix, voir §1 ; garder `SMTP_IGNORE_TLS=true`, voir §3.7), `EMAIL_FROM` (l'alias Gmail « Envoyer en tant que »), `BACKUP_REMOTE`.
 Garder `COMPOSE_FILE=compose.prod.yml` : c'est lui qui permet d'écrire `docker compose …` sans
 `-f`. Vérifier l'interpolation (aucune erreur, valeurs attendues) :
 
@@ -182,13 +182,15 @@ exemple avec `log_skip /api/ical/*` dans le bloc de site.
      d'adresse), il faut donc distinguer deux causes. D'abord, la joignabilité :
      `docker run --rm --network caddy_default alpine nc -zv <SMTP_HOST> 587`.
      - Échec : `SMTP_HOST` ne résout pas ou postfix n'écoute pas sur `SMTP_PORT`.
-     - Succès : c'est très probablement le certificat. postfix propose STARTTLS avec un
-       certificat auto-signé, et nodemailer refuse un certificat non vérifié. Confirmer avec
+     - Succès : c'est très probablement le certificat. Confirmer avec
        `docker run --rm --network caddy_default alpine/openssl s_client -starttls smtp -connect <SMTP_HOST>:587 </dev/null`
-       (`verify error … self-signed certificate`). Deux solutions, à trancher à ce moment-là :
-       désactiver STARTTLS sur postfix pour ce réseau interne (le trafic ne quitte pas Docker),
-       ou ajouter à l'application une option de confiance pour ce certificat précis. **Ne pas**
-       désactiver la vérification TLS globalement.
+       (`verify error … self-signed certificate`). C'est le cas du postfix de production
+       (certificat `CN=localhost`) : d'où `SMTP_IGNORE_TLS=true` dans le `.env` (§3.2). Avec
+       cette option, l'application ne tente pas STARTTLS ; le trafic app → postfix reste en clair
+       mais ne quitte pas le réseau Docker, et postfix → Gmail reste chiffré. L'application
+       refuse de démarrer si l'option est combinée à `SMTP_USER` (des identifiants ne partent
+       jamais en clair) ou à `SMTP_SECURE=true`. **Ne pas** désactiver la vérification des
+       certificats à la place.
    - `responseCode=5xx` : postfix refuse l'expéditeur (voir point 1) ou Gmail refuse le relais
      (`docker logs <conteneur-postfix>`).
 

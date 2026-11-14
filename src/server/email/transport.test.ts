@@ -42,6 +42,30 @@ describe("buildTransportOptions", () => {
     expect(options.requireTLS).toBe(false);
   });
 
+  it("par défaut : STARTTLS tenté si le relais le propose", () => {
+    expect(buildTransportOptions(relay).ignoreTLS).toBe(false);
+  });
+
+  it("ignoreTls sans authentification : STARTTLS jamais tenté", () => {
+    expect(buildTransportOptions({ ...relay, ignoreTls: true }).ignoreTLS).toBe(true);
+  });
+
+  it("ignoreTls avec authentification : ignoré, STARTTLS reste imposé", () => {
+    const options = buildTransportOptions({
+      ...relay,
+      ignoreTls: true,
+      auth: { user: "u", password: "p" },
+    });
+    expect(options.ignoreTLS).toBe(false);
+    expect(options.requireTLS).toBe(true);
+  });
+
+  it("ignoreTls avec TLS implicite : ignoré", () => {
+    expect(buildTransportOptions({ ...relay, secure: true, ignoreTls: true }).ignoreTLS).toBe(
+      false,
+    );
+  });
+
   it("pose des timeouts et une version TLS minimale", () => {
     const options = buildTransportOptions(relay);
     expect(options.connectionTimeout).toBeGreaterThan(0);
