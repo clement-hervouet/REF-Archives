@@ -10,12 +10,19 @@ const BASE_SECURITY_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {
+  // Production (docs/deploy.md) : `next build` produit un serveur autonome dans `.next/standalone`
+  // (server.js + seulement les dépendances réellement utilisées). L'image Docker ne copie que ce
+  // dossier, `.next/static` et `public` : image minimale, sans pnpm ni dépendances de dev (§6.7).
+  output: "standalone",
   // L'en-tête `X-Powered-By: Next.js` divulgue la pile sans utilité : on le retire (§6.4, A05).
   poweredByHeader: false,
   // `next dev` seulement (sans effet sur le build de production) : depuis Next.js 16, le
