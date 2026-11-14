@@ -214,33 +214,198 @@ Le site PHP qui utilise déjà ce relais est soumis aux mêmes règles : ne rien
 
 ### 3.9. Crons et sauvegardes
 
-1. Clé SSH vers la machine de sauvegarde, pour l'utilisateur qui lance les crons :
+Toute cette section se fait avec **l'utilisateur de déploiement** (celui qui possède
+`/opt/ref-archives`), jamais avec root : c'est lui qui lancera les crons, et c'est sa clé SSH qui
+servira à la copie distante. Les commandes marquées « distante » se lancent sur la machine qui
+reçoit les sauvegardes.
 
-   ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""   # si aucune clé n'existe
-   ssh-copy-id utilisateur@machine-distante
-   ssh -o BatchMode=yes utilisateur@machine-distante true && echo OK
-   ```
+#### a) Vérifier les prérequis sur le serveur
 
-2. Premier passage manuel de chaque script :
+```bash
+id                                   # le groupe « docker » doit apparaître
+docker compose ps                    # fonctionne sans sudo, depuis /opt/ref-archives
+systemctl is-active cron             # « active »
+command -v curl rsync ssh            # les trois chemins doivent s'afficher
+ls -ld /var/backups/ref-archives /var/log/ref-archives   # créés au §3.1, à ton nom
+```
 
-   ```bash
-   bash docker/backup.sh
-   bash docker/restore-test.sh
-   bash docker/cron-job.sh purge-data
-   bash docker/cron-job.sh purge-accounts
-   bash docker/cron-job.sh reminders
-   ```
+Si `rsync` manque : `sudo apt install rsync` (sur le serveur **et** sur la machine distante :
+rsync doit exister des deux côtés).
 
-   Chaque job répond par un objet JSON de compteurs. Une `401` signifie que `CRON_SECRET` du
-   `.env` ne correspond pas à celui du conteneur (relancer `docker compose up -d app` après une
-   modification du `.env`) ; une `404`, que `CRON_SECRET` est vide.
+#### b) Préparer la machine distante
 
-3. Installer les crons : vérifier le fuseau du serveur (`timedatectl`), adapter les heures de
-   `docker/crontab.example`, puis `crontab -e` et coller son contenu.
+Un dossier dédié, appartenant à l'utilisateur qui recevra les copies (distante) :
 
-Dans le décompte de `reminders`, `failed` compte les emails non partis (relais injoignable) : le
-job ne réserve pas la période dans ce cas, le passage du lendemain réessaie.
+```bash
+mkdir -p ~/ref-archives-backups
+chmod 700 ~/ref-archives-backups
+```
+
+#### c) Créer une clé SSH dédiée aux sauvegardes (serveur)
+
+Une clé propre aux sauvegardes, sans phrase de passe (le cron tourne sans personne pour la
+taper), qu'on peut révoquer sans toucher à tes autres accès :
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "ref-archives-backup" -f ~/.ssh/ref-archives-backup
+```
+
+Puis un alias dans `~/.ssh/config` (créer le fichier s'il n'existe pas, `chmod 600`) :
+
+```
+Host ref-backup
+    HostName <ip-ou-nom-de-la-machine-distante>
+    User <utilisateur-distant>
+    Port 22
+    IdentityFile ~/.ssh/ref-archives-backup
+    IdentitiesOnly yes
+```
+
+#### d) Autoriser la clé sur la machine distante
+
+Copier la clé publique (le mot de passe de l'utilisateur distant est demandé une seule fois) :
+
+```bash
+ssh-copy-id -i ~/.ssh/ref-archives-backup.pub ref-backup
+```
+
+**Premier contact obligatoire** : `backup.sh` utilise `BatchMode=yes`, qui refuse de répondre à
+la question « Are you sure you want to continue connecting? ». Il faut donc se connecter une fois
+à la main pour enregistrer l'empreinte de la machine dans `~/.ssh/known_hosts` :
+
+```bash
+ssh ref-backup true                         # répondre « yes » à la question de l'empreinte
+ssh -o BatchMode=yes ref-backup true && echo OK   # doit afficher OK sans rien demander
+```
+
+**Durcissement recommandé** (si la machine distante a rsync ≥ 3.2.4, qui fournit `rrsync`) :
+limiter cette clé à l'écriture dans le dossier de sauvegarde, sans shell ni suppression. Sur la
+machine distante, dans `~/.ssh/authorized_keys`, préfixer la ligne de la clé
+`ref-archives-backup` (distante) :
+
+```
+command="rrsync -wo -no-del /home/<utilisateur-distant>/ref-archives-backups",restrict ssh-ed25519 AAAA… ref-archives-backup
+```
+
+Si le serveur était compromis, cette clé ne permettrait ni de lire, ni d'effacer les sauvegardes
+distantes, ni d'ouvrir un shell. Conséquences : `ssh ref-backup true` échoue désormais (c'est
+voulu), et la destination rsync devient **relative** à ce dossier. Vérifier que `rrsync` existe
+avant : `command -v rrsync` (distante ; sur certaines distributions il est dans
+`/usr/share/doc/rsync/scripts/`).
+
+#### e) Renseigner `BACKUP_REMOTE` dans `.env`
+
+```bash
+nano /opt/ref-archives/.env
+```
+
+- Sans `rrsync` : `BACKUP_REMOTE=ref-backup:ref-archives-backups/`
+- Avec `rrsync` : `BACKUP_REMOTE=ref-backup:./`
+
+La barre finale compte : rsync copie le **contenu** de `/var/backups/ref-archives/` dans ce
+dossier. `BACKUP_DIR` et `BACKUP_RETENTION_DAYS` (14) peuvent rester par défaut.
+
+#### f) Premier passage manuel de chaque script
+
+```bash
+cd /opt/ref-archives
+bash docker/backup.sh
+```
+
+Attendu : `Sauvegarde OK : /var/backups/ref-archives/ref-archives_<date>.dump (<taille>)`, puis
+contrôler la copie distante :
+
+```bash
+ls -l /var/backups/ref-archives/
+ssh ref-backup ls -l ref-archives-backups/   # sans rrsync ; avec rrsync, regarder sur la machine distante
+```
+
+Erreurs possibles : `Permission denied (publickey)` → étape d ; `Host key verification failed` →
+le premier contact de l'étape d n'a pas été fait ; `rsync: command not found` → rsync absent de la
+machine distante. Le dump local est gardé même si la copie distante échoue.
+
+```bash
+bash docker/restore-test.sh
+```
+
+Attendu : un tableau (dernière migration `021_…` ou plus récente, nombre de comptes, etc.) puis
+`Restauration de test réussie.` Le conteneur jetable est supprimé à la fin, même en cas d'échec.
+
+```bash
+bash docker/cron-job.sh purge-data
+bash docker/cron-job.sh purge-accounts
+bash docker/cron-job.sh reminders
+```
+
+Chaque job répond par un objet JSON de compteurs. Une `401` signifie que `CRON_SECRET` du `.env`
+ne correspond pas à celui du conteneur (après une modification du `.env`, relancer
+`docker compose up -d app`) ; une `404`, que `CRON_SECRET` est vide ; `Could not resolve host` ou
+un délai dépassé, que le serveur ne joint pas sa propre URL publique (DNS ou Caddy).
+
+Attention, `reminders` est un **vrai** passage : il envoie les rappels dus aujourd'hui (le lundi,
+le rappel des indisponibilités ; du jeudi au samedi, le récapitulatif s'il y a un match). C'est
+sans risque de doublon, car chaque envoi est réservé par période (table `reminder_dispatch`) : le cron du
+lendemain ne renverra pas le même. Dans son décompte, `failed` compte les emails non partis
+(relais injoignable) ; la période n'est alors pas réservée et le passage suivant réessaie.
+
+#### g) Choisir les heures selon le fuseau du serveur
+
+```bash
+timedatectl | grep "Time zone"
+```
+
+- `Europe/Paris` : garder les heures de `docker/crontab.example`.
+- `Etc/UTC` : soit passer le serveur à l'heure de Paris
+  (`sudo timedatectl set-timezone Europe/Paris`, puis `sudo systemctl restart cron` ; cela change
+  aussi l'heure affichée dans les journaux des autres services), soit garder UTC et retirer une
+  heure aux horaires (8 h → 7 h). En UTC, les envois se décalent d'une heure entre l'été et
+  l'hiver ; c'est sans conséquence pour ces jobs.
+
+#### h) Installer les crons
+
+Afficher d'abord la crontab existante, pour ne rien écraser :
+
+```bash
+crontab -l
+```
+
+- Aucune crontab (`no crontab for …`) : `crontab /opt/ref-archives/docker/crontab.example`
+- Une crontab existe : l'ajouter à la suite avec
+  `(crontab -l; cat /opt/ref-archives/docker/crontab.example) | crontab -`
+
+Si les heures ont été adaptées à l'étape g, éditer ensuite avec `crontab -e`. Contrôler le
+résultat avec `crontab -l`. Les lignes `SHELL=/bin/bash` et `PATH=…` du fichier sont
+nécessaires : `cron-job.sh` utilise une substitution de processus propre à bash, et cron démarre
+avec un `PATH` minimal.
+
+#### i) Faire tourner les journaux
+
+Les crons écrivent dans `/var/log/ref-archives/*.log`, qui grossiraient sans fin :
+
+```bash
+sudo tee /etc/logrotate.d/ref-archives > /dev/null << 'CONF'
+/var/log/ref-archives/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+CONF
+sudo logrotate --debug /etc/logrotate.d/ref-archives   # simulation : aucune erreur attendue
+```
+
+#### j) Vérifier le lendemain
+
+```bash
+journalctl -u cron --since yesterday | grep ref-archives   # les jobs ont bien été lancés
+tail -n 5 /var/log/ref-archives/backup.log /var/log/ref-archives/cron.log
+ls -lt /var/backups/ref-archives/ | head -n 3            # une sauvegarde de la nuit
+```
+
+Le premier du mois suivant, vérifier aussi `/var/log/ref-archives/restore-test.log`. Une
+sauvegarde qu'on n'a jamais réussi à restaurer ne compte pas comme une sauvegarde (CLAUDE.md §6.7).
 
 ## 4. Vérifications après le premier déploiement
 
