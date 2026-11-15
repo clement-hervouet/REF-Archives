@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { fr } from "@/i18n/fr";
+import { ACCESS_REQUEST_PATH } from "@/lib/app-paths";
 import { formatDateTime } from "@/lib/format";
 import { login } from "./actions";
 import type { LoginFormState } from "./actions";
@@ -85,6 +86,12 @@ export function LoginForm() {
       >
         {fr.auth.login.forgotPassword}
       </Link>
+      <p className="flex flex-wrap items-center gap-x-1 text-sm">
+        <span className="text-muted-foreground">{fr.auth.login.noAccount}</span>
+        <Link href={ACCESS_REQUEST_PATH} className="inline-flex min-h-11 items-center underline">
+          {fr.auth.login.requestAccess}
+        </Link>
+      </p>
     </form>
   );
 }

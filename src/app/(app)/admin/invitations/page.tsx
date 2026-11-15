@@ -6,10 +6,14 @@ import {
 import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
+import { formatDateTime } from "@/lib/format";
 import { requireAdminOrRedirect } from "@/server/auth/session";
+import { listPendingAccessRequests } from "@/server/db/access-requests";
 import { listInvitations } from "@/server/db/invitations";
 import type { InvitationSummary } from "@/server/db/invitations";
 import { getDb } from "@/server/db/pool";
+import { AccessRequestList } from "./access-request-list";
+import type { AccessRequestRow } from "./access-request-list";
 import { revokeInvitationAction } from "./actions";
 import { CreateInvitationForm } from "./create-invitation-form";
 
@@ -44,7 +48,17 @@ function InvitationRow({ invitation }: { invitation: InvitationSummary }) {
 export default async function InvitationsPage() {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
   const admin = await requireAdminOrRedirect();
-  const invitations = await listInvitations(getDb(), admin.id, new Date());
+  const [invitations, accessRequests] = await Promise.all([
+    listInvitations(getDb(), admin.id, new Date()),
+    listPendingAccessRequests(getDb()),
+  ]);
+  const requestRows: AccessRequestRow[] = accessRequests.map((request) => ({
+    id: request.id,
+    name: `${request.firstname} ${request.lastname}`,
+    email: request.email,
+    receivedLabel: t.requests.receivedOn.replace("{date}", formatDateTime(request.createdAt)),
+  }));
+  const requestCount = requestRows.length;
   const pending = invitations.filter((invitation) => invitation.status === "pending");
   const history = invitations.filter((invitation) => invitation.status !== "pending");
 
@@ -53,6 +67,24 @@ export default async function InvitationsPage() {
       <section className="flex max-w-2xl flex-col gap-2">
         <PageTitle>{t.title}</PageTitle>
         <p className="text-muted-foreground">{t.intro}</p>
+      </section>
+
+      {/* Demandes d'accès en tête : c'est ce que la pastille de la navigation signale. */}
+      <section aria-labelledby="access-requests" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="access-requests" className="text-lg font-semibold">
+            {t.requests.title}
+          </h2>
+          {requestCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {requestCount === 1
+                ? t.requests.countOne
+                : t.requests.countMany.replace("{count}", String(requestCount))}
+            </p>
+          )}
+        </div>
+        <p className="max-w-2xl text-sm text-muted-foreground">{t.requests.intro}</p>
+        <AccessRequestList requests={requestRows} />
       </section>
 
       <section

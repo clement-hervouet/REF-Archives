@@ -8,4 +8,6 @@ export type NavUser = {
   email: string;
   /** Affiche les liens d'administration (confort : chaque page admin vérifie elle-même). */
   isAdmin: boolean;
+  /** Demandes d'accès en attente (pastille de « Invitations », §15.4.4) ; 0 pour un non-admin. */
+  pendingAccessRequests: number;
 };

@@ -72,6 +72,12 @@ const PURGE_ENDED_SESSIONS_SQL = counted(`  DELETE FROM session
 const PURGE_ENDED_INVITATIONS_SQL = counted(`  DELETE FROM invitation
   WHERE coalesce(accepted_at, revoked_at, expires_at) < ${OLDER_THAN_DAYS}`);
 
+// Demande d'accès traitée depuis plus de $1 jours, ou jamais traitée depuis plus de $2 jours
+// (§15.4.4). Une demande en attente plus récente n'est jamais effacée.
+const PURGE_OLD_ACCESS_REQUESTS_SQL = counted(`  DELETE FROM access_request
+  WHERE decided_at < now() - $1::integer * interval '1 day'
+     OR (decided_at IS NULL AND created_at < now() - $2::integer * interval '1 day')`);
+
 // Un lien de réinitialisation expiré (utilisé ou non) n'est plus jamais accepté.
 const PURGE_EXPIRED_PASSWORD_RESETS_SQL = counted(`  DELETE FROM password_reset
   WHERE expires_at <= now()`);
@@ -127,6 +133,18 @@ export function purgeEndedSessions(db: Queryable, days: number): Promise<number>
 /** Invitations acceptées, révoquées ou expirées depuis plus de `days` jours. */
 export function purgeEndedInvitations(db: Queryable, days: number): Promise<number> {
   return runCount(db, PURGE_ENDED_INVITATIONS_SQL, [days]);
+}
+
+/**
+ * Demandes d'accès traitées depuis plus de `decidedDays` jours, ou jamais traitées depuis
+ * plus de `pendingDays` jours.
+ */
+export function purgeOldAccessRequests(
+  db: Queryable,
+  decidedDays: number,
+  pendingDays: number,
+): Promise<number> {
+  return runCount(db, PURGE_OLD_ACCESS_REQUESTS_SQL, [decidedDays, pendingDays]);
 }
 
 /** Liens de réinitialisation de mot de passe expirés. */

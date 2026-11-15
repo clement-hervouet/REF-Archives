@@ -9,6 +9,7 @@ import {
   purgeEndedSessions,
   purgeExpiredPasswordResets,
   purgeForgottenRateLimits,
+  purgeOldAccessRequests,
   purgeOldReminderDispatches,
   purgeOldSecurityEvents,
 } from "./purge";
@@ -64,6 +65,20 @@ describe("purgeEndedInvitations", () => {
     const { db, query } = makeFakeDb([{ count: 0 }]);
     await purgeEndedInvitations(db, 30);
     expect(query.mock.calls[0]?.[0]).toContain("coalesce(accepted_at, revoked_at, expires_at)");
+  });
+});
+
+describe("purgeOldAccessRequests", () => {
+  it("efface les demandes traitées après $1 jours et celles jamais traitées après $2 jours", async () => {
+    const { db, query } = makeFakeDb([{ count: 3 }]);
+    expect(await purgeOldAccessRequests(db, 30, 90)).toBe(3);
+    const [sql, values] = query.mock.calls[0] ?? [];
+    expect(sql).toContain("DELETE FROM access_request");
+    expect(sql).toContain("decided_at < now() - $1::integer * interval '1 day'");
+    expect(sql).toContain("decided_at IS NULL AND created_at < now() - $2::integer");
+    expect(sql).not.toContain("30");
+    expect(sql).not.toContain("90");
+    expect(values).toEqual([30, 90]);
   });
 });
 

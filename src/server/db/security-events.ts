@@ -32,6 +32,10 @@ export const securityEventTypeSchema = z.enum([
   "common_scale_rate_deleted",
   // Changement de mot de passe par un utilisateur connecté (bloc 16, migration 021).
   "password_changed",
+  // Demandes d'accès (§15.4.4, migration 023). L'invitation qui en découle reste
+  // `invitation_created`.
+  "access_requested",
+  "access_request_refused",
 ]);
 export type SecurityEventType = z.infer<typeof securityEventTypeSchema>;
 

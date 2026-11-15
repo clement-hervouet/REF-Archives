@@ -6,6 +6,8 @@ import {
   SECONDARY_NAV,
   isAnyNavItemActive,
   isNavItemActive,
+  navItemBadgeCount,
+  pendingRequestsLabel,
 } from "./nav-items";
 
 function item(href: string) {
@@ -64,5 +66,25 @@ describe("structure", () => {
   it("n'a aucun lien en double", () => {
     const hrefs = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ADMIN_NAV, ACCOUNT_NAV].map((e) => e.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
+  });
+});
+
+describe("navItemBadgeCount", () => {
+  it("porte les demandes d'accès en attente sur « Invitations » seulement", () => {
+    expect(navItemBadgeCount(item("/admin/invitations"), 3)).toBe(3);
+    expect(navItemBadgeCount(item("/admin/comptes"), 3)).toBe(0);
+    expect(navItemBadgeCount(item("/"), 3)).toBe(0);
+  });
+
+  it("n'affiche rien sans demande (ni pour un nombre négatif)", () => {
+    expect(navItemBadgeCount(item("/admin/invitations"), 0)).toBe(0);
+    expect(navItemBadgeCount(item("/admin/invitations"), -1)).toBe(0);
+  });
+});
+
+describe("pendingRequestsLabel", () => {
+  it("accorde au singulier et au pluriel", () => {
+    expect(pendingRequestsLabel(1)).toBe("1 demande d'accès en attente");
+    expect(pendingRequestsLabel(4)).toBe("4 demandes d'accès en attente");
   });
 });

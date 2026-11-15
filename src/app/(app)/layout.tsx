@@ -9,6 +9,8 @@ import { fr } from "@/i18n/fr";
 import { cn } from "@/lib/utils";
 import { getSeasonalState } from "@/server/account/seasonal-theme";
 import { requireUserOrRedirect } from "@/server/auth/session";
+import { countPendingAccessRequests } from "@/server/db/access-requests";
+import { getDb } from "@/server/db/pool";
 import { logout } from "./actions";
 import { updateSeasonalThemeAction } from "./parametres/seasonal-theme-actions";
 
@@ -31,11 +33,14 @@ export const dynamic = "force-dynamic";
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUserOrRedirect();
+  const isAdmin = user.role === "admin";
   const navUser: NavUser = {
     firstname: user.firstname,
     lastname: user.lastname,
     email: user.email,
-    isAdmin: user.role === "admin",
+    isAdmin,
+    // Pastille des demandes d'accès (§15.4.4) : lue pour les admins seulement.
+    pendingAccessRequests: isAdmin ? await countPendingAccessRequests(getDb()) : 0,
   };
   const seasonal = await getSeasonalState();
 

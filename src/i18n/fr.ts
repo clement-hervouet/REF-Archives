@@ -29,6 +29,9 @@ export const fr = {
     colleagues: "Collègues",
     clubs: "Clubs",
     gameNotes: "Notes de match",
+    // Pastille à côté de « Invitations » (§15.4.4), lue par les lecteurs d'écran.
+    pendingRequestsOne: "1 demande d'accès en attente",
+    pendingRequestsMany: "{count} demandes d'accès en attente",
   },
   auth: {
     login: {
@@ -38,6 +41,8 @@ export const fr = {
       submit: "Se connecter",
       submitting: "Connexion en cours…",
       forgotPassword: "Mot de passe oublié ?",
+      noAccount: "Pas encore de compte ?",
+      requestAccess: "Demander un accès",
       passwordResetDone: "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
       accountDeletionScheduled:
         "La suppression de votre compte est programmée : il est désactivé et sera effacé avec toutes vos données dans 30 jours. Pour annuler, contactez l'administrateur.",
@@ -169,7 +174,7 @@ export const fr = {
         id: "privacy-controller",
         title: "Qui est responsable de vos données",
         paragraphs: [
-          "Le responsable du traitement est l'administrateur de REF-Archives. Pour toute question sur vos données ou pour exercer vos droits, contactez-le directement : c'est la personne qui vous a invité sur l'application.",
+          "Le responsable du traitement est l'administrateur de REF-Archives. Pour toute question sur vos données ou pour exercer vos droits, contactez-le directement : c'est lui qui envoie les invitations et examine les demandes d'accès.",
         ],
         items: [],
       },
@@ -179,6 +184,7 @@ export const fr = {
         paragraphs: [],
         items: [
           "Votre compte : adresse email, prénom, nom, rôle (utilisateur ou administrateur) et mot de passe. Le mot de passe n'est conservé que sous forme d'empreinte irréversible : personne, pas même l'administrateur, ne peut le lire.",
+          "Votre demande d'accès, si vous en envoyez une depuis la page de connexion : prénom, nom et adresse email.",
           "Vos réglages : rappels par email, récapitulatif du weekend, lien d'abonnement calendrier.",
           "Ce que vous saisissez : indemnités (équipes, date, heure, adresse, niveau, barème, distance, paiement), matchs complets, notes de match (confiance, stress, texte, liens vers des clips), barèmes, clubs, adresses et collègues.",
           "Des données techniques de sécurité : sessions de connexion (date de création et de dernière activité), journal des événements de sécurité (connexions, changements de mot de passe, exports…) et compteurs anti-abus. Votre adresse IP n'y figure jamais en clair : elle est remplacée par une empreinte calculée avec une clé secrète du serveur.",
@@ -192,6 +198,7 @@ export const fr = {
         ],
         items: [
           "Faire fonctionner le service que vous avez demandé en créant votre compte : suivi des indemnités, rappels, récapitulatif du weekend, flux de calendrier. Base légale : l'exécution du service.",
+          "Examiner votre demande d'accès et, si elle est acceptée, vous inviter. Base légale : les mesures préalables à la création de votre compte, prises à votre demande.",
           "Protéger les comptes et l'application : journal de sécurité, limitation des tentatives, alertes par email. Base légale : l'intérêt légitime à sécuriser le service.",
         ],
       },
@@ -209,7 +216,7 @@ export const fr = {
         paragraphs: [],
         items: [
           "Vous seul voyez vos indemnités, matchs, notes, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
-          "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
+          "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité, ainsi que les demandes d'accès. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
           "Les emails (invitation, mot de passe oublié, alertes de sécurité, rappels, récapitulatif du weekend) partent par l'intermédiaire de Gmail (Google). Google traite donc leur contenu, qui peut inclure vos matchs à venir, éventuellement hors de l'Union européenne.",
           "Le bouton « Itinéraire » ouvre Google Maps avec l'adresse du match : l'adresse n'est envoyée à Google que si vous cliquez.",
           "Si vous créez un lien d'abonnement calendrier, l'agenda que vous y abonnez (Google Agenda, Samsung Calendar…) reçoit vos matchs. Toute personne qui connaît ce lien peut les lire : gardez-le pour vous, et régénérez-le ou révoquez-le dans Paramètres en cas de doute.",
@@ -233,6 +240,7 @@ export const fr = {
           "Compte supprimé : désactivé tout de suite, puis effacé avec toutes ses données au bout de 30 jours.",
           "Sessions de connexion : 30 jours au plus, puis effacées 30 jours après leur fin.",
           "Invitations : effacées 30 jours après avoir été acceptées, révoquées ou expirées.",
+          "Demandes d'accès : effacées 30 jours après avoir été acceptées ou refusées, ou 90 jours après leur envoi si elles n'ont pas été traitées.",
           "Journal de sécurité : 90 jours. Après la suppression d'un compte, ses lignes restent jusqu'à cette échéance, sans lien avec le compte.",
           "Sauvegardes du serveur : 14 jours. Une donnée effacée en disparaît au fil de leur renouvellement.",
         ],
@@ -415,6 +423,26 @@ export const fr = {
     errors: {
       invalidEmail: "Cette adresse email n'est pas valide.",
       rateLimited: "Trop de demandes. Réessayez dans {minutes} min.",
+    },
+  },
+  accessRequest: {
+    title: "Demander un accès",
+    intro:
+      "REF-Archives fonctionne sur invitation. Indiquez votre prénom, votre nom et votre adresse email : l'administrateur examinera votre demande et, s'il l'accepte, vous enverra une invitation par email.",
+    email: "Adresse email",
+    submit: "Envoyer la demande",
+    submitting: "Envoi en cours…",
+    // Identique que l'adresse ait déjà un compte, une demande en attente ou rien (§6.1).
+    requested:
+      "Votre demande a été transmise à l'administrateur. Si elle est acceptée, vous recevrez une invitation à l'adresse {email}.",
+    alreadyAccount:
+      "Vous avez déjà un compte ? Connectez-vous, ou utilisez « Mot de passe oublié ? ».",
+    backToLogin: "Retour à la connexion",
+    errors: {
+      invalid: "Vérifiez les champs signalés.",
+      invalidEmail: "Cette adresse email n'est pas valide.",
+      rateLimited: "Trop de demandes. Réessayez dans {minutes} min.",
+      unexpected: "Une erreur est survenue. Réessayez dans un instant.",
     },
   },
   resetPassword: {
@@ -1221,6 +1249,25 @@ export const fr = {
         invalidEmail: "Cette adresse email n'est pas valide.",
         emailTaken: "Un compte existe déjà avec cette adresse.",
         rateLimited: "Trop d'invitations envoyées. Réessayez dans {minutes} min.",
+      },
+      // Demandes d'accès envoyées depuis la page de connexion (§15.4.4).
+      requests: {
+        title: "Demandes d'accès",
+        intro:
+          "Personnes qui ont demandé un accès depuis la page de connexion. « Inviter » leur envoie l'invitation habituelle ; « Refuser » retire la demande, sans prévenir la personne.",
+        empty: "Aucune demande en attente.",
+        countOne: "1 en attente",
+        countMany: "{count} en attente",
+        receivedOn: "Reçue le {date}",
+        invite: "Inviter",
+        inviting: "Invitation…",
+        inviteFor: "Inviter {name} ({email})",
+        refuse: "Refuser",
+        refuseFor: "Refuser la demande de {name} ({email})",
+        errors: {
+          notFound: "Cette demande a déjà été traitée.",
+          emailTaken: "Un compte existe déjà avec l'adresse {email} : la demande a été retirée.",
+        },
       },
     },
   },

@@ -8,6 +8,7 @@ import {
   CLUBS_PATH,
   COLLEAGUES_PATH,
   GAME_NOTES_PATH,
+  INVITATIONS_PATH,
   SETTINGS_PATH,
   UPCOMING_PATH,
 } from "@/lib/app-paths";
@@ -55,7 +56,7 @@ export const SECONDARY_NAV: readonly NavItem[] = [
 /** Pages d'administration : affichées aux admins seulement (l'accès reste contrôlé par chaque page). */
 export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/bareme-commun", label: fr.nav.commonScale },
-  { href: "/admin/invitations", label: fr.nav.invitations },
+  { href: INVITATIONS_PATH, label: fr.nav.invitations },
   { href: ACCOUNTS_PATH, label: fr.nav.accounts },
 ];
 
@@ -74,6 +75,21 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
   return [item.href, ...(item.alsoActiveOn ?? [])].some((prefix) =>
     matchesPrefix(pathname, prefix),
   );
+}
+
+/**
+ * Nombre à afficher en pastille à côté d'une entrée : les demandes d'accès en attente sur
+ * « Invitations » (§15.4.4), 0 ailleurs (pas de pastille).
+ */
+export function navItemBadgeCount(item: NavItem, pendingAccessRequests: number): number {
+  return item.href === INVITATIONS_PATH ? Math.max(0, pendingAccessRequests) : 0;
+}
+
+/** Texte de la pastille pour les lecteurs d'écran. */
+export function pendingRequestsLabel(count: number): string {
+  return count === 1
+    ? fr.nav.pendingRequestsOne
+    : fr.nav.pendingRequestsMany.replace("{count}", String(count));
 }
 
 /** Vrai si une des entrées est active (le bouton « Plus » s'affiche alors comme actif). */
