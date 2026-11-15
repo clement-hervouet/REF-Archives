@@ -418,6 +418,38 @@ export const fr = {
         Feminin: "Féminin",
       },
       label: "{category} {type} {level}",
+      /** Abréviation d'usage (DM2, RFU15, NM3), seule affichée dans la liste des niveaux. */
+      abbreviation: {
+        category: {
+          Departemental: "D",
+          Regional: "R",
+          National: "N",
+          Pro: "P",
+        },
+        type: {
+          Masculin: "M",
+          Feminin: "F",
+        },
+        format: "{category}{type}{level}",
+        /**
+         * Niveaux connus sous un nom d'usage plutôt qu'un code : le plus haut niveau
+         * départemental (pré-régionale) et régional (pré-nationale), et le Pro.
+         */
+        named: {
+          Departemental: {
+            Masculin: { "1": "PRM" },
+            Feminin: { "1": "PRF" },
+          },
+          Regional: {
+            Masculin: { "1": "PNM" },
+            Feminin: { "1": "PNF" },
+          },
+          Pro: {
+            Masculin: { "1": "Pro A", "2": "Pro B" },
+            Feminin: { "1": "LFB", "2": "LF2" },
+          },
+        },
+      },
     },
     errors: {
       name: "Le nom doit contenir entre 1 et 100 caractères, sur une seule ligne.",
@@ -549,6 +581,7 @@ export const fr = {
       time: "Heure",
       division: "Niveau",
       chooseDivision: "Choisir un niveau",
+      frequentDivisions: "Souvent arbitrés",
       scale: "Barème",
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",

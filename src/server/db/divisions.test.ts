@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listDivisions } from "./divisions";
+import { listDivisions, listFrequentDivisionIds } from "./divisions";
 import { makeFakeDb } from "./fake-db";
 
 const DIVISION_ID = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
@@ -19,5 +19,23 @@ describe("listDivisions", () => {
       { id: DIVISION_ID, division: "Mondial", type: "Masculin", level: "1" },
     ]);
     await expect(listDivisions(db)).rejects.toThrow();
+  });
+});
+
+describe("listFrequentDivisionIds", () => {
+  const USER_ID = "7c1e4b2a-9d3f-4e8a-b6c5-2f1a0d9e8b77";
+
+  it("filtre par propriétaire et passe la limite en paramètre", async () => {
+    const { db, query } = makeFakeDb([{ division_id: DIVISION_ID }]);
+    expect(await listFrequentDivisionIds(db, USER_ID, 5)).toEqual([DIVISION_ID]);
+    const [sql, params] = query.mock.calls[0] ?? [];
+    expect(sql).toContain("user_id = $1");
+    expect(sql).toContain("deleted_at IS NULL");
+    expect(params).toEqual([USER_ID, 5]);
+  });
+
+  it("refuse un identifiant mal formé", async () => {
+    const { db } = makeFakeDb([{ division_id: "pas-un-uuid" }]);
+    await expect(listFrequentDivisionIds(db, USER_ID, 5)).rejects.toThrow();
   });
 });

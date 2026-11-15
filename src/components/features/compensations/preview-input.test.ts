@@ -11,6 +11,7 @@ const SCALE = "0b6d5a8e-2f4c-4d1a-9e3b-7c5f1a2d8e40";
 
 const DATA: CompensationFormData = {
   divisions: [{ id: DIVISION, category: "Departemental", type: "Masculin", level: "1" }],
+  frequentDivisionIds: [],
   scales: [{ id: SCALE, name: "Comité" }],
   defaultScaleByDivision: {},
   clubs: [
