@@ -15,11 +15,12 @@ export type MatchDivision = {
   type: DivisionType;
   level: DivisionLevel;
 };
+/** Adresse du match ; rue et ville `null` si c'est celle d'un club pas encore complétée (§15.4.1). */
 export type MatchAddress = {
-  street: string;
+  street: string | null;
   number: string | null;
   postalCode: string;
-  city: string;
+  city: string | null;
 };
 
 /** Colonnes de la division et des équipes (alias `d`, `club1`, `club2` : sans table de base). */
@@ -48,10 +49,10 @@ export const matchPartiesFields = {
 
 /** Champs Zod de l'adresse du match. */
 export const matchAddressFields = {
-  street: z.string(),
+  street: z.string().nullable(),
   number: z.string().nullable(),
   postal_code: z.string(),
-  city: z.string(),
+  city: z.string().nullable(),
 };
 
 /** Division et noms d'équipes d'une ligne, en forme applicative. */
@@ -71,10 +72,10 @@ export function toMatchParties(row: {
 
 /** Adresse d'une ligne, en forme applicative. */
 export function toMatchAddress(row: {
-  street: string;
+  street: string | null;
   number: string | null;
   postal_code: string;
-  city: string;
+  city: string | null;
 }): MatchAddress {
   return {
     street: row.street,

@@ -27,6 +27,7 @@ export const fr = {
     upcoming: "À venir",
     settings: "Paramètres",
     colleagues: "Collègues",
+    clubs: "Clubs",
     gameNotes: "Notes de match",
   },
   auth: {
@@ -564,6 +565,8 @@ export const fr = {
       street: "Rue",
       number: "Numéro (facultatif)",
       postalCode: "Code postal",
+      newClubPostalCodeHint:
+        "Il suffit à trouver l'organisme qui verse. Le reste de l'adresse se complète dans Clubs.",
       city: "Ville",
       country: "Pays (facultatif)",
       venueException: "Le match n'a pas lieu à l'adresse du club de l'équipe 1",
@@ -571,7 +574,8 @@ export const fr = {
       chooseAddress: "Choisir une adresse",
       newAddress: "Nouvelle adresse…",
       defaultVenue: "Adresse du club de l'équipe 1 : {address}",
-      defaultVenueNewClub: "L'adresse du nouveau club de l'équipe 1 sera utilisée.",
+      defaultVenueNewClub:
+        "L'adresse du nouveau club de l'équipe 1 sera utilisée (code postal seul en attendant de la compléter dans Clubs).",
       distance: "Distance aller (km)",
       distanceHint:
         "Un seul trajet, par exemple 23 ou 23,5 : l'aller-retour est compté automatiquement.",
@@ -836,6 +840,59 @@ export const fr = {
       limit: "Vous avez atteint le nombre maximal de collègues.",
       club: "Ce club n'existe plus. Rechargez la page.",
       newClub: "Vérifiez les informations du nouveau club ci-dessous.",
+    },
+  },
+  clubs: {
+    title: "Mes clubs",
+    intro:
+      "Les clubs de vos matchs, créés depuis vos indemnités avec leur code postal. Complétez leur adresse ici : l'itinéraire s'affiche dès que la rue, le code postal et la ville sont connus, et les matchs à domicile du club suivent l'adresse.",
+    empty: "Aucun club pour l'instant : ils se créent aussi depuis le formulaire d'indemnité.",
+    search: {
+      label: "Rechercher un club",
+      placeholder: "Nom, ville ou code postal",
+      countOne: "{count} club",
+      countMany: "{count} clubs",
+      filtered: "{shown} sur {total}",
+      none: "Aucun club ne correspond à « {query} ».",
+    },
+    incomplete: "Adresse à compléter (rue et ville) pour l'itinéraire",
+    add: {
+      legend: "Ajouter un club",
+      submit: "Ajouter",
+      submitting: "Ajout…",
+      created: "Club ajouté.",
+    },
+    edit: {
+      submit: "Enregistrer",
+      submitting: "Enregistrement…",
+      updated: "Club modifié.",
+      label: "Modifier {name}",
+      formLabel: "Fiche du club {name}",
+      cancel: "Annuler",
+    },
+    delete: {
+      submit: "Supprimer",
+      label: "Supprimer {name}",
+      confirm: "Confirmer",
+      cancel: "Annuler",
+      warning:
+        "Le club sera supprimé définitivement. Les collègues qui y sont rattachés resteront, sans club.",
+      inUse:
+        "Ce club apparaît dans au moins une indemnité ou un match (même supprimé récemment) : il ne peut pas être supprimé.",
+    },
+    fields: {
+      name: "Nom du club",
+      street: "Rue (facultatif)",
+      number: "Numéro (facultatif)",
+      postalCode: "Code postal",
+      city: "Ville (facultatif)",
+      country: "Pays (facultatif)",
+    },
+    errors: {
+      invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",
+      notFound: "Ce club n'existe plus. Rechargez la page.",
+      street: "Rue invalide : une seule ligne, 255 caractères maximum.",
+      city: "Ville invalide : une seule ligne, 255 caractères maximum.",
     },
   },
   admin: {

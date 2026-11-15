@@ -160,7 +160,7 @@ describe("createCompensation", () => {
       deps,
       USER_ID,
       form({
-        team1: { kind: "new", name: "BC Béthune", address: ADDRESS },
+        team1: { kind: "new", name: "BC Béthune", postalCode: "62400" },
         venue: { kind: "new", address: { ...ADDRESS, street: "Salle Pierre de Coubertin" } },
       }),
     );
@@ -168,6 +168,8 @@ describe("createCompensation", () => {
     expect(result.status).toBe("created");
     // Seul le club existant est verrouillé.
     expect(query.mock.calls[2]?.[1]).toEqual([[CLUB_B], USER_ID]);
+    // Adresse du nouveau club : code postal seul (§15.4.1).
+    expect(query.mock.calls[3]?.[1]).toEqual([USER_ID, null, null, "62400", null, null]);
     expect(query.mock.calls[4]?.[1]).toEqual([USER_ID, ADDRESS_A, "BC Béthune", 1000]);
     expect(query.mock.calls[5]?.[1]?.[1]).toBe("Salle Pierre de Coubertin");
     // L'indemnité prend l'adresse d'exception, pas celle du nouveau club.
@@ -272,7 +274,7 @@ describe("createCompensation", () => {
       await createCompensation(
         deps,
         USER_ID,
-        form({ team1: { kind: "new", name: "BC Béthune", address: ADDRESS } }),
+        form({ team1: { kind: "new", name: "BC Béthune", postalCode: "62400" } }),
       ),
     ).toEqual({ status: "limit_reached", resource: "club" });
   });

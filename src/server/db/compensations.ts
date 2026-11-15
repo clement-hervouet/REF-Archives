@@ -230,9 +230,9 @@ const listItemRowSchema = amountRowSchema.extend({
   level: divisionLevelSchema,
   team1_name: z.string(),
   team2_name: z.string(),
-  street: z.string(),
+  street: z.string().nullable(),
   number: z.string().nullable(),
-  city: z.string(),
+  city: z.string().nullable(),
   scale_name: z.string(),
   game_id: z.uuid().nullable(),
 });

@@ -1,13 +1,14 @@
 /**
  * Matchs à venir (page « À venir », blocs 7 et 10) : quand (avec « Demain », « Dans 5
- * jours »), qui, niveau, lieu, officiels du match complet. « Itinéraire » reste visible ;
- * agenda, match et modification sont dans le menu « ⋯ ». Aussi utilisée, sans le menu,
+ * jours »), qui, niveau, lieu, officiels du match complet. « Itinéraire » reste visible
+ * quand l'adresse est complète (rue, code postal, ville : une adresse de club peut n'avoir
+ * que son code postal, §15.4.1) ; agenda, match et modification sont dans le menu « ⋯ ». Aussi utilisée, sans le menu,
  * pour les matchs du weekend de l'accueil (bloc 13). Ni montant ni barème : c'est une
  * fiche pratique pour se rendre au match.
  */
 import Link from "next/link";
 import { ActionsMenu } from "@/components/features/compensations/actions-menu";
-import { addressLabel } from "@/components/features/compensations/address-label";
+import { addressLabel, isCompleteAddress } from "@/components/features/compensations/address-label";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { MENU_ITEM_CLASS } from "@/components/features/compensations/menu-styles";
 import { officialsSummary } from "@/components/features/games/officials-summary";
@@ -47,7 +48,7 @@ function relativeLabel(today: string, startsAt: Date): string | null {
 type CardProps = {
   match: UpcomingMatch;
   today: string;
-  /** Faux sur l'accueil (bloc 13) : « Itinéraire » seul, les autres actions restent sur « À venir ». */
+  /** Faux sur l'accueil (bloc 13) : « Itinéraire » seul (si l'adresse est complète), les autres actions restent sur « À venir ». */
   withActions: boolean;
 };
 
@@ -55,6 +56,7 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
   const address = addressLabel(match.address);
   const date = formatIsoDate(toParisIsoDate(match.startsAt));
   const officials = officialsSummary(match.officials);
+  const withItinerary = isCompleteAddress(match.address);
   return (
     <article className="relative grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
       <MatchDate startsAt={match.startsAt} note={relativeLabel(today, match.startsAt)} />
@@ -70,58 +72,62 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 md:items-start">
-        <a
-          href={itineraryUrl(address)}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t.itineraryLabel.replace("{address}", address)}
-          className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
-        >
-          {t.itinerary}
-        </a>
-        {withActions && (
-          <ActionsMenu ariaLabel={fr.compensations.list.moreActionsLabel.replace("{date}", date)}>
-            {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+      {(withItinerary || withActions) && (
+        <div className="flex flex-wrap items-center gap-1 md:items-start">
+          {withItinerary && (
             <a
-              href={matchExportPath(match.id)}
-              download
-              data-close-menu
-              aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
-              className={MENU_ITEM_CLASS}
+              href={itineraryUrl(address)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t.itineraryLabel.replace("{address}", address)}
+              className="inline-flex min-h-11 items-center rounded-md border border-input px-4"
             >
-              {fr.calendar.export.label}
+              {t.itinerary}
             </a>
-            {match.gameId === null ? (
-              <Link
-                href={completeGamePath(match.id)}
+          )}
+          {withActions && (
+            <ActionsMenu ariaLabel={fr.compensations.list.moreActionsLabel.replace("{date}", date)}>
+              {/* `<a>` et non `<Link>` : c'est un fichier à télécharger, pas une page. */}
+              <a
+                href={matchExportPath(match.id)}
+                download
                 data-close-menu
-                aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                aria-label={fr.calendar.export.ariaLabel.replace("{date}", date)}
                 className={MENU_ITEM_CLASS}
               >
-                {fr.games.completeMatch}
-              </Link>
-            ) : (
+                {fr.calendar.export.label}
+              </a>
+              {match.gameId === null ? (
+                <Link
+                  href={completeGamePath(match.id)}
+                  data-close-menu
+                  aria-label={fr.games.completeMatchLabel.replace("{date}", date)}
+                  className={MENU_ITEM_CLASS}
+                >
+                  {fr.games.completeMatch}
+                </Link>
+              ) : (
+                <Link
+                  href={gamePath(match.gameId)}
+                  data-close-menu
+                  aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                  className={MENU_ITEM_CLASS}
+                >
+                  {fr.games.viewMatch}
+                </Link>
+              )}
               <Link
-                href={gamePath(match.gameId)}
+                href={`/indemnites/${match.id}/modifier`}
                 data-close-menu
-                aria-label={fr.games.viewMatchLabel.replace("{date}", date)}
+                aria-label={t.editLabel.replace("{date}", date)}
                 className={MENU_ITEM_CLASS}
               >
-                {fr.games.viewMatch}
+                {t.edit}
               </Link>
-            )}
-            <Link
-              href={`/indemnites/${match.id}/modifier`}
-              data-close-menu
-              aria-label={t.editLabel.replace("{date}", date)}
-              className={MENU_ITEM_CLASS}
-            >
-              {t.edit}
-            </Link>
-          </ActionsMenu>
-        )}
-      </div>
+            </ActionsMenu>
+          )}
+        </div>
+      )}
     </article>
   );
 }

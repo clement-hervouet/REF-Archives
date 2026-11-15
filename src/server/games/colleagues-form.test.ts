@@ -140,11 +140,10 @@ describe("nouveau club depuis un collègue", () => {
     lastname: "Martin",
     clubId: "new",
     clubName: " BC Rennes ",
-    clubStreet: "Rue du Sport",
-    clubNumber: "",
     clubPostalCode: "35000",
+    // Ignorés : un nouveau club ne prend que son nom et son code postal (§15.4.1).
+    clubStreet: "Rue du Sport",
     clubCity: "Rennes",
-    clubCountry: "",
   };
   const ADDRESS_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
 
@@ -158,14 +157,7 @@ describe("nouveau club depuis un collègue", () => {
       status: "created",
     });
     expect(query.mock.calls[0]?.[0]).toContain("INSERT INTO address");
-    expect(query.mock.calls[0]?.[1]).toEqual([
-      USER_ID,
-      "Rue du Sport",
-      null,
-      "35000",
-      "Rennes",
-      null,
-    ]);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, null, null, "35000", null, null]);
     expect(query.mock.calls[1]?.[0]).toContain("INSERT INTO club");
     expect(query.mock.calls[1]?.[1]?.slice(0, 3)).toEqual([USER_ID, ADDRESS_ID, "BC Rennes"]);
     expect(query.mock.calls[2]?.[1]?.[5]).toBe(CLUB_ID);

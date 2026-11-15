@@ -76,8 +76,9 @@ describe("readCompensationFormData", () => {
         ...BASE,
         team1Club: "new",
         team1Name: "BC Béthune",
-        team1Street: "Avenue du Sport",
         team1PostalCode: "62400",
+        // Ignorés : un nouveau club ne prend que son nom et son code postal (§15.4.1).
+        team1Street: "Avenue du Sport",
         team1City: "Béthune",
         venueException: "on",
         venueAddress: "new",
@@ -88,17 +89,7 @@ describe("readCompensationFormData", () => {
         venueCountry: "FR",
       }),
     );
-    expect(data.team1).toEqual({
-      kind: "new",
-      name: "BC Béthune",
-      address: {
-        street: "Avenue du Sport",
-        number: "",
-        postalCode: "62400",
-        city: "Béthune",
-        country: "",
-      },
-    });
+    expect(data.team1).toEqual({ kind: "new", name: "BC Béthune", postalCode: "62400" });
     expect(data.venue).toEqual({
       kind: "new",
       address: {

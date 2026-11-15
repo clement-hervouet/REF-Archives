@@ -2,8 +2,9 @@
 
 /**
  * Club d'un collègue (bloc 10) : aucun, un club existant, ou « Nouveau club… » qui fait
- * apparaître son nom et son adresse (mêmes règles que dans une indemnité). Rendu dans le
- * `<form>` remonté après chaque envoi : le choix repart des valeurs conservées.
+ * apparaître son nom et son code postal (mêmes règles que dans une indemnité, §15.4.1 ;
+ * le reste de l'adresse se complète dans « Clubs »). Rendu dans le `<form>` remonté après
+ * chaque envoi : le choix repart des valeurs conservées.
  */
 import { useState } from "react";
 import { FIELD_CLASS, TextField } from "@/components/features/scales/form-parts";
@@ -16,7 +17,8 @@ import { newClubFieldError } from "./game-messages";
 const c = fr.colleagues.club;
 const f = fr.compensations.fields;
 
-export type ClubOption = { id: string; name: string; city: string };
+/** `place` : ville du club, sinon son code postal (distingue deux clubs du même nom). */
+export type ClubOption = { id: string; name: string; place: string };
 
 type Props = {
   idBase: string;
@@ -28,22 +30,17 @@ type Props = {
 
 const INPUT_NAMES: Record<NewClubField, string> = {
   name: "clubName",
-  street: "clubStreet",
-  number: "clubNumber",
   postalCode: "clubPostalCode",
-  city: "clubCity",
-  country: "clubCountry",
 };
 
 export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Props) {
   const [choice, setChoice] = useState(valueOf("clubId"));
-  const field = (key: NewClubField, label: string, maxLength: number, required = true) => (
+  const field = (key: NewClubField, label: string, maxLength: number) => (
     <TextField
       id={`${idBase}-club-${key}`}
       name={INPUT_NAMES[key]}
       label={label}
       maxLength={maxLength}
-      required={required}
       defaultValue={valueOf(INPUT_NAMES[key])}
       error={newClubFieldError(key, state)}
     />
@@ -69,7 +66,7 @@ export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Pr
           {clubs.map((club) => (
             // La ville distingue deux clubs du même nom.
             <option key={club.id} value={club.id}>
-              {club.name} ({club.city})
+              {club.name} ({club.place})
             </option>
           ))}
           <option value={NEW_CHOICE}>{c.new}</option>
@@ -84,17 +81,9 @@ export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Pr
         // Conteneur : la grille s'adapte à la largeur de la carte, pas à celle de l'écran.
         <fieldset className="@container flex min-w-0 flex-col gap-3 rounded-md border border-border p-3 md:basis-full">
           <legend className="px-1 text-sm font-semibold">{c.newLegend}</legend>
-          {field("name", f.clubName, 255)}
           <div className="grid gap-3 @md:grid-cols-[minmax(0,1fr)_8rem]">
-            {field("street", f.street, 255)}
-            {field("number", f.number, 20, false)}
-          </div>
-          <div className="grid gap-3 @md:grid-cols-[8rem_minmax(0,1fr)] @xl:grid-cols-[8rem_minmax(0,1fr)_minmax(0,12rem)]">
+            {field("name", f.clubName, 255)}
             {field("postalCode", f.postalCode, 10)}
-            {field("city", f.city, 255)}
-            <div className="@md:col-span-2 @xl:col-span-1">
-              {field("country", f.country, 100, false)}
-            </div>
           </div>
         </fieldset>
       )}

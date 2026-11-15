@@ -1,4 +1,5 @@
 import { Disclosure } from "@/components/features/common/disclosure";
+import { clubPlace } from "@/components/features/compensations/address-label";
 import { ColleagueCard } from "@/components/features/games/colleague-card";
 import { ColleagueDirectory } from "@/components/features/games/colleague-directory";
 import { ColleagueForm } from "@/components/features/games/colleague-form";
@@ -25,7 +26,7 @@ export default async function ColleaguesPage() {
   const clubs = clubList.map((club) => ({
     id: club.id,
     name: club.name,
-    city: club.address.city,
+    place: clubPlace(club.address),
   }));
 
   return (

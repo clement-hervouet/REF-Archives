@@ -6,7 +6,8 @@
  * Champs du formulaire HTML :
  * - date, time, divisionId, scaleId, oneWayDistance ;
  * - payer : organisme qui verse, vide = déduit du niveau et de l'adresse (bloc 10) ;
- * - team1Club / team2Club : identifiant d'un club, ou `new` (champs teamN* d'un nouveau club) ;
+ * - team1Club / team2Club : identifiant d'un club, ou `new` (teamNName et teamNPostalCode
+ *   d'un nouveau club, §15.4.1) ;
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
  *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*).
  */
@@ -27,8 +28,6 @@ import type { CompensationForEdit } from "../db/compensations";
 import type { CompensationAmount } from "./amount";
 import { createCompensation, updateCompensation } from "./create-compensation";
 import type { CompensationDeps, CreateCompensationRejection } from "./create-compensation";
-
-type Prefix = "team1" | "team2" | "venue";
 
 /** État du formulaire d'indemnité, en création comme en modification (`useActionState`). */
 export type CompensationFormState =
@@ -51,7 +50,7 @@ const ADDRESS_INPUT_SUFFIX: Record<AddressPart, string> = {
   country: "Country",
 };
 
-function readAddress(formData: FormData, prefix: Prefix): Record<AddressPart, string | undefined> {
+function readAddress(formData: FormData, prefix: "venue"): Record<AddressPart, string | undefined> {
   const field = (part: AddressPart): string | undefined =>
     readText(formData, `${prefix}${ADDRESS_INPUT_SUFFIX[part]}`);
   return {
@@ -67,10 +66,11 @@ function readAddress(formData: FormData, prefix: Prefix): Record<AddressPart, st
 function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string, unknown> {
   const club = readText(formData, `${prefix}Club`);
   if (club === NEW_CHOICE) {
+    // Nouveau club : nom et code postal seulement (§15.4.1).
     return {
       kind: "new",
       name: readText(formData, `${prefix}Name`),
-      address: readAddress(formData, prefix),
+      postalCode: readText(formData, `${prefix}PostalCode`),
     };
   }
   return { kind: "existing", clubId: club };
@@ -118,7 +118,10 @@ export function fieldOfIssuePath(path: readonly PropertyKey[]): CompensationFiel
   }
   if (top === "team1" || top === "team2" || top === "venue") {
     const last = rest[rest.length - 1];
-    const candidate = rest[0] === "address" || rest[0] === "name" ? `${top}.${last ?? ""}` : top;
+    const candidate =
+      rest[0] === "address" || rest[0] === "name" || rest[0] === "postalCode"
+        ? `${top}.${last ?? ""}`
+        : top;
     return isField(candidate) ? candidate : top;
   }
   return isField(top) ? top : null;

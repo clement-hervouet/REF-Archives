@@ -14,13 +14,19 @@ import type { Queryable } from "./users";
 /** Limite anti-abus (application potentiellement publique). */
 export const MAX_CLUBS_PER_USER = 1000;
 
+/** Adresse à créer : seul le code postal est obligatoire (adresse de club partielle, §15.4.1). */
 export type NewAddress = {
-  street: string;
+  street: string | null;
   number: string | null;
   postalCode: string;
-  city: string;
+  city: string | null;
   country: string | null;
 };
+
+/** Adresse d'un club créé à la volée (indemnité, match, collègue) : code postal seul. */
+export function postalCodeOnlyAddress(postalCode: string): NewAddress {
+  return { street: null, number: null, postalCode, city: null, country: null };
+}
 
 /** Club verrouillé pour la transaction, avec son adresse (adresse par défaut du match). */
 export type LockedClub = { id: string; addressId: string };

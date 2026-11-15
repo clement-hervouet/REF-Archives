@@ -92,20 +92,22 @@ describe("compensationFormSchema", () => {
     expect(parsed).not.toHaveProperty("oneWayDistance");
   });
 
-  it("accepte des clubs créés à la volée et une adresse d'exception nouvelle", () => {
+  it("accepte des clubs créés à la volée (nom et code postal) et une adresse d'exception nouvelle", () => {
     const parsed = compensationFormSchema.parse(
       input({
-        team1: { kind: "new", name: "BC Béthune", address: ADDRESS },
-        team2: { kind: "new", name: "ES Arras", address: { ...ADDRESS, city: "Arras" } },
+        team1: { kind: "new", name: "BC Béthune", postalCode: " 62400 " },
+        team2: { kind: "new", name: "ES Arras", postalCode: "62000" },
         venue: { kind: "new", address: { ...ADDRESS, street: "Rue du Gymnase" } },
       }),
     );
-    expect(parsed.team1).toEqual({
-      kind: "new",
-      name: "BC Béthune",
-      address: { ...ADDRESS, country: null },
-    });
+    expect(parsed.team1).toEqual({ kind: "new", name: "BC Béthune", postalCode: "62400" });
     expect(parsed.venue.kind).toBe("new");
+  });
+
+  it("exige le code postal d'un nouveau club", () => {
+    expect(errorPaths({ team1: { kind: "new", name: "BC Béthune", postalCode: "" } })).toEqual([
+      "team1",
+    ]);
   });
 
   it("accepte une adresse d'exception déjà connue", () => {

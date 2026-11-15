@@ -4,10 +4,10 @@
  * session, jamais du formulaire, et chaque requête filtre sur lui.
  *
  * Champs HTML : `firstname`, `lastname`, `hasAccount` (case), `clubId` (vide = aucun club,
- * identifiant d'un club de l'utilisateur, ou `new` avec `clubName`, `clubStreet`,
- * `clubNumber`, `clubPostalCode`, `clubCity`, `clubCountry` pour le créer) ; `personId`
- * (caché) pour modifier ou supprimer. Un nouveau club et le collègue sont écrits dans la
- * même transaction : un refus (limite atteinte) n'en laisse rien, adresse comprise.
+ * identifiant d'un club de l'utilisateur, ou `new` avec `clubName` et `clubPostalCode`
+ * pour le créer, comme depuis une indemnité, §15.4.1) ; `personId` (caché) pour modifier
+ * ou supprimer. Un nouveau club et le collègue sont écrits dans la même transaction : un
+ * refus (limite atteinte) n'en laisse rien, adresse comprise.
  */
 import { z } from "zod";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
@@ -15,15 +15,14 @@ import { readText } from "@/lib/form-data";
 import { teamChoiceSchema } from "@/lib/schemas/compensations";
 import { newColleagueSchema } from "@/lib/schemas/officials";
 import { isOwnedClub } from "../db/clubs";
-import { insertAddress, insertClub } from "../db/compensation-writes";
-import type { NewAddress } from "../db/compensation-writes";
+import { insertAddress, insertClub, postalCodeOnlyAddress } from "../db/compensation-writes";
 import { deleteColleague, insertColleague, updateColleague } from "../db/persons";
 import type { Queryable } from "../db/users";
 import { rejectGame, runRejectable } from "./rejection";
 import type { GameDeps, GameRejection } from "./rejection";
 
 /** Champ du nouveau club en erreur. */
-export type NewClubField = "name" | "street" | "number" | "postalCode" | "city" | "country";
+export type NewClubField = "name" | "postalCode";
 
 export type ColleagueFormState =
   | { status: "idle" }
@@ -52,18 +51,11 @@ const idSchema = z.uuid();
 type ClubChoice =
   | { kind: "none" }
   | { kind: "existing"; clubId: string }
-  | { kind: "new"; name: string; address: NewAddress };
+  | { kind: "new"; name: string; postalCode: string };
 
 type ClubRead = { ok: true; choice: ClubChoice } | { ok: false; state: ColleagueFormState };
 
-const NEW_CLUB_FIELDS: readonly NewClubField[] = [
-  "name",
-  "street",
-  "number",
-  "postalCode",
-  "city",
-  "country",
-];
+const NEW_CLUB_FIELDS: readonly NewClubField[] = ["name", "postalCode"];
 
 function isNewClubField(value: unknown): value is NewClubField {
   return NEW_CLUB_FIELDS.some((field) => field === value);
@@ -73,8 +65,7 @@ function isNewClubField(value: unknown): value is NewClubField {
 function newClubErrors(error: z.ZodError): NewClubField[] {
   const fields = new Set<NewClubField>();
   for (const issue of error.issues) {
-    const [top, part] = issue.path;
-    const field = top === "address" ? part : top;
+    const [field] = issue.path;
     if (isNewClubField(field)) {
       fields.add(field);
     }
@@ -93,13 +84,7 @@ function readClubChoice(formData: FormData): ClubRead {
     const parsed = teamChoiceSchema.safeParse({
       kind: "new",
       name: readText(formData, "clubName"),
-      address: {
-        street: readText(formData, "clubStreet"),
-        number: readText(formData, "clubNumber") ?? "",
-        postalCode: readText(formData, "clubPostalCode"),
-        city: readText(formData, "clubCity"),
-        country: readText(formData, "clubCountry") ?? "",
-      },
+      postalCode: readText(formData, "clubPostalCode"),
     });
     if (!parsed.success) {
       return { ok: false, state: { status: "club_invalid", fields: newClubErrors(parsed.error) } };
@@ -109,7 +94,7 @@ function readClubChoice(formData: FormData): ClubRead {
     }
     return {
       ok: true,
-      choice: { kind: "new", name: parsed.data.name, address: parsed.data.address },
+      choice: { kind: "new", name: parsed.data.name, postalCode: parsed.data.postalCode },
     };
   }
   const clubId = idSchema.safeParse(raw);
@@ -133,7 +118,10 @@ async function resolveClubId(
     case "existing":
       return (await isOwnedClub(db, { userId, clubId: choice.clubId })) ? choice.clubId : undefined;
     case "new": {
-      const addressId = await insertAddress(db, { userId, address: choice.address });
+      const addressId = await insertAddress(db, {
+        userId,
+        address: postalCodeOnlyAddress(choice.postalCode),
+      });
       const clubId = await insertClub(db, { userId, name: choice.name, addressId });
       return clubId ?? rejectGame({ status: "limit_reached", resource: "club" });
     }

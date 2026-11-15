@@ -1,13 +1,14 @@
 /**
  * Choix du club d'une équipe : un club existant, ou « Nouveau club… » qui fait apparaître
- * son nom et son adresse (création à la volée, bloc 6).
+ * son nom et son code postal (création à la volée, bloc 6). Le reste de l'adresse se
+ * complète dans l'onglet « Clubs » (§15.4.1) ; le code postal suffit à déduire l'organisme.
  */
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { ClubSummary } from "@/server/db/clubs";
-import { AddressFields } from "./address-fields";
+import { clubPlace } from "./address-label";
 import { fieldError } from "./compensation-messages";
 import { SelectField } from "./select-field";
 
@@ -48,7 +49,7 @@ export function ClubFields({
         <option value="">{t.fields.chooseClub}</option>
         {clubs.map((club) => (
           <option key={club.id} value={club.id}>
-            {club.name} ({club.address.city})
+            {club.name} ({clubPlace(club.address)})
           </option>
         ))}
         <option value={NEW_CHOICE}>{t.fields.newClub}</option>
@@ -63,7 +64,17 @@ export function ClubFields({
             defaultValue={valueOf(`${prefix}Name`)}
             error={fieldError(`${prefix}.name`, state)}
           />
-          <AddressFields idBase={idBase} prefix={prefix} valueOf={valueOf} state={state} />
+          <div className="md:max-w-xs">
+            <TextField
+              id={`${idBase}-postal-code`}
+              name={`${prefix}PostalCode`}
+              label={t.fields.postalCode}
+              hint={t.fields.newClubPostalCodeHint}
+              maxLength={10}
+              defaultValue={valueOf(`${prefix}PostalCode`)}
+              error={fieldError(`${prefix}.postalCode`, state)}
+            />
+          </div>
         </>
       )}
     </fieldset>
