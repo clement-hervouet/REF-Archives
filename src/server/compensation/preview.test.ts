@@ -14,6 +14,7 @@ function input(overrides: Partial<PreviewInput> = {}): PreviewInput {
     category: "Regional",
     rates: RATES,
     oneWayDistance: "23",
+    travelShared: false,
     payerChoice: "",
     venue: { postalCode: "35000", country: null },
     ...overrides,
@@ -21,6 +22,24 @@ function input(overrides: Partial<PreviewInput> = {}): PreviewInput {
 }
 
 describe("previewCompensation : montant", () => {
+  it("calcule un doublé sans distance saisie", () => {
+    expect(previewCompensation(input({ travelShared: true, oneWayDistance: "" })).amount).toEqual({
+      status: "ok",
+      amount: { gameCents: 4800, mileageCents: 0, totalCents: 4800 },
+      distanceM: 0,
+      effectiveFrom: "2026-09-01",
+    });
+  });
+
+  it("met le kilométrage à 0 sur le second match d'un doublé, distance gardée", () => {
+    expect(previewCompensation(input({ travelShared: true })).amount).toEqual({
+      status: "ok",
+      amount: { gameCents: 4800, mileageCents: 0, totalCents: 4800 },
+      distanceM: 46_000,
+      effectiveFrom: "2026-09-01",
+    });
+  });
+
   it("calcule avec la ligne en vigueur à la date du match", () => {
     expect(previewCompensation(input()).amount).toEqual({
       status: "ok",

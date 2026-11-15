@@ -140,6 +140,8 @@ export async function countCompensationsInRange(
 export type CompensationAmountRow = {
   startsAt: Date;
   distanceM: number;
+  /** Doublé (§15.4.5) : kilométrage déjà compté sur un autre match. */
+  travelShared: boolean;
   gameAmountCents: number;
   centsPerKm: string;
   /** Jour du paiement `AAAA-MM-JJ` (bloc 10), ou `null` s'il n'est pas encore payé. */
@@ -171,13 +173,14 @@ export type CompensationForEdit = {
   team1AddressId: string;
   scaleId: string;
   distanceM: number;
+  travelShared: boolean;
   /** Organisme choisi explicitement (clé), ou `null` pour la déduction automatique. */
   payer: string | null;
 };
 
 // Les jointures reprennent user_id : on ne lit jamais l'équipe, le club ou l'adresse d'un autre.
 // Niveau, code postal et pays : de quoi déduire l'organisme qui verse (bloc 10).
-const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, r.game_amount_cents,
+const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, c.travel_shared, r.game_amount_cents,
   r.cents_per_km::text AS cents_per_km, c.paid_on::text AS paid_on,
   c.payer AS payer_override, d.division, a.postal_code, a.country
 FROM compensation c
@@ -188,7 +191,7 @@ WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 
 // `paid_on::text` : une colonne `date` lue telle quelle deviendrait un Date JavaScript à
 // minuit dans le fuseau du serveur, et pourrait changer de jour.
-const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.game_id, c.paid_on::text AS paid_on,
+const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared, c.game_id, c.paid_on::text AS paid_on,
   c.payer AS payer_override,
   ${MATCH_PARTIES_COLUMNS},
   ${MATCH_ADDRESS_COLUMNS}, a.country,
@@ -202,7 +205,8 @@ JOIN scale s ON s.id = r.scale_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
 ORDER BY c.starts_at, c.id`;
 
-const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m, c.payer,
+const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m,
+  c.travel_shared, c.payer,
   t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
   club1.address_id AS team1_address_id, r.scale_id
 FROM compensation c
@@ -215,6 +219,7 @@ WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
 const amountRowSchema = z.object({
   starts_at: z.date(),
   distance_m: z.number().int(),
+  travel_shared: z.boolean(),
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
   paid_on: z.string().nullable(),
@@ -243,6 +248,7 @@ const editRowSchema = z.object({
   division_id: z.uuid(),
   address_id: z.uuid(),
   distance_m: z.number().int(),
+  travel_shared: z.boolean(),
   team1_club_id: z.uuid(),
   team2_club_id: z.uuid(),
   team1_address_id: z.uuid(),
@@ -254,6 +260,7 @@ function toAmountRow(row: z.infer<typeof amountRowSchema>): CompensationAmountRo
   return {
     startsAt: row.starts_at,
     distanceM: row.distance_m,
+    travelShared: row.travel_shared,
     gameAmountCents: row.game_amount_cents,
     centsPerKm: row.cents_per_km,
     paidOn: row.paid_on,
@@ -315,6 +322,42 @@ export async function findCompensationForEdit(
     team1AddressId: row.team1_address_id,
     scaleId: row.scale_id,
     distanceM: row.distance_m,
+    travelShared: row.travel_shared,
     payer: row.payer,
   };
+}
+
+// ─── Doublés ────────────────────────────────────────────────────────────────
+
+/** Jour et adresse d'une indemnité : de quoi repérer un doublé dans le formulaire (§15.4.5). */
+export type MatchDayVenue = {
+  compensationId: string;
+  /** Jour du match à Paris, `AAAA-MM-JJ`. */
+  day: string;
+  addressId: string;
+};
+
+// Indemnités actives des 12 derniers mois et à venir (index compensation_user_starts_at_idx),
+// comme les niveaux souvent arbitrés. Le jour se lit à Paris, comme partout ailleurs.
+const LIST_MATCH_DAY_VENUES_SQL = `SELECT id,
+  (starts_at AT TIME ZONE 'Europe/Paris')::date::text AS day, address_id
+FROM compensation
+WHERE user_id = $1
+  AND deleted_at IS NULL
+  AND starts_at >= now() - interval '12 months'
+ORDER BY starts_at, id`;
+
+const matchDayVenueRowSchema = z.object({
+  id: z.uuid(),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  address_id: z.uuid(),
+});
+
+/** Jour et adresse des indemnités récentes et à venir de l'utilisateur. */
+export async function listMatchDayVenues(db: Queryable, userId: string): Promise<MatchDayVenue[]> {
+  const result = await db.query(LIST_MATCH_DAY_VENUES_SQL, [userId]);
+  return result.rows.map((raw) => {
+    const row = matchDayVenueRowSchema.parse(raw);
+    return { compensationId: row.id, day: row.day, addressId: row.address_id };
+  });
 }

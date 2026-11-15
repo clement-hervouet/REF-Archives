@@ -78,7 +78,7 @@ function CompensationCard({
         </p>
         <p className="text-sm font-medium">{t.payer.replace("{payer}", payerLabel(item.payer))}</p>
         <p className="text-sm break-words text-muted-foreground">
-          {t.rateDetails
+          {(item.travelShared ? t.rateDetailsShared : t.rateDetails)
             .replace("{scale}", item.scaleName)
             .replace("{game}", formatCents(item.amount.gameCents))
             .replace("{mileage}", formatCents(item.amount.mileageCents))

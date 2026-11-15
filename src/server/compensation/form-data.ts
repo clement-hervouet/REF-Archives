@@ -4,6 +4,8 @@
  */
 import { listAddresses, listClubs } from "../db/clubs";
 import type { AddressSummary, ClubSummary } from "../db/clubs";
+import { listMatchDayVenues } from "../db/compensations";
+import type { MatchDayVenue } from "../db/compensations";
 import { listDivisions, listFrequentDivisionIds } from "../db/divisions";
 import type { Division } from "../db/divisions";
 import {
@@ -31,6 +33,8 @@ export type CompensationFormData = {
   addresses: readonly AddressSummary[];
   /** Lignes de chaque barème choisissable, pour l'aperçu du montant (bloc 10). */
   ratesByScale: Readonly<Record<string, readonly Omit<PreviewRate, "scaleId">[]>>;
+  /** Jour et adresse des indemnités récentes et à venir : repère un doublé (§15.4.5). */
+  matchDayVenues: readonly MatchDayVenue[];
 };
 
 export async function loadCompensationFormData(
@@ -46,6 +50,7 @@ export async function loadCompensationFormData(
     clubs,
     addresses,
     rates,
+    matchDayVenues,
   ] = await Promise.all([
     listDivisions(db),
     listFrequentDivisionIds(db, userId, FREQUENT_DIVISIONS_LIMIT),
@@ -55,6 +60,7 @@ export async function loadCompensationFormData(
     listClubs(db, userId),
     listAddresses(db, userId),
     listSelectableScaleRates(db, userId),
+    listMatchDayVenues(db, userId),
   ]);
 
   // Barème présélectionné pour chaque niveau, calculé ici : le client ne reçoit que le résultat.
@@ -82,5 +88,6 @@ export async function loadCompensationFormData(
     clubs,
     addresses,
     ratesByScale,
+    matchDayVenues,
   };
 }

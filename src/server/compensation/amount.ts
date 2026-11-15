@@ -55,12 +55,27 @@ export type CompensationAmount = {
   totalCents: number;
 };
 
-/** Montant complet d'une indemnité : match + kilométrage. */
-export function computeCompensation(rate: CompensationRate, distanceM: number): CompensationAmount {
+export type CompensationTravel = {
+  /** Distance aller-retour en mètres (colonne `distance_m`). */
+  distanceM: number;
+  /**
+   * Doublé (§15.4.5) : déplacement déjà indemnisé sur un autre match du même jour au même
+   * endroit. Le kilométrage vaut alors 0 ; la distance reste valide et enregistrée.
+   */
+  travelShared: boolean;
+};
+
+/** Montant complet d'une indemnité : match + kilométrage (0 sur le second match d'un doublé). */
+export function computeCompensation(
+  rate: CompensationRate,
+  travel: CompensationTravel,
+): CompensationAmount {
   if (!Number.isSafeInteger(rate.gameAmountCents) || rate.gameAmountCents < 0) {
     throw new ValidationError("invalid_game_amount");
   }
-  const mileageCents = computeMileageCents(distanceM, rate.centsPerKm);
+  // Distance validée même sur un doublé : une valeur impossible reste une erreur.
+  const fullMileageCents = computeMileageCents(travel.distanceM, rate.centsPerKm);
+  const mileageCents = travel.travelShared ? 0 : fullMileageCents;
   return {
     gameCents: rate.gameAmountCents,
     mileageCents,

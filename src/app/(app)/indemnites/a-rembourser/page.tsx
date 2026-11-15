@@ -40,7 +40,7 @@ export default async function UnpaidCompensationsPage() {
         .replace("{team1}", row.team1Name)
         .replace("{team2}", row.team2Name),
       details: divisionLabel(row.division),
-      totalCents: computeCompensation(row, row.distanceM).totalCents,
+      totalCents: computeCompensation(row, row).totalCents,
     })),
   }));
 

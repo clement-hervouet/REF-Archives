@@ -42,6 +42,8 @@ export type NewCompensation = {
   addressId: string;
   /** Organisme choisi explicitement (clé validée), ou `null` : déduit à l'affichage (bloc 10). */
   payer: string | null;
+  /** Doublé (§15.4.5) : déplacement déjà indemnisé sur un autre match, kilométrage à 0. */
+  travelShared: boolean;
 };
 
 const idRowSchema = z.object({ id: z.uuid() });
@@ -170,10 +172,10 @@ const INSERT_COMPENSATION_SQL = `WITH allowed AS (
 inserted AS (
   INSERT INTO compensation (
     user_id, scale_rate_id, distance_m, starts_at, division_id, team1_id, team2_id, address_id,
-    payer
+    payer, travel_shared
   )
   SELECT $1::uuid, $2::uuid, $3::integer, $4::timestamptz, $5::uuid, $6::uuid, $7::uuid, $8::uuid,
-    $10::varchar
+    $10::varchar, $11::boolean
   FROM allowed
   WHERE ok
   RETURNING id
@@ -196,6 +198,7 @@ export async function insertCompensation(
     input.addressId,
     MAX_COMPENSATIONS_PER_USER,
     input.payer,
+    input.travelShared,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
@@ -208,7 +211,7 @@ FOR UPDATE`;
 
 const UPDATE_COMPENSATION_SQL = `UPDATE compensation
 SET scale_rate_id = $3, distance_m = $4, starts_at = $5, division_id = $6,
-  team1_id = $7, team2_id = $8, address_id = $9, payer = $10
+  team1_id = $7, team2_id = $8, address_id = $9, payer = $10, travel_shared = $11
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
@@ -246,6 +249,7 @@ export async function updateCompensation(
     input.team2Id,
     input.addressId,
     input.payer,
+    input.travelShared,
   ]);
   return result.rows.length > 0;
 }

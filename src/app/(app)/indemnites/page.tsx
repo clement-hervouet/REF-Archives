@@ -57,14 +57,14 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
   ]);
   const dated = amounts.map((row) => ({
     startsAt: row.startsAt,
-    amount: computeCompensation(row, row.distanceM),
+    amount: computeCompensation(row, row),
     status: paymentStatus(row.startsAt, row.paidOn, now),
     payer: row.payer,
   }));
   const totals = computeMonthlyTotals(dated);
   const items = rows.map((row) => ({
     ...row,
-    amount: computeCompensation(row, row.distanceM),
+    amount: computeCompensation(row, row),
     status: paymentStatus(row.startsAt, row.paidOn, now),
   }));
   const monthTotal = totals.find((total) => total.month === month) ?? sumTotals(month, []);

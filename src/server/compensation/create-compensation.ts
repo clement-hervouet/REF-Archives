@@ -106,7 +106,13 @@ async function resolveCompensation(
 
   return {
     rate,
-    row: { ...match, scaleRateId: rate.id, distanceM: form.distanceM, payer: form.payer },
+    row: {
+      ...match,
+      scaleRateId: rate.id,
+      distanceM: form.distanceM,
+      payer: form.payer,
+      travelShared: form.travelShared,
+    },
   };
 }
 
@@ -159,7 +165,7 @@ export async function createCompensation(
     return {
       status: "created",
       compensationId,
-      amount: computeCompensation(rate, form.distanceM),
+      amount: computeCompensation(rate, form),
       firstOfSeason: await firstOfSeason(db, userId, form.startsAt),
     };
   });
@@ -184,6 +190,6 @@ export async function updateCompensation(
     const { rate, row } = await resolveCompensation(db, userId, form);
     await updateCompensationRow(db, { ...row, compensationId, userId });
     await syncGameFromCompensation(db, { compensationId, userId });
-    return { status: "updated", amount: computeCompensation(rate, form.distanceM) };
+    return { status: "updated", amount: computeCompensation(rate, form) };
   });
 }

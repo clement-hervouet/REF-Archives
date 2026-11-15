@@ -187,6 +187,7 @@ describe("insertCompensation", () => {
     userId: USER_ID,
     scaleRateId: RATE_ID,
     distanceM: 47_000,
+    travelShared: false,
     startsAt,
     divisionId: DIVISION_ID,
     team1Id: TEAM_ID,
@@ -209,6 +210,7 @@ describe("insertCompensation", () => {
       ADDRESS_ID,
       MAX_COMPENSATIONS_PER_USER,
       "cd-35",
+      false,
     ]);
   });
 
@@ -225,6 +227,7 @@ describe("listCompensationAmounts", () => {
       {
         starts_at: startsAt,
         distance_m: 47_000,
+        travel_shared: false,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         paid_on: "2026-11-20",
@@ -238,6 +241,7 @@ describe("listCompensationAmounts", () => {
       {
         startsAt,
         distanceM: 47_000,
+        travelShared: false,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
         paidOn: "2026-11-20",
@@ -260,6 +264,7 @@ describe("listCompensationsInRange", () => {
         id: COMPENSATION_ID,
         starts_at: startsAt,
         distance_m: 47_000,
+        travel_shared: false,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         division: "Regional",
@@ -283,6 +288,7 @@ describe("listCompensationsInRange", () => {
         id: COMPENSATION_ID,
         startsAt,
         distanceM: 47_000,
+        travelShared: false,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
         division: { category: "Regional", type: "Masculin", level: "1" },
@@ -311,6 +317,7 @@ describe("findCompensationForEdit", () => {
         division_id: DIVISION_ID,
         address_id: ADDRESS_ID,
         distance_m: 47_000,
+        travel_shared: false,
         team1_club_id: CLUB_A,
         team2_club_id: CLUB_B,
         team1_address_id: ADDRESS_ID,
@@ -330,6 +337,7 @@ describe("findCompensationForEdit", () => {
       team1AddressId: ADDRESS_ID,
       scaleId: SCALE_ID,
       distanceM: 47_000,
+      travelShared: false,
       payer: null,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
@@ -362,6 +370,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
         ...ids,
         scaleRateId: RATE_ID,
         distanceM: 1000,
+        travelShared: true,
         startsAt,
         divisionId: DIVISION_ID,
         team1Id: TEAM_ID,
@@ -381,6 +390,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
       "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
       ADDRESS_ID,
       null,
+      true,
     ]);
   });
 

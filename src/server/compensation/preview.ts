@@ -23,6 +23,8 @@ export type PreviewInput = {
   /** Lignes du barème choisi (vide si aucun barème). */
   rates: readonly PreviewRate[];
   oneWayDistance: string;
+  /** Case « doublé » cochée : déplacement déjà compté sur un autre match (§15.4.5). */
+  travelShared: boolean;
   /** Valeur de la liste « Organisme » : vide = automatique. */
   payerChoice: string;
   /** Adresse du match retenue (club de l'équipe 1 ou exception), ou `null` si pas encore connue. */
@@ -82,7 +84,11 @@ function previewPayer(input: PreviewInput): PayerPreview {
 }
 
 function previewAmount(input: PreviewInput): AmountPreview {
-  const distanceM = parseOneWayDistance(input.oneWayDistance);
+  // Doublé (§15.4.5) : la distance est facultative, vide = 0.
+  const distanceM =
+    input.travelShared && input.oneWayDistance.trim() === ""
+      ? 0
+      : parseOneWayDistance(input.oneWayDistance);
   if (!isIsoDate(input.date) || input.rates.length === 0 || distanceM === null) {
     return { status: "incomplete" };
   }
@@ -92,7 +98,7 @@ function previewAmount(input: PreviewInput): AmountPreview {
   }
   return {
     status: "ok",
-    amount: computeCompensation(rate, distanceM),
+    amount: computeCompensation(rate, { distanceM, travelShared: input.travelShared }),
     distanceM,
     effectiveFrom: rate.effectiveFrom,
   };

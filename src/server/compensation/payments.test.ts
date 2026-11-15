@@ -21,10 +21,42 @@ function form(ids: string[], paidOn?: string): FormData {
 describe("summarizeUnpaid", () => {
   it("additionne les montants (match + kilométrage arrondi) et garde la plus ancienne", () => {
     const rows = [
-      { id: "a", gameAmountCents: 3000, centsPerKm: "40.00", distanceM: 24_000 }, // 30 + 9,60
-      { id: "b", gameAmountCents: 4800, centsPerKm: "42.50", distanceM: 46_000 }, // 48 + 19,55
+      {
+        id: "a",
+        gameAmountCents: 3000,
+        centsPerKm: "40.00",
+        distanceM: 24_000,
+        travelShared: false,
+      }, // 30 + 9,60
+      {
+        id: "b",
+        gameAmountCents: 4800,
+        centsPerKm: "42.50",
+        distanceM: 46_000,
+        travelShared: false,
+      }, // 48 + 19,55
     ];
     expect(summarizeUnpaid(rows)).toEqual({ count: 2, totalCents: 10_715, oldest: rows[0] });
+  });
+
+  it("ne compte pas le kilométrage du second match d'un doublé", () => {
+    const rows = [
+      {
+        id: "a",
+        gameAmountCents: 3000,
+        centsPerKm: "40.00",
+        distanceM: 24_000,
+        travelShared: false,
+      }, // 30 + 9,60
+      {
+        id: "b",
+        gameAmountCents: 3000,
+        centsPerKm: "40.00",
+        distanceM: 24_000,
+        travelShared: true,
+      }, // 30
+    ];
+    expect(summarizeUnpaid(rows).totalCents).toBe(6960);
   });
 
   it("renvoie un résumé vide sans indemnité en attente", () => {
@@ -102,7 +134,12 @@ describe("handleClearPayment", () => {
 });
 
 describe("groupByPayer", () => {
-  const rate = { gameAmountCents: 3000, centsPerKm: "40.00", distanceM: 24_000 }; // 39,60 €
+  const rate = {
+    gameAmountCents: 3000,
+    centsPerKm: "40.00",
+    distanceM: 24_000,
+    travelShared: false,
+  }; // 39,60 €
   const cd35 = { kind: "committee", department: "35" } as const;
   const bzh = { kind: "league", league: "bretagne" } as const;
 

@@ -50,6 +50,10 @@ function setup() {
 }
 
 describe("readCompensationFormData", () => {
+  it("lit la case du doublé", () => {
+    expect(readCompensationFormData(form({ ...BASE, travelShared: "on" })).travelShared).toBe(true);
+  });
+
   it("lit des clubs existants et l'adresse de l'équipe 1 par défaut", () => {
     expect(readCompensationFormData(form(BASE))).toEqual({
       date: "2026-11-14",
@@ -61,6 +65,7 @@ describe("readCompensationFormData", () => {
       team2: { kind: "existing", clubId: CLUB_B },
       venue: { kind: "team1" },
       oneWayDistance: "23,5",
+      travelShared: false,
     });
   });
 
@@ -302,6 +307,7 @@ describe("compensationFormValues", () => {
     team1AddressId: ADDRESS_A,
     scaleId: SCALE_ID,
     distanceM: 47_000,
+    travelShared: false,
     payer: null,
   };
 
@@ -323,6 +329,18 @@ describe("compensationFormValues", () => {
     expect(compensationFormValues({ ...compensation, payer: "federation" }).payer).toBe(
       "federation",
     );
+  });
+
+  it("coche la case du doublé quand le déplacement est déjà compté", () => {
+    expect(compensationFormValues(compensation).travelShared).toBeUndefined();
+    expect(compensationFormValues({ ...compensation, travelShared: true }).travelShared).toBe("on");
+  });
+
+  it("laisse la distance vide pour un doublé enregistré sans distance", () => {
+    expect(
+      compensationFormValues({ ...compensation, travelShared: true, distanceM: 0 }).oneWayDistance,
+    ).toBe("");
+    expect(compensationFormValues({ ...compensation, distanceM: 0 }).oneWayDistance).toBe("0");
   });
 
   it("coche l'exception quand l'adresse diffère de celle du club de l'équipe 1", () => {

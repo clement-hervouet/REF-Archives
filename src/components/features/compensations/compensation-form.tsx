@@ -28,7 +28,7 @@ import { compensationStatusMessage, fieldError } from "./compensation-messages";
 import { CompensationRecap } from "./compensation-recap";
 import { PayerSelect } from "./payer-select";
 import { SeasonStartCelebration } from "./season-start-celebration";
-import { previewInputFromForm, readFormData } from "./preview-input";
+import { hasSameDayMatch, previewInputFromForm, readFormData } from "./preview-input";
 import { SelectField } from "./select-field";
 
 const t = fr.compensations;
@@ -95,7 +95,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
           className="flex min-w-0 flex-col gap-6"
         >
           {editing && <input type="hidden" name="compensationId" value={compensationId} />}
-          <MatchFields data={data} state={state} valueOf={valueOf} />
+          <MatchFields data={data} state={state} valueOf={valueOf} liveRead={read} />
           {/* Téléphone : le récapitulatif juste avant le bouton. Ordinateur : à côté. */}
           <CompensationRecap input={recapInput} preview={recapPreview} className="lg:hidden" />
           <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
@@ -118,6 +118,8 @@ type FieldsProps = {
   valueOf: (name: string) => string;
   /** Faux pour un match complet sans indemnité : ni barème ni déplacement. */
   withCompensation?: boolean;
+  /** Valeurs en cours de saisie (récapitulatif) : repèrent un doublé (§15.4.5). */
+  liveRead?: (name: string) => string;
 };
 
 /** Niveaux regroupés par catégorie (Départemental, Régional…), dans l'ordre reçu. */
@@ -144,7 +146,13 @@ function frequentDivisions(
 }
 
 /** Champs d'un match (date, niveau, équipes, adresse), plus barème et distance pour une indemnité. */
-export function MatchFields({ data, state, valueOf, withCompensation = true }: FieldsProps) {
+export function MatchFields({
+  data,
+  state,
+  valueOf,
+  withCompensation = true,
+  liveRead = valueOf,
+}: FieldsProps) {
   const id = useId();
   const [divisionId, setDivisionId] = useState(valueOf("divisionId"));
   const [scaleId, setScaleId] = useState(
@@ -154,10 +162,20 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
   const [team2Club, setTeam2Club] = useState(valueOf("team2Club"));
   const [venueException, setVenueException] = useState(valueOf("venueException") === "on");
   const [venueAddress, setVenueAddress] = useState(valueOf("venueAddress"));
+  // Doublé (§15.4.5) : `null` = automatique, la case suit la détection (saisie seulement).
+  // En modification, ou dès que la case a été touchée, elle garde le choix fait.
+  const [travelShared, setTravelShared] = useState<boolean | null>(
+    valueOf("compensationId") !== "" || valueOf("travelSharedSet") === "1"
+      ? valueOf("travelShared") === "on"
+      : null,
+  );
+  const sameDayMatch = withCompensation && hasSameDayMatch(liveRead, data);
+  const travelSharedChecked = travelShared ?? sameDayMatch;
 
   const club1 = data.clubs.find((club) => club.id === team1Club);
   const frequent = frequentDivisions(data.divisions, data.frequentDivisionIds);
   const venueHintId = `${id}-venue-default`;
+  const travelHintId = `${id}-travel-shared-hint`;
 
   return (
     <>
@@ -321,14 +339,41 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
       {withCompensation && (
         <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.sections.travel}</legend>
+          {/* Choix explicite : conservé si le formulaire revient avec une erreur. */}
+          {travelShared !== null && <input type="hidden" name="travelSharedSet" value="1" />}
+          <div className="flex flex-col gap-1">
+            <label className="flex min-h-11 items-center gap-3">
+              <input
+                type="checkbox"
+                name="travelShared"
+                checked={travelSharedChecked}
+                onChange={(event) => {
+                  setTravelShared(event.target.checked);
+                }}
+                aria-describedby={travelHintId}
+                className="h-5 w-5 shrink-0"
+              />
+              <span>{t.fields.travelShared}</span>
+            </label>
+            <p id={travelHintId} className="text-sm text-muted-foreground">
+              {sameDayMatch && (
+                <span className="font-medium text-foreground">
+                  {t.fields.travelSharedDetected}{" "}
+                </span>
+              )}
+              {t.fields.travelSharedHint}
+            </p>
+          </div>
           <div className="md:max-w-xs">
+            {/* Doublé : distance facultative (vide = 0), le kilométrage vaut 0 de toute façon. */}
             <TextField
               id={`${id}-distance`}
               name="oneWayDistance"
               inputMode="decimal"
-              label={t.fields.distance}
+              label={travelSharedChecked ? t.fields.distanceOptional : t.fields.distance}
               hint={t.fields.distanceHint}
               maxLength={9}
+              required={!travelSharedChecked}
               defaultValue={valueOf("oneWayDistance")}
               error={fieldError("oneWayDistance", state)}
             />

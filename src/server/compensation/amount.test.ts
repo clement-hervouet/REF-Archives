@@ -72,8 +72,12 @@ describe("computeMileageCents", () => {
 });
 
 describe("computeCompensation", () => {
+  const travel = (distanceM: number, travelShared = false) => ({ distanceM, travelShared });
+
   it("additionne le match et le kilométrage", () => {
-    expect(computeCompensation({ gameAmountCents: 4800, centsPerKm: "42.50" }, 46_000)).toEqual({
+    expect(
+      computeCompensation({ gameAmountCents: 4800, centsPerKm: "42.50" }, travel(46_000)),
+    ).toEqual({
       gameCents: 4800,
       mileageCents: 1955,
       totalCents: 6755,
@@ -81,17 +85,35 @@ describe("computeCompensation", () => {
   });
 
   it("accepte un match sans indemnité de match", () => {
-    expect(computeCompensation({ gameAmountCents: 0, centsPerKm: "40.00" }, 10_000)).toEqual({
+    expect(
+      computeCompensation({ gameAmountCents: 0, centsPerKm: "40.00" }, travel(10_000)),
+    ).toEqual({
       gameCents: 0,
       mileageCents: 400,
       totalCents: 400,
     });
   });
 
+  it("ne compte pas le kilométrage du second match d'un doublé", () => {
+    expect(
+      computeCompensation({ gameAmountCents: 4800, centsPerKm: "42.50" }, travel(46_000, true)),
+    ).toEqual({
+      gameCents: 4800,
+      mileageCents: 0,
+      totalCents: 4800,
+    });
+  });
+
+  it("refuse une distance impossible, même sur un doublé", () => {
+    expect(() =>
+      computeCompensation({ gameAmountCents: 4800, centsPerKm: "40.00" }, travel(-1, true)),
+    ).toThrow(ValidationError);
+  });
+
   it("refuse un montant de match négatif ou non entier", () => {
     for (const gameAmountCents of [-1, 10.5]) {
       expect(
-        () => computeCompensation({ gameAmountCents, centsPerKm: "40.00" }, 0),
+        () => computeCompensation({ gameAmountCents, centsPerKm: "40.00" }, travel(0)),
         String(gameAmountCents),
       ).toThrow(ValidationError);
     }

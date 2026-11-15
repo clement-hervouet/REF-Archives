@@ -619,6 +619,8 @@ export const fr = {
       moreActionsLabel: "Plus d'actions pour le match du {date}",
       payer: "Versée par {payer}",
       rateDetails: "{scale} : match {game} + kilométrage {mileage} ({distance} aller-retour)",
+      rateDetailsShared:
+        "{scale} : match {game}, déplacement déjà compté sur l'autre match (doublé)",
       paidOn: "Payée le {date}",
       pending: "En attente de paiement",
       clearPayment: "Annuler le paiement",
@@ -650,6 +652,7 @@ export const fr = {
       noRate:
         "Ce barème n'a pas de montant à cette date : choisissez-en un autre ou ajoutez une ligne au barème.",
       detail: "Match {game} + kilométrage {mileage} ({distance} aller-retour)",
+      detailShared: "Match {game}, déplacement déjà compté sur l'autre match (doublé)",
       rateLine: "{scale}, montants en vigueur depuis le {date}",
     },
     payers: {
@@ -745,8 +748,13 @@ export const fr = {
       defaultVenueNewClub:
         "L'adresse du nouveau club de l'équipe 1 sera utilisée (code postal seul en attendant de la compléter dans Clubs).",
       distance: "Distance aller (km)",
+      distanceOptional: "Distance aller (km, facultative)",
       distanceHint:
         "Un seul trajet, par exemple 23 ou 23,5 : l'aller-retour est compté automatiquement.",
+      travelShared: "Doublé : le déplacement est déjà compté sur un autre match",
+      travelSharedHint:
+        "Deux matchs le même jour au même endroit : le kilométrage n'est versé qu'une fois. Cochez la case sur le second match : la distance devient facultative.",
+      travelSharedDetected: "Un autre match est déjà enregistré ce jour-là à cette adresse.",
     },
     errors: {
       invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",

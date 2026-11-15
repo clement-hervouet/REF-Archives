@@ -8,7 +8,9 @@
  *   et son code postal seulement (le reste de l'adresse se complète dans « Clubs ») ;
  * - adresse : celle du club de l'équipe 1 par défaut, une autre seulement en cas
  *   d'exception (case à cocher) ;
- * - distance : saisie en km aller, stockée en mètres aller-retour (×2).
+ * - distance : saisie en km aller, stockée en mètres aller-retour (×2) ;
+ * - doublé (§15.4.5) : case « déplacement déjà compté sur un autre match », kilométrage à 0 ;
+ *   la distance devient alors facultative (vide = 0).
  */
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
@@ -103,12 +105,30 @@ const payerChoiceSchema = z
     message: "invalid_payer",
   });
 
+/** Distance laissée vide : acceptée seulement sur un doublé (vérifié dans `refineTravel`). */
+const emptyDistanceSchema = z
+  .string()
+  .trim()
+  .max(0)
+  .transform(() => null);
+
 const compensationFieldsSchema = z.object({
   ...matchFieldsShape,
   scaleId: z.uuid(),
   payer: payerChoiceSchema,
-  oneWayDistance: oneWayDistanceSchema,
+  oneWayDistance: z.union([oneWayDistanceSchema, emptyDistanceSchema]),
+  travelShared: z.boolean(),
 });
+
+/** Doublé (§15.4.5) : sans case cochée, la distance reste obligatoire. */
+function refineTravel(
+  value: { oneWayDistance: number | null; travelShared: boolean },
+  ctx: z.RefinementCtx,
+): void {
+  if (value.oneWayDistance === null && !value.travelShared) {
+    ctx.addIssue({ code: "custom", path: ["oneWayDistance"], message: "distance_required" });
+  }
+}
 
 const matchFieldsSchema = z.object(matchFieldsShape);
 
@@ -166,13 +186,16 @@ function toMatchInfo(value: MatchFieldsValue, ctx: z.RefinementCtx) {
  */
 export const compensationFormSchema = compensationFieldsSchema
   .superRefine(refineMatchFields)
+  .superRefine(refineTravel)
   .transform((value, ctx) => {
     const info = toMatchInfo(value, ctx);
     return {
       ...info,
       scaleId: value.scaleId,
       payer: value.payer,
-      distanceM: value.oneWayDistance,
+      // Doublé sans distance : 0 m, le kilométrage vaut 0 de toute façon.
+      distanceM: value.oneWayDistance ?? 0,
+      travelShared: value.travelShared,
     };
   });
 

@@ -26,6 +26,8 @@ export type UnpaidCompensation = {
   team1Name: string;
   team2Name: string;
   distanceM: number;
+  /** Doublé (§15.4.5) : kilométrage déjà compté sur un autre match. */
+  travelShared: boolean;
   gameAmountCents: number;
   centsPerKm: string;
   /** Organisme qui verse (choix enregistré, sinon déduit), ou `null` si inconnu. */
@@ -33,7 +35,7 @@ export type UnpaidCompensation = {
 };
 
 // Index partiel `compensation_unpaid_idx` (migration 015).
-const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m,
+const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared,
   ${MATCH_PARTIES_COLUMNS},
   r.game_amount_cents, r.cents_per_km::text AS cents_per_km,
   c.payer AS payer_override, a.postal_code, a.country
@@ -60,6 +62,7 @@ const unpaidRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   distance_m: z.number().int(),
+  travel_shared: z.boolean(),
   ...matchPartiesFields,
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
@@ -84,6 +87,7 @@ export async function listUnpaidPlayedCompensations(
       startsAt: row.starts_at,
       ...toMatchParties(row),
       distanceM: row.distance_m,
+      travelShared: row.travel_shared,
       gameAmountCents: row.game_amount_cents,
       centsPerKm: row.cents_per_km,
       payer: effectivePayer({

@@ -73,7 +73,7 @@ export function CompensationRecap({ input, preview, className }: Props) {
               {formatCents(amount.amount.totalCents)}
             </p>
             <p className="text-sm">
-              {t.detail
+              {(input.travelShared ? t.detailShared : t.detail)
                 .replace("{game}", formatCents(amount.amount.gameCents))
                 .replace("{mileage}", formatCents(amount.amount.mileageCents))
                 .replace("{distance}", formatRoundTripKm(amount.distanceM))}
