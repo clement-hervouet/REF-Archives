@@ -46,6 +46,7 @@ function form(overrides: Partial<CompensationFormInput> = {}) {
     venue: { kind: "team1" },
     scaleId: SCALE_ID,
     oneWayDistance: "23,5",
+    travelShared: false,
     ...overrides,
   });
 }
@@ -112,7 +113,30 @@ describe("createCompensation", () => {
       10_000,
       // Organisme : déduction automatique (rien d'enregistré).
       null,
+      // Pas un doublé : le kilométrage compte.
+      false,
     ]);
+  });
+
+  it("enregistre un doublé : kilométrage à 0, distance gardée", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ id: DIVISION_ID }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+      [{ count: 2 }],
+    );
+    expect(await createCompensation(deps, USER_ID, form({ travelShared: true }))).toMatchObject({
+      status: "created",
+      amount: { gameCents: 4800, mileageCents: 0, totalCents: 4800 },
+    });
+    const params = query.mock.calls[5]?.[1];
+    expect(params?.[2]).toBe(47_000);
+    expect(params?.[10]).toBe(true);
   });
 
   it("choisit la ligne selon le jour du match à Paris, pas en UTC", async () => {
@@ -397,6 +421,7 @@ describe("updateCompensation", () => {
       TEAM_2,
       ADDRESS_A,
       null,
+      false,
     ]);
     // Bloc 9 : le match complet lié reçoit les mêmes informations, dans la même transaction.
     expect(query.mock.calls[7]?.[0]).toContain("UPDATE game g");

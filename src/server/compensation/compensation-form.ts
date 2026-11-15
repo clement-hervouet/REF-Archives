@@ -9,7 +9,8 @@
  * - team1Club / team2Club : identifiant d'un club, ou `new` (teamNName et teamNPostalCode
  *   d'un nouveau club, §15.4.1) ;
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
- *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*).
+ *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*) ;
+ * - travelShared : case « doublé », déplacement déjà compté sur un autre match (§15.4.5).
  */
 import { z } from "zod";
 import {
@@ -100,6 +101,8 @@ export function readCompensationFormData(formData: FormData): Record<string, unk
     team2: readTeam(formData, "team2"),
     venue: readVenue(formData),
     oneWayDistance: readText(formData, "oneWayDistance"),
+    // Case à cocher : absente du FormData quand elle n'est pas cochée.
+    travelShared: readText(formData, "travelShared") === "on",
   };
 }
 
@@ -209,8 +212,15 @@ export function compensationFormValues(compensation: CompensationForEdit): Recor
     payer: compensation.payer ?? "",
     team1Club: compensation.team1ClubId,
     team2Club: compensation.team2ClubId,
-    oneWayDistance: oneWayKmInput(compensation.distanceM),
+    // Doublé enregistré sans distance : champ vide plutôt que « 0 ».
+    oneWayDistance:
+      compensation.travelShared && compensation.distanceM === 0
+        ? ""
+        : oneWayKmInput(compensation.distanceM),
   };
+  if (compensation.travelShared) {
+    values.travelShared = "on";
+  }
   if (compensation.addressId !== compensation.team1AddressId) {
     values.venueException = "on";
     values.venueAddress = compensation.addressId;

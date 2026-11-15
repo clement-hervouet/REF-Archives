@@ -8,7 +8,7 @@ import type { Payer } from "@/lib/payers";
 import { parseClearPaymentForm, parsePaymentForm } from "@/lib/schemas/payments";
 import type { PaymentIssue } from "@/lib/schemas/payments";
 import { computeCompensation } from "./amount";
-import type { CompensationRate } from "./amount";
+import type { CompensationRate, CompensationTravel } from "./amount";
 
 // ─── Résumé ─────────────────────────────────────────────────────────────────
 
@@ -20,12 +20,12 @@ export type UnpaidSummary<T> = {
 };
 
 /** Total et plus ancienne des indemnités en attente, triées de la plus ancienne à la plus récente. */
-export function summarizeUnpaid<T extends CompensationRate & { distanceM: number }>(
+export function summarizeUnpaid<T extends CompensationRate & CompensationTravel>(
   rows: readonly T[],
 ): UnpaidSummary<T> {
   let totalCents = 0;
   for (const row of rows) {
-    totalCents += computeCompensation(row, row.distanceM).totalCents;
+    totalCents += computeCompensation(row, row).totalCents;
   }
   return { count: rows.length, totalCents, oldest: rows[0] ?? null };
 }
@@ -44,7 +44,7 @@ export type PayerGroup<T> = {
  * l'ordre des lignes (par date) est conservé dans chaque groupe.
  */
 export function groupByPayer<
-  T extends CompensationRate & { distanceM: number; payer: Payer | null },
+  T extends CompensationRate & CompensationTravel & { payer: Payer | null },
 >(rows: readonly T[]): PayerGroup<T>[] {
   const groups = new Map<string, PayerGroup<T> & { payer: Payer | null }>();
   for (const row of rows) {
@@ -57,7 +57,7 @@ export function groupByPayer<
       totalCents: 0,
     };
     group.rows.push(row);
-    group.totalCents += computeCompensation(row, row.distanceM).totalCents;
+    group.totalCents += computeCompensation(row, row).totalCents;
     groups.set(key, group);
   }
   return [...groups.values()]

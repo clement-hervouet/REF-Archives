@@ -30,6 +30,7 @@ function input(overrides: Partial<CompensationFormInput> = {}): CompensationForm
     venue: { kind: "team1" },
     scaleId: SCALE_ID,
     oneWayDistance: "23,5",
+    travelShared: false,
     ...overrides,
   };
 }
@@ -90,6 +91,21 @@ describe("compensationFormSchema", () => {
     expect(parsed.venue).toEqual({ kind: "team1" });
     expect(parsed).not.toHaveProperty("date");
     expect(parsed).not.toHaveProperty("oneWayDistance");
+  });
+
+  it("doublé : distance facultative, vide = 0, saisie gardée", () => {
+    expect(
+      compensationFormSchema.parse(input({ travelShared: true, oneWayDistance: " " })),
+    ).toMatchObject({
+      distanceM: 0,
+      travelShared: true,
+    });
+    expect(compensationFormSchema.parse(input({ travelShared: true })).distanceM).toBe(47_000);
+  });
+
+  it("refuse une distance vide hors doublé, ou invalide même sur un doublé", () => {
+    expect(errorPaths({ oneWayDistance: "" })).toEqual(["oneWayDistance"]);
+    expect(errorPaths({ travelShared: true, oneWayDistance: "abc" })).toEqual(["oneWayDistance"]);
   });
 
   it("accepte des clubs créés à la volée (nom et code postal) et une adresse d'exception nouvelle", () => {

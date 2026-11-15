@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CompensationFormData } from "@/server/compensation/form-data";
-import { previewInputFromForm, readFormData } from "./preview-input";
+import { hasSameDayMatch, previewInputFromForm, readFormData } from "./preview-input";
 
 const CLUB_A = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 const CLUB_B = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02";
@@ -8,6 +8,8 @@ const ADDRESS_A = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
 const ADDRESS_X = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b09";
 const DIVISION = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
 const SCALE = "0b6d5a8e-2f4c-4d1a-9e3b-7c5f1a2d8e40";
+const OTHER_COMPENSATION = "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e61";
+const EDITED_COMPENSATION = "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e62";
 
 const DATA: CompensationFormData = {
   divisions: [{ id: DIVISION, category: "Departemental", type: "Masculin", level: "1" }],
@@ -53,6 +55,10 @@ const DATA: CompensationFormData = {
   ratesByScale: {
     [SCALE]: [{ effectiveFrom: "2026-01-01", gameAmountCents: 3000, centsPerKm: "40.00" }],
   },
+  matchDayVenues: [
+    { compensationId: OTHER_COMPENSATION, day: "2026-11-14", addressId: ADDRESS_A },
+    { compensationId: EDITED_COMPENSATION, day: "2026-11-21", addressId: ADDRESS_A },
+  ],
 };
 
 function read(values: Record<string, string>) {
@@ -116,6 +122,11 @@ describe("previewInputFromForm", () => {
     ).toEqual({ postalCode: "56100", country: null });
   });
 
+  it("lit la case du doublé", () => {
+    expect(previewInputFromForm(read({ travelShared: "on" }), DATA).travelShared).toBe(true);
+    expect(previewInputFromForm(read({}), DATA).travelShared).toBe(false);
+  });
+
   it("laisse vide ce qui n'est pas encore choisi", () => {
     expect(previewInputFromForm(read({}), DATA)).toMatchObject({
       team1Name: null,
@@ -125,6 +136,64 @@ describe("previewInputFromForm", () => {
       venue: null,
       rates: [],
     });
+  });
+});
+
+describe("hasSameDayMatch", () => {
+  it("repère une autre indemnité le même jour à l'adresse du club de l'équipe 1", () => {
+    expect(hasSameDayMatch(read({ date: "2026-11-14", team1Club: CLUB_A }), DATA)).toBe(true);
+  });
+
+  it("ignore un autre jour ou une autre adresse", () => {
+    expect(hasSameDayMatch(read({ date: "2026-11-15", team1Club: CLUB_A }), DATA)).toBe(false);
+    expect(hasSameDayMatch(read({ date: "2026-11-14", team1Club: CLUB_B }), DATA)).toBe(false);
+  });
+
+  it("suit l'adresse d'exception connue, jamais une nouvelle adresse ou un nouveau club", () => {
+    expect(
+      hasSameDayMatch(
+        read({
+          date: "2026-11-14",
+          team1Club: CLUB_B,
+          venueException: "on",
+          venueAddress: ADDRESS_A,
+        }),
+        {
+          ...DATA,
+          addresses: [
+            ...DATA.addresses,
+            {
+              id: ADDRESS_A,
+              street: "Rue A",
+              number: null,
+              postalCode: "62400",
+              city: "Béthune",
+              country: null,
+            },
+          ],
+        },
+      ),
+    ).toBe(true);
+    expect(
+      hasSameDayMatch(
+        read({ date: "2026-11-14", team1Club: CLUB_A, venueException: "on", venueAddress: "new" }),
+        DATA,
+      ),
+    ).toBe(false);
+    expect(hasSameDayMatch(read({ date: "2026-11-14", team1Club: "new" }), DATA)).toBe(false);
+  });
+
+  it("ne compte pas l'indemnité en cours de modification", () => {
+    expect(
+      hasSameDayMatch(
+        read({ date: "2026-11-21", team1Club: CLUB_A, compensationId: EDITED_COMPENSATION }),
+        DATA,
+      ),
+    ).toBe(false);
+  });
+
+  it("ne repère rien sans date", () => {
+    expect(hasSameDayMatch(read({ team1Club: CLUB_A }), DATA)).toBe(false);
   });
 });
 

@@ -69,12 +69,42 @@ export function previewInputFromForm(read: Read, data: CompensationFormData): Fo
     category: division?.category ?? null,
     rates: data.ratesByScale[scaleId] ?? [],
     oneWayDistance: read("oneWayDistance"),
+    travelShared: read("travelShared") === "on",
     payerChoice: read("payer"),
     venue: venue(read, data),
     team1Name: teamName(read, "team1", data),
     team2Name: teamName(read, "team2", data),
     scaleName: data.scales.find((scale) => scale.id === scaleId)?.name ?? null,
   };
+}
+
+/**
+ * Identifiant de l'adresse du match si elle est déjà connue (club existant de l'équipe 1 ou
+ * adresse choisie dans la liste), sinon `null` (nouveau club, nouvelle adresse, rien choisi).
+ */
+function venueAddressId(read: Read, data: CompensationFormData): string | null {
+  if (read("venueException") === "on") {
+    const address = read("venueAddress");
+    return data.addresses.some((candidate) => candidate.id === address) ? address : null;
+  }
+  const club = data.clubs.find((candidate) => candidate.id === read("team1Club"));
+  return club?.address.id ?? null;
+}
+
+/**
+ * Doublé probable (§15.4.5) : une autre indemnité existe le même jour à la même adresse.
+ * L'indemnité en cours de modification (`compensationId`) ne compte pas.
+ */
+export function hasSameDayMatch(read: Read, data: CompensationFormData): boolean {
+  const day = read("date");
+  const addressId = venueAddressId(read, data);
+  if (day === "" || addressId === null) {
+    return false;
+  }
+  const self = read("compensationId");
+  return data.matchDayVenues.some(
+    (other) => other.day === day && other.addressId === addressId && other.compensationId !== self,
+  );
 }
 
 /** Lecteur sur un `FormData` : un champ absent ou un fichier vaut une chaîne vide. */

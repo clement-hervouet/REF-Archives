@@ -101,7 +101,8 @@ const NOTES_SQL = list(`SELECT json_agg(json_build_object(
 const COMPENSATIONS_SQL = list(`SELECT json_agg(json_build_object(
     'id', c.id, 'gameId', c.game_id, 'startsAt', c.starts_at, 'division', ${DIVISION_JSON},
     'team1Id', c.team1_id, 'team2Id', c.team2_id, 'addressId', c.address_id,
-    'distanceMeters', c.distance_m, 'payer', c.payer, 'paidOn', c.paid_on,
+    'distanceMeters', c.distance_m, 'travelShared', c.travel_shared, 'payer', c.payer,
+    'paidOn', c.paid_on,
     'scaleRate', json_build_object(
       'id', r.id, 'scaleId', s.id, 'scaleName', s.name, 'effectiveFrom', r.effective_from,
       'gameAmountCents', r.game_amount_cents, 'centsPerKm', r.cents_per_km),
