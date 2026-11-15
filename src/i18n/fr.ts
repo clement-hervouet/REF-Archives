@@ -156,6 +156,113 @@ export const fr = {
       },
     },
   },
+  // Page « Confidentialité » (§15.4.3) : information RGPD (art. 13), publique.
+  privacy: {
+    title: "Confidentialité",
+    link: "Confidentialité et données personnelles",
+    updated: "Dernière mise à jour : 15 novembre 2026",
+    intro:
+      "REF-Archives est une application personnelle, auto-hébergée et sans but commercial, qui aide des arbitres de basket à suivre leurs indemnités, leurs matchs et leurs notes. Cette page explique quelles données elle enregistre, pourquoi, combien de temps, et comment exercer vos droits.",
+    back: "Retour à l'application",
+    sections: [
+      {
+        id: "privacy-controller",
+        title: "Qui est responsable de vos données",
+        paragraphs: [
+          "Le responsable du traitement est l'administrateur de REF-Archives. Pour toute question sur vos données ou pour exercer vos droits, contactez-le directement : c'est la personne qui vous a invité sur l'application.",
+        ],
+        items: [],
+      },
+      {
+        id: "privacy-data",
+        title: "Les données enregistrées",
+        paragraphs: [],
+        items: [
+          "Votre compte : adresse email, prénom, nom, rôle (utilisateur ou administrateur) et mot de passe. Le mot de passe n'est conservé que sous forme d'empreinte irréversible : personne, pas même l'administrateur, ne peut le lire.",
+          "Vos réglages : rappels par email, récapitulatif du weekend, lien d'abonnement calendrier.",
+          "Ce que vous saisissez : indemnités (équipes, date, heure, adresse, niveau, barème, distance, paiement), matchs complets, notes de match (confiance, stress, texte, liens vers des clips), barèmes, clubs, adresses et collègues.",
+          "Des données techniques de sécurité : sessions de connexion (date de création et de dernière activité), journal des événements de sécurité (connexions, changements de mot de passe, exports…) et compteurs anti-abus. Votre adresse IP n'y figure jamais en clair : elle est remplacée par une empreinte calculée avec une clé secrète du serveur.",
+        ],
+      },
+      {
+        id: "privacy-purposes",
+        title: "Pourquoi ces données sont utilisées",
+        paragraphs: [
+          "L'application ne contient ni publicité, ni mesure d'audience, ni traceur. Vos données ne sont jamais vendues ni utilisées à d'autres fins que celles-ci.",
+        ],
+        items: [
+          "Faire fonctionner le service que vous avez demandé en créant votre compte : suivi des indemnités, rappels, récapitulatif du weekend, flux de calendrier. Base légale : l'exécution du service.",
+          "Protéger les comptes et l'application : journal de sécurité, limitation des tentatives, alertes par email. Base légale : l'intérêt légitime à sécuriser le service.",
+        ],
+      },
+      {
+        id: "privacy-colleagues",
+        title: "Les informations sur vos collègues",
+        paragraphs: [
+          "Quand vous enregistrez un collègue, vous saisissez des informations sur une autre personne. N'indiquez que ce qui vous sert : le nom suffit. Ces fiches ne sont visibles que par vous et ne servent jamais à contacter ces personnes.",
+        ],
+        items: [],
+      },
+      {
+        id: "privacy-recipients",
+        title: "Qui y a accès",
+        paragraphs: [],
+        items: [
+          "Vous seul voyez vos indemnités, matchs, notes, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
+          "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
+          "Les emails (invitation, mot de passe oublié, alertes de sécurité, rappels, récapitulatif du weekend) partent par l'intermédiaire de Gmail (Google). Google traite donc leur contenu, qui peut inclure vos matchs à venir, éventuellement hors de l'Union européenne.",
+          "Le bouton « Itinéraire » ouvre Google Maps avec l'adresse du match : l'adresse n'est envoyée à Google que si vous cliquez.",
+          "Si vous créez un lien d'abonnement calendrier, l'agenda que vous y abonnez (Google Agenda, Samsung Calendar…) reçoit vos matchs. Toute personne qui connaît ce lien peut les lire : gardez-le pour vous, et régénérez-le ou révoquez-le dans Paramètres en cas de doute.",
+        ],
+      },
+      {
+        id: "privacy-hosting",
+        title: "Où sont stockées vos données",
+        paragraphs: [
+          "L'application et sa base de données sont hébergées sur un serveur personnel situé en France. Des sauvegardes quotidiennes sont gardées sur ce serveur, avec une copie sur une seconde machine, elle aussi en France.",
+        ],
+        items: [],
+      },
+      {
+        id: "privacy-retention",
+        title: "Combien de temps",
+        paragraphs: [],
+        items: [
+          "Compte et données saisies : tant que votre compte existe.",
+          "Données que vous supprimez (indemnités, matchs, notes, barèmes) : effacées définitivement 30 jours après leur suppression.",
+          "Compte supprimé : désactivé tout de suite, puis effacé avec toutes ses données au bout de 30 jours.",
+          "Sessions de connexion : 30 jours au plus, puis effacées 30 jours après leur fin.",
+          "Invitations : effacées 30 jours après avoir été acceptées, révoquées ou expirées.",
+          "Journal de sécurité : 90 jours. Après la suppression d'un compte, ses lignes restent jusqu'à cette échéance, sans lien avec le compte.",
+          "Sauvegardes du serveur : 14 jours. Une donnée effacée en disparaît au fil de leur renouvellement.",
+        ],
+      },
+      {
+        id: "privacy-cookies",
+        title: "Cookies",
+        paragraphs: [
+          "Ces cookies sont nécessaires au fonctionnement de l'application ou mémorisent vos propres choix : ils ne demandent pas de consentement. Aucun cookie publicitaire ni de mesure d'audience n'est utilisé.",
+        ],
+        items: [
+          "Session de connexion : vous garde connecté, 30 jours au plus.",
+          "Thème (clair, sombre ou celui de l'appareil) et thème saisonnier (activé ou non, densité) : gardent vos choix d'affichage sur cet appareil, pendant un an.",
+        ],
+      },
+      {
+        id: "privacy-rights",
+        title: "Vos droits",
+        paragraphs: [
+          "Si vous estimez que vos droits ne sont pas respectés, vous pouvez adresser une réclamation à la CNIL (www.cnil.fr).",
+        ],
+        items: [
+          "Accès et portabilité : « Télécharger mes données », dans Paramètres, fournit une copie complète au format JSON.",
+          "Rectification : modifiez votre prénom et votre nom dans Paramètres, et vos saisies dans chaque page. Pour changer d'adresse email, contactez l'administrateur.",
+          "Effacement : « Supprimer mon compte », dans Paramètres.",
+          "Opposition et limitation : contactez l'administrateur.",
+        ],
+      },
+    ],
+  },
   home: {
     acknowledge: "C'est fait pour cette semaine",
     acknowledged: "Indisponibilités du weekend du {date} : c'est noté pour cette semaine.",

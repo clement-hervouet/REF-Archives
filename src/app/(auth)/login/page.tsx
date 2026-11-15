@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
+import { PRIVACY_PATH } from "@/lib/app-paths";
 import { getCurrentUser } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
 import { AppBrand } from "@/components/features/common/app-brand";
@@ -60,6 +62,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         <LoginNotice searchParams={searchParams} />
       </Suspense>
       <LoginForm />
+      <Link
+        href={PRIVACY_PATH}
+        className="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline"
+      >
+        {fr.privacy.link}
+      </Link>
     </main>
   );
 }
