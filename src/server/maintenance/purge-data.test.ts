@@ -26,11 +26,12 @@ describe("runPurgeData", () => {
       reminderDispatches: 1,
       sessions: 1,
       invitations: 1,
+      accessRequests: 1,
       passwordResets: 1,
       rateLimits: 1,
     });
     expect(transactions).toBe(1);
-    expect(query).toHaveBeenCalledTimes(10);
+    expect(query).toHaveBeenCalledTimes(11);
   });
 
   it("efface les indemnités avant les barèmes (une indemnité supprimée protège son barème)", async () => {
@@ -56,6 +57,7 @@ describe("runPurgeData", () => {
     expect(valuesOf("reminder_dispatch")).toEqual([30]);
     expect(valuesOf("session")).toEqual([30]);
     expect(valuesOf("invitation")).toEqual([30]);
+    expect(valuesOf("access_request")).toEqual([30, 90]);
     expect(valuesOf("password_reset")).toEqual([]);
     expect(valuesOf("rate_limit")).toEqual([86_400]);
   });

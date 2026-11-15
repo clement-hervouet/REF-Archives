@@ -12,6 +12,12 @@ export const DATA_EXPORT_PATH = `${SETTINGS_PATH}/export`;
 /** Page « Confidentialité » : information RGPD, lisible sans être connecté (§15.4.3). */
 export const PRIVACY_PATH = "/confidentialite";
 
+/** Page « Demander un accès » : formulaire public, lien depuis la connexion (§15.4.4). */
+export const ACCESS_REQUEST_PATH = "/demande-acces";
+
+/** Page admin « Invitations », avec les demandes d'accès en attente (bloc 10, §15.4.4). */
+export const INVITATIONS_PATH = "/admin/invitations";
+
 /** Page « À venir » : matchs prévus, récapitulatif du weekend (bloc 7). */
 export const UPCOMING_PATH = "/a-venir";
 

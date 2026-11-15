@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { fr } from "@/i18n/fr";
 import { cn } from "@/lib/utils";
+import { NavBadge } from "./nav-badge";
 import {
   ACCOUNT_NAV,
   ADMIN_NAV,
@@ -19,6 +20,8 @@ import {
   SECONDARY_NAV,
   isAnyNavItemActive,
   isNavItemActive,
+  navItemBadgeCount,
+  pendingRequestsLabel,
 } from "./nav-items";
 import type { NavIcon, NavItem } from "./nav-items";
 import type { NavUser } from "./nav-user";
@@ -60,7 +63,16 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-function PanelLink({ item, pathname }: { item: NavItem; pathname: string }) {
+function PanelLink({
+  item,
+  pathname,
+  badge = 0,
+}: {
+  item: NavItem;
+  pathname: string;
+  /** Pastille (demandes d'accès en attente sur « Invitations »), 0 pour aucune. */
+  badge?: number;
+}) {
   const active = isNavItemActive(item, pathname);
   return (
     <li>
@@ -73,6 +85,7 @@ function PanelLink({ item, pathname }: { item: NavItem; pathname: string }) {
         )}
       >
         {item.label}
+        <NavBadge count={badge} />
       </Link>
     </li>
   );
@@ -158,7 +171,12 @@ export function MobileNav({ user, logoutAction }: Props) {
                 <p className="px-3 text-sm text-muted-foreground">{fr.nav.adminGroup}</p>
                 <ul className="flex flex-col">
                   {ADMIN_NAV.map((item) => (
-                    <PanelLink key={item.href} item={item} pathname={pathname} />
+                    <PanelLink
+                      key={item.href}
+                      item={item}
+                      pathname={pathname}
+                      badge={navItemBadgeCount(item, user.pendingAccessRequests)}
+                    />
                   ))}
                 </ul>
               </div>
@@ -204,8 +222,24 @@ export function MobileNav({ user, logoutAction }: Props) {
                 open && "bg-accent text-foreground",
               )}
             >
-              <Menu aria-hidden="true" className="size-5" strokeWidth={moreActive ? 2.25 : 1.75} />
+              <span className="relative">
+                <Menu
+                  aria-hidden="true"
+                  className="size-5"
+                  strokeWidth={moreActive ? 2.25 : 1.75}
+                />
+                {/* Point jaune : des demandes d'accès attendent dans le menu (§15.4.4). */}
+                {user.pendingAccessRequests > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-background"
+                  />
+                )}
+              </span>
               <span>{fr.nav.more}</span>
+              {user.pendingAccessRequests > 0 && (
+                <span className="sr-only">{pendingRequestsLabel(user.pendingAccessRequests)}</span>
+              )}
             </button>
           </li>
         </ul>

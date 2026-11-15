@@ -9,7 +9,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { fr } from "@/i18n/fr";
 import { cn } from "@/lib/utils";
-import { ACCOUNT_NAV, ADMIN_NAV, PRIMARY_NAV, SECONDARY_NAV, isNavItemActive } from "./nav-items";
+import { NavBadge } from "./nav-badge";
+import {
+  ACCOUNT_NAV,
+  ADMIN_NAV,
+  PRIMARY_NAV,
+  SECONDARY_NAV,
+  isNavItemActive,
+  navItemBadgeCount,
+} from "./nav-items";
 import type { NavItem } from "./nav-items";
 import type { NavUser } from "./nav-user";
 
@@ -18,7 +26,16 @@ type Props = {
   logoutAction: () => Promise<void>;
 };
 
-function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
+function SidebarLink({
+  item,
+  pathname,
+  badge = 0,
+}: {
+  item: NavItem;
+  pathname: string;
+  /** Pastille (demandes d'accès en attente sur « Invitations »), 0 pour aucune. */
+  badge?: number;
+}) {
   const active = isNavItemActive(item, pathname);
   return (
     <li>
@@ -33,6 +50,7 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
         )}
       >
         {item.label}
+        <NavBadge count={badge} />
       </Link>
     </li>
   );
@@ -42,10 +60,12 @@ function SidebarGroup({
   label,
   items,
   pathname,
+  pendingAccessRequests = 0,
 }: {
   label?: string;
   items: readonly NavItem[];
   pathname: string;
+  pendingAccessRequests?: number;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -59,7 +79,12 @@ function SidebarGroup({
         aria-labelledby={label === undefined ? undefined : `nav-${label}`}
       >
         {items.map((item) => (
-          <SidebarLink key={item.href} item={item} pathname={pathname} />
+          <SidebarLink
+            key={item.href}
+            item={item}
+            pathname={pathname}
+            badge={navItemBadgeCount(item, pendingAccessRequests)}
+          />
         ))}
       </ul>
     </div>
@@ -89,7 +114,12 @@ export function Sidebar({ user, logoutAction }: Props) {
         <div className="mx-3 border-t border-sidebar-border" />
         <SidebarGroup items={SECONDARY_NAV} pathname={pathname} />
         {user.isAdmin && (
-          <SidebarGroup label={fr.nav.adminGroup} items={ADMIN_NAV} pathname={pathname} />
+          <SidebarGroup
+            label={fr.nav.adminGroup}
+            items={ADMIN_NAV}
+            pathname={pathname}
+            pendingAccessRequests={user.pendingAccessRequests}
+          />
         )}
       </nav>
 

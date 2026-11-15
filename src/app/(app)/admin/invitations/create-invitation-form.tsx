@@ -3,6 +3,7 @@
 /**
  * Création d'une invitation (bloc 10) : email et bouton sur une ligne, puis, après succès,
  * un encadré avec le lien (affiché une seule fois) et son bouton « Copier » à côté.
+ * L'encadré sert aussi aux invitations nées d'une demande d'accès (§15.4.4).
  */
 import { useActionState, useState } from "react";
 import {
@@ -76,6 +77,43 @@ function CopyableLink({ url }: { url: string }) {
   );
 }
 
+type CreatedInvitation = {
+  email: string;
+  /** Chemin relatif du lien : le navigateur y ajoute l'origine du site. */
+  path: string;
+  /** Date ISO (UTC). */
+  expiresAt: string;
+  emailSent: boolean;
+};
+
+/**
+ * Encadré affiché après la création d'une invitation : message, lien (montré une seule fois)
+ * et date d'expiration. Partagé avec « Inviter » des demandes d'accès (§15.4.4).
+ */
+export function InvitationCreatedNotice({ invitation }: { invitation: CreatedInvitation }) {
+  return (
+    <div
+      role="status"
+      // Email non parti : avertissement (jaune), l'admin doit transmettre le lien lui-même.
+      className={`flex flex-col gap-3 rounded-md border p-4 ${
+        invitation.emailSent ? "border-success/50 bg-success/10" : "border-warning bg-warning/15"
+      }`}
+    >
+      <p>
+        {(invitation.emailSent ? t.createdAndSent : t.createdNotSent).replace(
+          "{email}",
+          invitation.email,
+        )}
+      </p>
+      {/* `window` n'est lu qu'ici : cet encadré n'existe qu'après une action, côté navigateur. */}
+      <CopyableLink url={`${window.location.origin}${invitation.path}`} />
+      <p className="text-sm text-muted-foreground">
+        {t.expiresOn.replace("{date}", formatDateTime(new Date(invitation.expiresAt)))}
+      </p>
+    </div>
+  );
+}
+
 export function CreateInvitationForm() {
   const [state, formAction, isPending] = useActionState(createInvitationAction, {
     status: "idle",
@@ -120,27 +158,7 @@ export function CreateInvitationForm() {
         </div>
       </form>
 
-      {state.status === "created" && (
-        <div
-          role="status"
-          // Email non parti : avertissement (jaune), l'admin doit transmettre le lien lui-même.
-          className={`flex flex-col gap-3 rounded-md border p-4 ${
-            state.emailSent ? "border-success/50 bg-success/10" : "border-warning bg-warning/15"
-          }`}
-        >
-          <p>
-            {(state.emailSent ? t.createdAndSent : t.createdNotSent).replace(
-              "{email}",
-              state.email,
-            )}
-          </p>
-          {/* `window` n'est lu qu'ici : cet état n'existe qu'après une action, côté navigateur. */}
-          <CopyableLink url={`${window.location.origin}${state.path}`} />
-          <p className="text-sm text-muted-foreground">
-            {t.expiresOn.replace("{date}", formatDateTime(new Date(state.expiresAt)))}
-          </p>
-        </div>
-      )}
+      {state.status === "created" && <InvitationCreatedNotice invitation={state} />}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 /**
  * Purge planifiée des données (bloc 11, §5.6 et §9) : efface définitivement les données en
  * soft delete au-delà du délai de conservation, et les lignes techniques devenues inutiles
- * (journal de sécurité ancien, réservations de rappels, sessions, invitations, liens de
- * réinitialisation, compteurs de rate limiting).
+ * (journal de sécurité ancien, réservations de rappels, sessions, invitations, demandes
+ * d'accès, liens de réinitialisation, compteurs de rate limiting).
  *
  * Une seule transaction : tout passe ou rien ne passe, et le passage du lendemain reprend
  * ce qui a échoué. Idempotent : un second passage le même jour n'efface rien. Appelée
@@ -18,13 +18,16 @@ import {
   purgeEndedSessions,
   purgeExpiredPasswordResets,
   purgeForgottenRateLimits,
+  purgeOldAccessRequests,
   purgeOldReminderDispatches,
   purgeOldSecurityEvents,
 } from "../db/purge";
 import type { Queryable, Transaction } from "../db/users";
 import {
+  DECIDED_ACCESS_REQUEST_RETENTION_DAYS,
   ENDED_INVITATION_RETENTION_DAYS,
   ENDED_SESSION_RETENTION_DAYS,
+  PENDING_ACCESS_REQUEST_RETENTION_DAYS,
   REMINDER_DISPATCH_RETENTION_DAYS,
   SECURITY_EVENT_RETENTION_DAYS,
   SOFT_DELETE_RETENTION_DAYS,
@@ -42,6 +45,7 @@ export type PurgeDataResult = {
   reminderDispatches: number;
   sessions: number;
   invitations: number;
+  accessRequests: number;
   passwordResets: number;
   rateLimits: number;
 };
@@ -55,13 +59,18 @@ async function purgeSoftDeleted(db: Queryable) {
   return { compensations, notes, games, scales };
 }
 
-/** Lignes techniques : journal, rappels, sessions, invitations, jetons, compteurs. */
+/** Lignes techniques : journal, rappels, sessions, invitations, demandes, jetons, compteurs. */
 async function purgeTechnical(db: Queryable) {
   return {
     securityEvents: await purgeOldSecurityEvents(db, SECURITY_EVENT_RETENTION_DAYS),
     reminderDispatches: await purgeOldReminderDispatches(db, REMINDER_DISPATCH_RETENTION_DAYS),
     sessions: await purgeEndedSessions(db, ENDED_SESSION_RETENTION_DAYS),
     invitations: await purgeEndedInvitations(db, ENDED_INVITATION_RETENTION_DAYS),
+    accessRequests: await purgeOldAccessRequests(
+      db,
+      DECIDED_ACCESS_REQUEST_RETENTION_DAYS,
+      PENDING_ACCESS_REQUEST_RETENTION_DAYS,
+    ),
     passwordResets: await purgeExpiredPasswordResets(db),
     rateLimits: await purgeForgottenRateLimits(db, RATE_LIMIT_MEMORY_MS / 1000),
   };

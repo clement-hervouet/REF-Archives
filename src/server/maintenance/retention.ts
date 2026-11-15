@@ -25,3 +25,9 @@ export const ENDED_SESSION_RETENTION_DAYS = 30;
 
 /** Invitations acceptées, révoquées ou expirées : elles contiennent un email. */
 export const ENDED_INVITATION_RETENTION_DAYS = 30;
+
+/** Demandes d'accès traitées (invitées ou refusées) : elles contiennent un email et un nom. */
+export const DECIDED_ACCESS_REQUEST_RETENTION_DAYS = 30;
+
+/** Demandes d'accès jamais traitées : effacées au bout de ce délai après leur envoi. */
+export const PENDING_ACCESS_REQUEST_RETENTION_DAYS = 90;
