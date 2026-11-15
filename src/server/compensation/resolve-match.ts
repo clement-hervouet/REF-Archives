@@ -1,6 +1,7 @@
 /**
  * Résolution des informations d'un match dans une transaction, commune à l'indemnité
- * (bloc 6) et au match complet (bloc 9) : clubs existants verrouillés ou créés à la volée,
+ * (bloc 6) et au match complet (bloc 9) : clubs existants verrouillés ou créés à la volée
+ * (nom et code postal, §15.4.1),
  * adresse du match (celle du club de l'équipe 1 sauf exception), équipes retrouvées ou
  * créées au niveau du match.
  *
@@ -10,7 +11,13 @@
  */
 import type { MatchInfo } from "@/lib/schemas/compensations";
 import { addressBelongsTo } from "../db/compensations";
-import { ensureTeam, insertAddress, insertClub, lockOwnedClubs } from "../db/compensation-writes";
+import {
+  ensureTeam,
+  insertAddress,
+  insertClub,
+  lockOwnedClubs,
+  postalCodeOnlyAddress,
+} from "../db/compensation-writes";
 import type { LockedClub } from "../db/compensation-writes";
 import type { Queryable } from "../db/users";
 
@@ -43,7 +50,11 @@ async function resolveClub(
   if (choice.kind === "existing") {
     return lockedClubs.get(choice.clubId) ?? reject({ status: "not_found", field: side });
   }
-  const addressId = await insertAddress(db, { userId, address: choice.address });
+  // Nouveau club : code postal seul, le reste de l'adresse se complète dans « Clubs ».
+  const addressId = await insertAddress(db, {
+    userId,
+    address: postalCodeOnlyAddress(choice.postalCode),
+  });
   const clubId = await insertClub(db, { userId, name: choice.name, addressId });
   return clubId === null
     ? reject({ status: "limit_reached", resource: "club" })

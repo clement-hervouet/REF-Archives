@@ -1,6 +1,7 @@
 /**
- * Champs d'une nouvelle adresse (club ou salle). Les noms suivent `compensation-form.ts` :
- * `team1Street`, `venueCity`… ; les erreurs, `team1.street`, `venue.city`…
+ * Champs d'une nouvelle adresse de salle (exception à l'adresse du club de l'équipe 1).
+ * Les noms suivent `compensation-form.ts` : `venueStreet`, `venueCity`… ; les erreurs,
+ * `venue.street`, `venue.city`… Un nouveau club ne prend que son code postal (§15.4.1).
  */
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
@@ -11,7 +12,7 @@ const t = fr.compensations.fields;
 
 type Props = {
   idBase: string;
-  prefix: "team1" | "team2" | "venue";
+  prefix: "venue";
   valueOf: (name: string) => string;
   state: CompensationFormState;
 };

@@ -25,6 +25,9 @@ export function matchExportPath(compensationId: string): string {
 /** Page « Mes collègues » : fiches nom seul (bloc 9). */
 export const COLLEAGUES_PATH = "/collegues";
 
+/** Page « Mes clubs » : clubs et leur adresse, à compléter (§15.4.1). */
+export const CLUBS_PATH = "/clubs";
+
 /** Fiche d'un match complet (bloc 9). */
 export function gamePath(gameId: string): string {
   return `/matchs/${gameId}`;

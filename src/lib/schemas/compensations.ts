@@ -4,7 +4,8 @@
  *
  * Une indemnité est autonome : elle porte elle-même les informations du match indemnisé,
  * sans référence obligatoire à un match complet (arbitres, notes : bloc ultérieur).
- * - équipes : un club existant (par identifiant) ou un nouveau, créé à la volée ;
+ * - équipes : un club existant (par identifiant) ou un nouveau, créé à la volée avec son nom
+ *   et son code postal seulement (le reste de l'adresse se complète dans « Clubs ») ;
  * - adresse : celle du club de l'équipe 1 par défaut, une autre seulement en cas
  *   d'exception (case à cocher) ;
  * - distance : saisie en km aller, stockée en mètres aller-retour (×2).
@@ -25,10 +26,13 @@ const NO_CONTROL_CHARS = /^[^\p{Cc}]*$/u;
 /** Code postal générique (France et étranger) : lettres, chiffres, espace, tiret. */
 const POSTAL_CODE_PATTERN = /^[0-9A-Za-z][0-9A-Za-z -]{1,9}$/;
 
-const requiredText = (max: number) => z.string().trim().min(1).max(max).regex(NO_CONTROL_CHARS);
+export const postalCodeSchema = z.string().trim().regex(POSTAL_CODE_PATTERN);
+
+export const requiredText = (max: number) =>
+  z.string().trim().min(1).max(max).regex(NO_CONTROL_CHARS);
 
 /** Champ texte facultatif : une saisie vide devient `null` (colonne NULL). */
-const optionalText = (max: number) =>
+export const optionalText = (max: number) =>
   z
     .string()
     .trim()
@@ -48,18 +52,19 @@ export const oneWayDistanceSchema = z
 export const newAddressSchema = z.object({
   street: requiredText(255),
   number: optionalText(20),
-  postalCode: z.string().trim().regex(POSTAL_CODE_PATTERN),
+  postalCode: postalCodeSchema,
   city: requiredText(255),
   country: optionalText(100),
 });
 
 /**
  * Équipe : désignée par son club. L'équipe elle-même (club + niveau du match) est
- * retrouvée ou créée côté serveur.
+ * retrouvée ou créée côté serveur. Un nouveau club ne demande que son nom et son code
+ * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse.
  */
 export const teamChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
-  z.object({ kind: z.literal("new"), name: requiredText(255), address: newAddressSchema }),
+  z.object({ kind: z.literal("new"), name: requiredText(255), postalCode: postalCodeSchema }),
 ]);
 
 /**

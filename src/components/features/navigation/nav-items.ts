@@ -5,6 +5,7 @@
 import { fr } from "@/i18n/fr";
 import {
   ACCOUNTS_PATH,
+  CLUBS_PATH,
   COLLEAGUES_PATH,
   GAME_NOTES_PATH,
   SETTINGS_PATH,
@@ -48,6 +49,7 @@ export const PRIMARY_NAV: readonly NavItem[] = [
 export const SECONDARY_NAV: readonly NavItem[] = [
   { href: "/baremes", label: fr.nav.scales },
   { href: COLLEAGUES_PATH, label: fr.nav.colleagues },
+  { href: CLUBS_PATH, label: fr.nav.clubs },
 ];
 
 /** Pages d'administration : affichées aux admins seulement (l'accès reste contrôlé par chaque page). */
