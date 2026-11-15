@@ -40,3 +40,29 @@ export async function listDivisions(db: Queryable): Promise<Division[]> {
     return { id: row.id, category: row.division, type: row.type, level: row.level };
   });
 }
+
+const frequentDivisionRowSchema = z.object({ division_id: z.uuid() });
+
+// Indemnités actives des 12 derniers mois et à venir (index compensation_user_starts_at_idx).
+// À égalité, le niveau arbitré le plus récemment passe devant.
+const LIST_FREQUENT_DIVISION_IDS_SQL = `SELECT division_id
+FROM compensation
+WHERE user_id = $1
+  AND deleted_at IS NULL
+  AND starts_at >= now() - interval '12 months'
+GROUP BY division_id
+ORDER BY count(*) DESC, max(starts_at) DESC
+LIMIT $2`;
+
+/**
+ * Niveaux les plus saisis par l'utilisateur sur ses indemnités des 12 derniers mois, du plus
+ * fréquent au moins fréquent : ils remontent en tête de la liste des niveaux.
+ */
+export async function listFrequentDivisionIds(
+  db: Queryable,
+  userId: string,
+  limit: number,
+): Promise<string[]> {
+  const result = await db.query(LIST_FREQUENT_DIVISION_IDS_SQL, [userId, limit]);
+  return result.rows.map((raw) => frequentDivisionRowSchema.parse(raw).division_id);
+}

@@ -8,7 +8,7 @@
  */
 import { useId, useState } from "react";
 import { RevealResult } from "@/components/features/common/reveal-result";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { divisionAbbreviation, divisionLabel } from "@/components/features/scales/division-label";
 import {
   FormMessage,
   SUBMIT_BUTTON_CLASS,
@@ -131,6 +131,18 @@ function groupByCategory(divisions: readonly Division[]): [Division["category"],
   return [...groups.entries()];
 }
 
+/**
+ * Niveaux souvent arbitrés, dans l'ordre de fréquence. Ils restent aussi dans leur catégorie :
+ * la liste complète garde le même ordre d'une saisie à l'autre.
+ */
+function frequentDivisions(
+  divisions: readonly Division[],
+  frequentIds: readonly string[],
+): Division[] {
+  const byId = new Map(divisions.map((division) => [division.id, division]));
+  return frequentIds.flatMap((divisionId) => byId.get(divisionId) ?? []);
+}
+
 /** Champs d'un match (date, niveau, équipes, adresse), plus barème et distance pour une indemnité. */
 export function MatchFields({ data, state, valueOf, withCompensation = true }: FieldsProps) {
   const id = useId();
@@ -144,6 +156,7 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
   const [venueAddress, setVenueAddress] = useState(valueOf("venueAddress"));
 
   const club1 = data.clubs.find((club) => club.id === team1Club);
+  const frequent = frequentDivisions(data.divisions, data.frequentDivisionIds);
   const venueHintId = `${id}-venue-default`;
 
   return (
@@ -180,11 +193,20 @@ export function MatchFields({ data, state, valueOf, withCompensation = true }: F
             error={fieldError("divisionId", state)}
           >
             <option value="">{t.fields.chooseDivision}</option>
+            {frequent.length > 0 && (
+              <optgroup label={t.fields.frequentDivisions}>
+                {frequent.map((division) => (
+                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
+                    {divisionAbbreviation(division)}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             {groupByCategory(data.divisions).map(([category, divisions]) => (
               <optgroup key={category} label={fr.scales.divisions.category[category]}>
                 {divisions.map((division) => (
-                  <option key={division.id} value={division.id}>
-                    {divisionLabel(division)}
+                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
+                    {divisionAbbreviation(division)}
                   </option>
                 ))}
               </optgroup>

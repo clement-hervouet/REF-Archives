@@ -4,7 +4,7 @@
  */
 import { listAddresses, listClubs } from "../db/clubs";
 import type { AddressSummary, ClubSummary } from "../db/clubs";
-import { listDivisions } from "../db/divisions";
+import { listDivisions, listFrequentDivisionIds } from "../db/divisions";
 import type { Division } from "../db/divisions";
 import {
   findCommonScaleId,
@@ -16,8 +16,13 @@ import type { PreviewRate } from "../db/scales";
 import type { Queryable } from "../db/users";
 import { resolveDefaultScaleId } from "../scales/default-scale";
 
+/** Nombre de niveaux « souvent arbitrés » proposés en tête de la liste. */
+const FREQUENT_DIVISIONS_LIMIT = 5;
+
 export type CompensationFormData = {
   divisions: readonly Division[];
+  /** Niveaux les plus saisis sur 12 mois, du plus fréquent au moins fréquent (en tête de liste). */
+  frequentDivisionIds: readonly string[];
   /** Barèmes choisissables : le commun en premier, puis ceux de l'utilisateur. */
   scales: readonly { id: string; name: string }[];
   /** Barème présélectionné pour chaque niveau (choix de l'utilisateur, sinon le commun). */
@@ -32,16 +37,25 @@ export async function loadCompensationFormData(
   db: Queryable,
   userId: string,
 ): Promise<CompensationFormData> {
-  const [divisions, scales, levelDefaults, commonScaleId, clubs, addresses, rates] =
-    await Promise.all([
-      listDivisions(db),
-      listSelectableScales(db, userId),
-      listLevelDefaults(db, userId),
-      findCommonScaleId(db),
-      listClubs(db, userId),
-      listAddresses(db, userId),
-      listSelectableScaleRates(db, userId),
-    ]);
+  const [
+    divisions,
+    frequentDivisionIds,
+    scales,
+    levelDefaults,
+    commonScaleId,
+    clubs,
+    addresses,
+    rates,
+  ] = await Promise.all([
+    listDivisions(db),
+    listFrequentDivisionIds(db, userId, FREQUENT_DIVISIONS_LIMIT),
+    listSelectableScales(db, userId),
+    listLevelDefaults(db, userId),
+    findCommonScaleId(db),
+    listClubs(db, userId),
+    listAddresses(db, userId),
+    listSelectableScaleRates(db, userId),
+  ]);
 
   // Barème présélectionné pour chaque niveau, calculé ici : le client ne reçoit que le résultat.
   const selectableScaleIds = new Set(scales.map((scale) => scale.id));
@@ -62,6 +76,7 @@ export async function loadCompensationFormData(
 
   return {
     divisions,
+    frequentDivisionIds,
     scales: scales.map((scale) => ({ id: scale.id, name: scale.name })),
     defaultScaleByDivision,
     clubs,
