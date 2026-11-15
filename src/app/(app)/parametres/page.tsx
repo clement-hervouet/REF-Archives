@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccountDeletionForm } from "@/components/features/account/account-deletion-form";
 import { PasswordChangeForm } from "@/components/features/account/password-change-form";
@@ -11,7 +12,7 @@ import { SeasonalThemeForm } from "@/components/features/settings/seasonal-theme
 import { SettingsSection } from "@/components/features/settings/settings-section";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
-import { DATA_EXPORT_PATH } from "@/lib/app-paths";
+import { DATA_EXPORT_PATH, PRIVACY_PATH } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
 import { ACCOUNT_DELETION_DELAY_DAYS } from "@/lib/schemas/accounts";
@@ -135,6 +136,9 @@ export default async function SettingsPage() {
           <p id="settings-data-export-hint" className="text-sm text-muted-foreground">
             {myData.export.hint}
           </p>
+          <Link href={PRIVACY_PATH} className="inline-flex min-h-11 items-center text-sm underline">
+            {fr.privacy.link}
+          </Link>
         </div>
       </SettingsSection>
 

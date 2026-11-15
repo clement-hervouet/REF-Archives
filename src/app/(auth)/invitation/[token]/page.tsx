@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
+import { PRIVACY_PATH } from "@/lib/app-paths";
 import { tokenSchema } from "@/lib/schemas/auth";
 import { findPendingInvitation } from "@/server/db/invitations";
 import { getDb } from "@/server/db/pool";
@@ -41,6 +43,12 @@ export default function InvitationPage({ params }: InvitationPageProps) {
       <Suspense fallback={null}>
         <InvitationContent params={params} />
       </Suspense>
+      <Link
+        href={PRIVACY_PATH}
+        className="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline"
+      >
+        {fr.privacy.link}
+      </Link>
     </main>
   );
 }

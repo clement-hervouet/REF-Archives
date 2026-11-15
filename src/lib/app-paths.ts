@@ -9,6 +9,9 @@ export const SETTINGS_PATH = "/parametres";
 /** Export RGPD de toutes ses données, en JSON (bloc 11), réservé au compte connecté. */
 export const DATA_EXPORT_PATH = `${SETTINGS_PATH}/export`;
 
+/** Page « Confidentialité » : information RGPD, lisible sans être connecté (§15.4.3). */
+export const PRIVACY_PATH = "/confidentialite";
+
 /** Page « À venir » : matchs prévus, récapitulatif du weekend (bloc 7). */
 export const UPCOMING_PATH = "/a-venir";
 
