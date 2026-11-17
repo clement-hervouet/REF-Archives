@@ -13,7 +13,8 @@ import { AppError } from "@/lib/errors";
 import type { CompensationForm } from "@/lib/schemas/compensations";
 import { seasonOf, seasonRange } from "@/lib/seasons";
 import type { CompensationField } from "@/lib/compensation-form-fields";
-import { countCompensationsInRange, listApplicableRates } from "../db/compensations";
+import { countCompensationsInRange, findCupFinal, listApplicableRates } from "../db/compensations";
+import type { CupFinal } from "../db/compensations";
 import type { ApplicableRate } from "../db/compensations";
 import {
   insertCompensation,
@@ -22,6 +23,7 @@ import {
 } from "../db/compensation-writes";
 import type { NewCompensation } from "../db/compensation-writes";
 import { syncGameFromCompensation } from "../db/game-writes";
+import type { CupRound } from "../db/divisions";
 import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
@@ -55,11 +57,14 @@ export type CreateCompensationResult =
        * indemnité de cette saison pour l'utilisateur (confettis, bloc 12d), sinon `null`.
        */
       firstOfSeason: number | null;
+      /** Finale de coupe tout juste enregistrée (confettis, §15.4.6), sinon `null`. */
+      final: CupFinal | null;
     }
   | CreateCompensationRejection;
 
 export type UpdateCompensationResult =
-  { status: "updated"; amount: CompensationAmount } | CreateCompensationRejection;
+  | { status: "updated"; amount: CompensationAmount; final: CupFinal | null }
+  | CreateCompensationRejection;
 
 /** Refus levé dans la transaction pour la faire annuler ; jamais visible hors de ce module. */
 class CompensationRejected extends AppError {
@@ -120,6 +125,23 @@ async function resolveCompensation(
   };
 }
 
+/**
+ * Finale à fêter : l'indemnité enregistrée est une finale de coupe qui ne l'était pas
+ * avant (`previousRound`, `null` à la création). Modifier une finale déjà enregistrée ne
+ * relance pas les confettis.
+ */
+async function finalToCelebrate(
+  db: Queryable,
+  userId: string,
+  row: ResolvedCompensation["row"],
+  previousRound: CupRound | null,
+): Promise<CupFinal | null> {
+  if (row.cupRound !== "F" || previousRound === "F") {
+    return null;
+  }
+  return findCupFinal(db, { divisionId: row.divisionId, addressId: row.addressId, userId });
+}
+
 /** Exécute `action` dans une transaction et transforme un refus en résultat. */
 async function runRejectable<T>(
   deps: CompensationDeps,
@@ -171,6 +193,7 @@ export async function createCompensation(
       compensationId,
       amount: computeCompensation(rate, form),
       firstOfSeason: await firstOfSeason(db, userId, form.startsAt),
+      final: await finalToCelebrate(db, userId, row, null),
     };
   });
 }
@@ -188,12 +211,17 @@ export async function updateCompensation(
 ): Promise<UpdateCompensationResult> {
   return runRejectable(deps, async (db): Promise<UpdateCompensationResult> => {
     // Verrou d'abord : une suppression simultanée ne peut pas passer entre-temps.
-    if (!(await lockCompensation(db, { compensationId, userId }))) {
+    const locked = await lockCompensation(db, { compensationId, userId });
+    if (locked === null) {
       reject({ status: "not_found", field: "compensation" });
     }
     const { rate, row } = await resolveCompensation(db, userId, form);
     await updateCompensationRow(db, { ...row, compensationId, userId });
     await syncGameFromCompensation(db, { compensationId, userId });
-    return { status: "updated", amount: computeCompensation(rate, form) };
+    return {
+      status: "updated",
+      amount: computeCompensation(rate, form),
+      final: await finalToCelebrate(db, userId, row, locked.cupRound),
+    };
   });
 }

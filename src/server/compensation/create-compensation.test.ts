@@ -142,6 +142,7 @@ describe("createCompensation", () => {
       // 47 km × 0,425 €/km = 19,975 € → 19,98 € (arrondi au centime, demi vers le haut).
       amount: { gameCents: 4800, mileageCents: 1998, totalCents: 6798 },
       firstOfSeason: null,
+      final: null,
     });
     expect(transactionCount()).toBe(1);
     // Équipe 2 introuvable à ce niveau : créée.
@@ -431,6 +432,7 @@ describe("première indemnité de la saison (bloc 12d)", () => {
     );
     expect(await createCompensation(deps, USER_ID, form())).toMatchObject({
       firstOfSeason: null,
+      final: null,
     });
   });
 });
@@ -440,7 +442,7 @@ describe("updateCompensation", () => {
     const { deps, query, transactionCount } = setup();
     answer(
       query,
-      [{ id: COMPENSATION_ID }],
+      [{ cup_round: null }],
       [{ cup: false }],
       RATES,
       BOTH_CLUBS,
@@ -454,6 +456,7 @@ describe("updateCompensation", () => {
     ).toEqual({
       status: "updated",
       amount: { gameCents: 4500, mileageCents: 1880, totalCents: 6380 },
+      final: null,
     });
     expect(transactionCount()).toBe(1);
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
@@ -487,9 +490,58 @@ describe("updateCompensation", () => {
     expect(query).toHaveBeenCalledTimes(1);
   });
 
+  it("fête une finale tout juste enregistrée, pas une finale déjà enregistrée (§15.4.6)", async () => {
+    const finalRows = (previous: string | null) => [
+      [{ cup_round: previous }],
+      [{ cup: true }],
+      RATES,
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [{ id: COMPENSATION_ID }],
+      [],
+      [
+        {
+          division: "Regional",
+          type: "Feminin",
+          level: "U18",
+          postal_code: "56000",
+          country: null,
+        },
+      ],
+    ];
+    const first = setup();
+    answer(first.query, ...finalRows("R2"));
+    const promoted = await updateCompensation(
+      first.deps,
+      USER_ID,
+      COMPENSATION_ID,
+      form({ cupRound: "F" }),
+    );
+    expect(promoted.status === "updated" && promoted.final).toEqual({
+      category: "Regional",
+      type: "Feminin",
+      level: "U18",
+      cup: true,
+      department: "56",
+    });
+    expect(first.query.mock.calls[8]?.[1]).toEqual([DIVISION_ID, ADDRESS_A, USER_ID]);
+
+    const again = setup();
+    answer(again.query, ...finalRows("F"));
+    const kept = await updateCompensation(
+      again.deps,
+      USER_ID,
+      COMPENSATION_ID,
+      form({ cupRound: "F" }),
+    );
+    expect(kept.status === "updated" && kept.final).toBeNull();
+    expect(again.query).toHaveBeenCalledTimes(8);
+  });
+
   it("transmet les refus de la résolution", async () => {
     const { deps, query } = setup();
-    answer(query, [{ id: COMPENSATION_ID }], [{ cup: false }], RATES);
+    answer(query, [{ cup_round: null }], [{ cup: false }], RATES);
     expect(
       await updateCompensation(deps, USER_ID, COMPENSATION_ID, form({ date: "2025-12-31" })),
     ).toEqual({ status: "no_rate_at_date" });

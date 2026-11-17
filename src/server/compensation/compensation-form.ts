@@ -26,7 +26,7 @@ import { oneWayKmInput } from "@/lib/distance";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
 import { softDeleteCompensation } from "../db/compensation-writes";
-import type { CompensationForEdit } from "../db/compensations";
+import type { CompensationForEdit, CupFinal } from "../db/compensations";
 import type { CompensationAmount } from "./amount";
 import { createCompensation, updateCompensation } from "./create-compensation";
 import type { CompensationDeps, CreateCompensationRejection } from "./create-compensation";
@@ -36,9 +36,17 @@ export type CompensationFormState =
   | { status: "idle" }
   | { status: "invalid"; fields: CompensationField[] }
   | CreateCompensationRejection
-  /** `firstOfSeason` : saison FFBB à fêter (première indemnité de la saison), sinon `null`. */
-  | { status: "created"; amount: CompensationAmount; firstOfSeason: number | null }
-  | { status: "updated"; amount: CompensationAmount };
+  /**
+   * `firstOfSeason` : saison FFBB à fêter (première indemnité de la saison), sinon `null`.
+   * `final` : finale de coupe tout juste enregistrée (§15.4.6), sinon `null`.
+   */
+  | {
+      status: "created";
+      amount: CompensationAmount;
+      firstOfSeason: number | null;
+      final: CupFinal | null;
+    }
+  | { status: "updated"; amount: CompensationAmount; final: CupFinal | null };
 
 export type DeleteCompensationState =
   { status: "idle" } | { status: "deleted" } | { status: "not_found" };
@@ -157,7 +165,12 @@ export async function handleCreateCompensation(
   }
   const result = await createCompensation(deps, userId, parsed.data);
   return result.status === "created"
-    ? { status: "created", amount: result.amount, firstOfSeason: result.firstOfSeason }
+    ? {
+        status: "created",
+        amount: result.amount,
+        firstOfSeason: result.firstOfSeason,
+        final: result.final,
+      }
     : result;
 }
 

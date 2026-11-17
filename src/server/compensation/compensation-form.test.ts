@@ -174,6 +174,7 @@ describe("handleCreateCompensation", () => {
       status: "created",
       amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
       firstOfSeason: null,
+      final: null,
     });
   });
 
@@ -241,7 +242,7 @@ describe("handleUpdateCompensation", () => {
   it("modifie l'indemnité de l'utilisateur", async () => {
     const { deps, query } = setup();
     for (const rows of [
-      [{ id: COMPENSATION_ID }],
+      [{ cup_round: null }],
       [{ cup: false }],
       [
         {
@@ -270,6 +271,7 @@ describe("handleUpdateCompensation", () => {
     ).toEqual({
       status: "updated",
       amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
+      final: null,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
   });

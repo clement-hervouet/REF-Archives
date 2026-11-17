@@ -3,6 +3,7 @@ import {
   MAX_COMPENSATIONS_PER_USER,
   addressBelongsTo,
   findCompensationForEdit,
+  findCupFinal,
   listApplicableRates,
   listCompensationAmounts,
   listCompensationsInRange,
@@ -37,6 +38,39 @@ const ADDRESS = {
   city: "Béthune",
   country: null,
 };
+
+describe("findCupFinal", () => {
+  it("nomme la coupe d'après le département de l'adresse de l'utilisateur", async () => {
+    const { db, query } = makeFakeDb([
+      {
+        division: "Departemental",
+        type: "Masculin",
+        level: "Seniors",
+        postal_code: "56000",
+        country: null,
+      },
+    ]);
+    expect(
+      await findCupFinal(db, { divisionId: DIVISION_ID, addressId: ADDRESS_ID, userId: USER_ID }),
+    ).toEqual({
+      category: "Departemental",
+      type: "Masculin",
+      level: "Seniors",
+      cup: true,
+      department: "56",
+    });
+    expect(query.mock.calls[0]?.[0]).toContain("a.user_id = $3");
+    expect(query.mock.calls[0]?.[0]).toContain("d.cup");
+    expect(query.mock.calls[0]?.[1]).toEqual([DIVISION_ID, ADDRESS_ID, USER_ID]);
+  });
+
+  it("null hors coupe ou pour l'adresse d'un autre", async () => {
+    const { db } = makeFakeDb();
+    expect(
+      await findCupFinal(db, { divisionId: DIVISION_ID, addressId: ADDRESS_ID, userId: USER_ID }),
+    ).toBeNull();
+  });
+});
 
 describe("listApplicableRates", () => {
   it("renvoie les lignes d'un barème choisissable, filtré par utilisateur", async () => {
@@ -356,8 +390,8 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
   const ids = { compensationId: COMPENSATION_ID, userId: USER_ID };
 
   it("filtrent toujours par utilisateur", async () => {
-    const { db, query } = makeFakeDb([{ id: COMPENSATION_ID }]);
-    expect(await lockCompensation(db, ids)).toBe(true);
+    const { db, query } = makeFakeDb([{ cup_round: "F", id: COMPENSATION_ID }]);
+    expect(await lockCompensation(db, ids)).toEqual({ cupRound: "F" });
     expect(await softDeleteCompensation(db, ids)).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
     expect(query.mock.calls[1]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
@@ -399,7 +433,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
 
   it("répondent faux quand rien n'est touché", async () => {
     const { db } = makeFakeDb();
-    expect(await lockCompensation(db, ids)).toBe(false);
+    expect(await lockCompensation(db, ids)).toBeNull();
     expect(await softDeleteCompensation(db, ids)).toBe(false);
   });
 });

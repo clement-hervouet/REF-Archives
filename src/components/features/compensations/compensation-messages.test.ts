@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
-import { compensationStatusMessage, fieldError } from "./compensation-messages";
+import {
+  celebrationMessages,
+  compensationStatusMessage,
+  fieldError,
+} from "./compensation-messages";
 
 describe("compensationStatusMessage", () => {
   it("n'affiche rien avant le premier envoi", () => {
@@ -13,6 +17,7 @@ describe("compensationStatusMessage", () => {
         status: "created",
         amount: { gameCents: 4800, mileageCents: 1998, totalCents: 6798 },
         firstOfSeason: null,
+        final: null,
       }),
     ).toEqual({
       tone: "success",
@@ -67,7 +72,48 @@ describe("fieldError", () => {
         status: "created",
         amount: { gameCents: 0, mileageCents: 0, totalCents: 0 },
         firstOfSeason: null,
+        final: null,
       }),
     ).toBeNull();
+  });
+});
+
+describe("celebrationMessages", () => {
+  const amount = { gameCents: 3000, mileageCents: 0, totalCents: 3000 };
+  const final = {
+    category: "Regional",
+    type: "Feminin",
+    level: "U18",
+    cup: true,
+    department: "56",
+  } as const;
+
+  it("rien sans saison à fêter ni finale", () => {
+    expect(celebrationMessages({ status: "idle" })).toEqual([]);
+    expect(
+      celebrationMessages({ status: "created", amount, firstOfSeason: null, final: null }),
+    ).toEqual([]);
+    expect(celebrationMessages({ status: "updated", amount, final: null })).toEqual([]);
+  });
+
+  it("félicite pour une finale, nommée d'après le lieu du match (§15.4.6)", () => {
+    expect(celebrationMessages({ status: "updated", amount, final })).toEqual([
+      "Félicitations pour cette sélection en finale CBU18F\u00a0!",
+    ]);
+    expect(
+      celebrationMessages({
+        status: "created",
+        amount,
+        firstOfSeason: null,
+        final: { ...final, category: "Departemental", level: "Seniors", type: "Masculin" },
+      }),
+    ).toEqual(["Félicitations pour cette sélection en finale COUPE 56 SM\u00a0!"]);
+  });
+
+  it("garde les deux messages pour une première indemnité de saison en finale", () => {
+    expect(celebrationMessages({ status: "created", amount, firstOfSeason: 2026, final })).toEqual([
+      "Première indemnité de la saison : bon début de saison 2026-2027\u00a0!",
+      "Félicitations pour cette sélection en finale CBU18F\u00a0!",
+    ]);
   });
 });

@@ -29,10 +29,14 @@ import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
 import { ClubFields } from "./club-fields";
 import { previewCompensation } from "@/server/compensation/preview";
-import { compensationStatusMessage, fieldError } from "./compensation-messages";
+import {
+  celebrationMessages,
+  compensationStatusMessage,
+  fieldError,
+} from "./compensation-messages";
 import { CompensationRecap } from "./compensation-recap";
 import { PayerSelect } from "./payer-select";
-import { SeasonStartCelebration } from "./season-start-celebration";
+import { Celebration } from "./celebration";
 import {
   hasSameDayMatch,
   matchDepartment,
@@ -69,6 +73,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   );
   const labels = editing ? t.edit : t.new;
   const compensationId = valueOf("compensationId");
+  const celebration = celebrationMessages(state);
 
   // Récapitulatif en direct (bloc 10) : relu dans le formulaire à chaque saisie. Lié au
   // `formKey` : après un envoi (formulaire remonté), il repart des valeurs conservées.
@@ -83,10 +88,8 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   return (
     <RevealResult submission={formKey} className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
-      {/* Première indemnité d'une saison FFBB (bloc 12d) : une salve par saisie (clé). */}
-      {state.status === "created" && state.firstOfSeason !== null && (
-        <SeasonStartCelebration key={formKey} season={state.firstOfSeason} />
-      )}
+      {/* Début de saison FFBB (bloc 12d), finale de coupe (§15.4.6) : une salve par envoi (clé). */}
+      {celebration.length > 0 && <Celebration key={formKey} messages={celebration} />}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
         <form

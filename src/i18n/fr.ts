@@ -756,6 +756,8 @@ export const fr = {
       created: "Indemnité enregistrée : {total} (match {game} + kilométrage {mileage}).",
       // Première indemnité d'une saison FFBB (bloc 12d), avec une salve de confettis.
       seasonStart: "Première indemnité de la saison : bon début de saison {season}\u00a0!",
+      // Finale de coupe enregistrée (§15.4.6), avec une salve de confettis ; aussi en modification.
+      finalReached: "Félicitations pour cette sélection en finale {cup}\u00a0!",
     },
     sections: {
       match: "Match",

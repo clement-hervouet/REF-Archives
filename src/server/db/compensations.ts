@@ -8,9 +8,14 @@
  * proprement au lieu de laisser échouer une contrainte.
  */
 import { z } from "zod";
-import { effectivePayer } from "@/lib/payers";
+import { departmentFromPostalCode, effectivePayer } from "@/lib/payers";
 import type { Payer } from "@/lib/payers";
-import { cupRoundSchema, divisionCategorySchema } from "./divisions";
+import {
+  cupRoundSchema,
+  divisionCategorySchema,
+  divisionLevelSchema,
+  divisionTypeSchema,
+} from "./divisions";
 import type { CupRound } from "./divisions";
 import {
   MATCH_ADDRESS_COLUMNS,
@@ -35,6 +40,52 @@ export type ApplicableRate = {
   /** Centimes par km, chaîne `numeric` exacte (ex. `"40.00"`). */
   centsPerKm: string;
 };
+
+// ─── Finale de coupe ────────────────────────────────────────────────────────
+
+/** Coupe dont une finale vient d'être enregistrée : de quoi la nommer (« CBU18F »). */
+export type CupFinal = Pick<MatchDivision, "category" | "type" | "level" | "cup" | "department">;
+
+// L'adresse est filtrée par propriétaire ; la division est un référentiel global.
+const FIND_CUP_FINAL_SQL = `SELECT d.division, d.type, d.level, a.postal_code, a.country
+FROM division d
+JOIN address a ON a.id = $2 AND a.user_id = $3
+WHERE d.id = $1 AND d.cup`;
+
+const cupFinalRowSchema = z.object({
+  division: divisionCategorySchema,
+  type: divisionTypeSchema,
+  level: divisionLevelSchema,
+  postal_code: z.string(),
+  country: z.string().nullable(),
+});
+
+/**
+ * Coupe et département du lieu d'une finale (§15.4.6), pour le message de félicitations.
+ * `null` si la division n'est pas une coupe ou si l'adresse n'est pas à l'utilisateur.
+ */
+export async function findCupFinal(
+  db: Queryable,
+  input: { divisionId: string; addressId: string; userId: string },
+): Promise<CupFinal | null> {
+  const result = await db.query(FIND_CUP_FINAL_SQL, [
+    input.divisionId,
+    input.addressId,
+    input.userId,
+  ]);
+  const raw: unknown = result.rows[0];
+  if (raw === undefined) {
+    return null;
+  }
+  const row = cupFinalRowSchema.parse(raw);
+  return {
+    category: row.division,
+    type: row.type,
+    level: row.level,
+    cup: true,
+    department: departmentFromPostalCode(row.postal_code, row.country),
+  };
+}
 
 // ─── Barème applicable ──────────────────────────────────────────────────────
 

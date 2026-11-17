@@ -3,7 +3,9 @@
  * Pur et sans React : testé à part.
  */
 import { fr } from "@/i18n/fr";
+import { divisionAbbreviation } from "@/components/features/scales/division-label";
 import { formatCents } from "@/lib/format";
+import { seasonLabel } from "@/lib/seasons";
 import type { CompensationField } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 
@@ -86,4 +88,28 @@ export function fieldError(field: CompensationField, state: CompensationFormStat
         : t.errors.invalid;
     }
   }
+}
+
+/**
+ * Messages de célébration après un enregistrement réussi (confettis) : première indemnité
+ * d'une saison FFBB (bloc 12d), finale de coupe tout juste enregistrée (§15.4.6, nommée
+ * d'après le lieu du match : « CBU18F »). Vide : pas de célébration.
+ */
+export function celebrationMessages(state: CompensationFormState): string[] {
+  if (state.status !== "created" && state.status !== "updated") {
+    return [];
+  }
+  const messages: string[] = [];
+  if (state.status === "created" && state.firstOfSeason !== null) {
+    messages.push(t.new.seasonStart.replace("{season}", seasonLabel(state.firstOfSeason)));
+  }
+  if (state.final !== null) {
+    messages.push(
+      t.new.finalReached.replace(
+        "{cup}",
+        divisionAbbreviation(state.final, state.final.department),
+      ),
+    );
+  }
+  return messages;
 }

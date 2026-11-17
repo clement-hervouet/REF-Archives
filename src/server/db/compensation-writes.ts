@@ -9,6 +9,7 @@
  */
 import { z } from "zod";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
+import { cupRoundSchema } from "./divisions";
 import type { CupRound } from "./divisions";
 import type { Queryable } from "./users";
 
@@ -209,7 +210,8 @@ export async function insertCompensation(
 
 // ─── Modification et suppression ───────────────────────────────────────────
 
-const LOCK_COMPENSATION_SQL = `SELECT id FROM compensation
+// Le tour actuel sert à ne fêter une finale qu'au moment où elle est enregistrée (§15.4.6).
+const LOCK_COMPENSATION_SQL = `SELECT cup_round FROM compensation
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 FOR UPDATE`;
 
@@ -226,16 +228,20 @@ SET deleted_at = now()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
+const lockedCompensationRowSchema = z.object({ cup_round: cupRoundSchema.nullable() });
+
 /**
- * Verrouille une indemnité active de l'utilisateur jusqu'à la fin de la transaction.
- * Faux si elle n'existe pas, est supprimée ou appartient à un autre utilisateur.
+ * Verrouille une indemnité active de l'utilisateur jusqu'à la fin de la transaction et
+ * renvoie son tour de coupe actuel. `null` si elle n'existe pas, est supprimée ou
+ * appartient à un autre utilisateur.
  */
 export async function lockCompensation(
   db: Queryable,
   input: { compensationId: string; userId: string },
-): Promise<boolean> {
+): Promise<{ cupRound: CupRound | null } | null> {
   const result = await db.query(LOCK_COMPENSATION_SQL, [input.compensationId, input.userId]);
-  return result.rows.length > 0;
+  const raw: unknown = result.rows[0];
+  return raw === undefined ? null : { cupRound: lockedCompensationRowSchema.parse(raw).cup_round };
 }
 
 /** Remplace les informations d'une indemnité active de l'utilisateur. */
