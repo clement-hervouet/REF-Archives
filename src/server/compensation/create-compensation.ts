@@ -41,7 +41,10 @@ type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "c
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }
-  /** Niveau de coupe sans tour (§15.4.6) : vérifié avec le niveau, en base. */
+  /**
+   * Champ obligatoire pour ce niveau (tour de coupe §15.4.6 ; équipe 2 hors plateau, nombre
+   * de matchs d'un plateau §15.4.7) : vérifié avec le niveau, en base.
+   */
   | { status: "invalid"; fields: CompensationField[] }
   /** Le barème choisi n'a aucune ligne en vigueur à la date du match. */
   | { status: "no_rate_at_date" }
@@ -98,8 +101,8 @@ async function resolveCompensation(
   if (level.status === "not_found") {
     reject({ status: "not_found", field: "divisionId" });
   }
-  if (level.status === "cup_round_required") {
-    reject({ status: "invalid", fields: ["cupRound"] });
+  if (level.status === "invalid") {
+    reject({ status: "invalid", fields: level.fields });
   }
   const rates = await listApplicableRates(db, { scaleId: form.scaleId, userId });
   if (rates === null) {
@@ -111,7 +114,12 @@ async function resolveCompensation(
     reject({ status: "no_rate_at_date" });
   }
 
-  const match = await resolveMatchInfo(db, userId, { ...form, cupRound: level.cupRound }, reject);
+  const match = await resolveMatchInfo(
+    db,
+    userId,
+    { ...form, cupRound: level.cupRound, team2: level.team2 },
+    reject,
+  );
 
   return {
     rate,
@@ -120,9 +128,23 @@ async function resolveCompensation(
       scaleRateId: rate.id,
       distanceM: form.distanceM,
       payer: form.payer,
-      travelShared: form.travelShared,
+      // Pas de doublé sur un plateau (§15.4.7) : une case envoyée quand même est ignorée.
+      travelShared: level.plateau ? false : form.travelShared,
+      gameCount: level.gameCount,
+      plateauGameCents: level.plateauGameCents,
     },
   };
+}
+
+/**
+ * Montant de l'indemnité enregistrée : 1 match au montant du barème hors plateau ; pour un
+ * plateau (§15.4.7), le montant par match saisi × le nombre de matchs (barème : taux km).
+ */
+function amountOf(rate: ApplicableRate, row: ResolvedCompensation["row"]): CompensationAmount {
+  return computeCompensation(
+    { ...rate, gameAmountCents: row.plateauGameCents ?? rate.gameAmountCents },
+    { ...row, gameCount: row.gameCount ?? 1 },
+  );
 }
 
 /**
@@ -191,7 +213,7 @@ export async function createCompensation(
     return {
       status: "created",
       compensationId,
-      amount: computeCompensation(rate, form),
+      amount: amountOf(rate, row),
       firstOfSeason: await firstOfSeason(db, userId, form.startsAt),
       final: await finalToCelebrate(db, userId, row, null),
     };
@@ -220,7 +242,7 @@ export async function updateCompensation(
     await syncGameFromCompensation(db, { compensationId, userId });
     return {
       status: "updated",
-      amount: computeCompensation(rate, form),
+      amount: amountOf(rate, row),
       final: await finalToCelebrate(db, userId, row, locked.cupRound),
     };
   });

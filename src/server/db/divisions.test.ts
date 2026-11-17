@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findDivisionCup, listDivisions, listFrequentDivisionIds } from "./divisions";
+import { findDivisionKind, listDivisions, listFrequentDivisionIds } from "./divisions";
 import { makeFakeDb } from "./fake-db";
 
 const DIVISION_ID = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
@@ -7,26 +7,61 @@ const DIVISION_ID = "5e2a9c7b-1d4f-4b6e-8a3c-9f0d2e7b1c55";
 describe("listDivisions", () => {
   it("mappe les colonnes vers le type applicatif", async () => {
     const { db } = makeFakeDb([
-      { id: DIVISION_ID, division: "Regional", type: "Feminin", level: "U15", cup: false },
+      {
+        id: DIVISION_ID,
+        division: "Regional",
+        type: "Feminin",
+        level: "U15",
+        cup: false,
+        plateau: false,
+      },
     ]);
     expect(await listDivisions(db)).toEqual([
-      { id: DIVISION_ID, category: "Regional", type: "Feminin", level: "U15", cup: false },
+      {
+        id: DIVISION_ID,
+        category: "Regional",
+        type: "Feminin",
+        level: "U15",
+        cup: false,
+        plateau: false,
+      },
     ]);
   });
 
   it("met les coupes après tous les championnats", async () => {
     const { db, query } = makeFakeDb([
-      { id: DIVISION_ID, division: "Departemental", type: "Masculin", level: "Seniors", cup: true },
+      {
+        id: DIVISION_ID,
+        division: "Departemental",
+        type: "Masculin",
+        level: "Seniors",
+        cup: true,
+        plateau: false,
+      },
     ]);
     expect(await listDivisions(db)).toEqual([
-      { id: DIVISION_ID, category: "Departemental", type: "Masculin", level: "Seniors", cup: true },
+      {
+        id: DIVISION_ID,
+        category: "Departemental",
+        type: "Masculin",
+        level: "Seniors",
+        cup: true,
+        plateau: false,
+      },
     ]);
-    expect(query.mock.calls[0]?.[0]).toContain("ORDER BY cup, division, type, level");
+    expect(query.mock.calls[0]?.[0]).toContain("ORDER BY cup, plateau, division, type, level");
   });
 
   it("refuse une valeur inconnue plutôt que de l'afficher", async () => {
     const { db } = makeFakeDb([
-      { id: DIVISION_ID, division: "Mondial", type: "Masculin", level: "1", cup: false },
+      {
+        id: DIVISION_ID,
+        division: "Mondial",
+        type: "Masculin",
+        level: "1",
+        cup: false,
+        plateau: false,
+      },
     ]);
     await expect(listDivisions(db)).rejects.toThrow();
   });
@@ -50,15 +85,15 @@ describe("listFrequentDivisionIds", () => {
   });
 });
 
-describe("findDivisionCup", () => {
+describe("findDivisionKind", () => {
   it("indique si la division est une coupe", async () => {
-    const { db, query } = makeFakeDb([{ cup: true }]);
-    expect(await findDivisionCup(db, DIVISION_ID)).toEqual({ cup: true });
+    const { db, query } = makeFakeDb([{ cup: true, plateau: false }]);
+    expect(await findDivisionKind(db, DIVISION_ID)).toEqual({ cup: true, plateau: false });
     expect(query.mock.calls[0]?.[1]).toEqual([DIVISION_ID]);
   });
 
   it("null si la division n'existe pas", async () => {
     const { db } = makeFakeDb();
-    expect(await findDivisionCup(db, DIVISION_ID)).toBeNull();
+    expect(await findDivisionKind(db, DIVISION_ID)).toBeNull();
   });
 });

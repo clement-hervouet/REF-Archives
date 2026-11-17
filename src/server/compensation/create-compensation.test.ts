@@ -76,9 +76,59 @@ const BOTH_CLUBS = [
 ];
 
 describe("createCompensation", () => {
+  it("plateau : exige le nombre et le montant par match, avant toute écriture (§15.4.7)", async () => {
+    const { deps, query } = setup();
+    answer(query, [{ cup: false, plateau: true }]);
+    expect(await createCompensation(deps, USER_ID, form({ team2: null }))).toEqual({
+      status: "invalid",
+      fields: ["gameCount", "plateauGameAmount"],
+    });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("hors plateau : exige l'équipe 2", async () => {
+    const { deps, query } = setup();
+    answer(query, [{ cup: false, plateau: false }]);
+    expect(await createCompensation(deps, USER_ID, form({ team2: null }))).toEqual({
+      status: "invalid",
+      fields: ["team2"],
+    });
+  });
+
+  it("plateau : club organisateur seul, montant saisi × nombre de matchs, km du barème", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ cup: false, plateau: true }],
+      RATES,
+      [{ id: CLUB_A, address_id: ADDRESS_A }],
+      [{ id: TEAM_1 }],
+      [{ id: COMPENSATION_ID }],
+      [{ count: 2 }],
+    );
+    // Équipe 2 envoyée quand même (formulaire forgé) : ignorée.
+    const result = await createCompensation(
+      deps,
+      USER_ID,
+      // Case « doublé » envoyée quand même : ignorée, pas de doublé sur un plateau.
+      form({ gameCount: "3", plateauGameAmount: "12,50", travelShared: true }),
+    );
+    expect(result).toMatchObject({
+      status: "created",
+      // 3 × 12,50 € saisis (pas les 48 € du barème) + 47 km × 0,425 €/km du barème.
+      amount: { gameCents: 3750, mileageCents: 1998, totalCents: 5748 },
+    });
+    expect(query.mock.calls[2]?.[1]).toEqual([[CLUB_A], USER_ID]);
+    const insert = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO compensation"));
+    expect(insert?.[1]?.[6]).toBeNull();
+    expect(insert?.[1]?.[12]).toBe(3);
+    expect(insert?.[1]?.[13]).toBe(1250);
+    expect(insert?.[1]?.[10]).toBe(false);
+  });
+
   it("refuse un niveau de coupe sans tour, avant toute écriture (§15.4.6)", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: true }]);
+    answer(query, [{ cup: true, plateau: false }]);
     expect(await createCompensation(deps, USER_ID, form())).toEqual({
       status: "invalid",
       fields: ["cupRound"],
@@ -90,7 +140,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -100,14 +150,14 @@ describe("createCompensation", () => {
     );
     await createCompensation(deps, USER_ID, form({ cupRound: "R8" }));
     const insert = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO compensation"));
-    expect(insert?.[1]?.at(-1)).toBeNull();
+    expect(insert?.[1]?.[11]).toBeNull();
   });
 
   it("enregistre le tour d'un match de coupe", async () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: true }],
+      [{ cup: true, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -118,14 +168,14 @@ describe("createCompensation", () => {
     const result = await createCompensation(deps, USER_ID, form({ cupRound: "R16" }));
     expect(result.status).toBe("created");
     const insert = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO compensation"));
-    expect(insert?.[1]?.at(-1)).toBe("R16");
+    expect(insert?.[1]?.[11]).toBe("R16");
   });
 
   it("crée l'indemnité avec la ligne en vigueur et l'adresse du club de l'équipe 1", async () => {
     const { deps, query, transactionCount } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -163,6 +213,9 @@ describe("createCompensation", () => {
       false,
       // Pas une coupe : pas de tour.
       null,
+      // Pas un plateau : ni nombre de matchs, ni montant par match saisi.
+      null,
+      null,
     ]);
   });
 
@@ -170,7 +223,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -191,7 +244,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -214,7 +267,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       [{ id: CLUB_B, address_id: ADDRESS_B }],
       [{ id: ADDRESS_A }],
@@ -252,7 +305,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: ADDRESS_NEW }],
@@ -283,7 +336,7 @@ describe("createCompensation", () => {
 
   it("refuse un barème introuvable ou d'un autre utilisateur", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: false }], []);
+    answer(query, [{ cup: false, plateau: false }], []);
     expect(await createCompensation(deps, USER_ID, form())).toEqual({
       status: "not_found",
       field: "scaleId",
@@ -292,7 +345,7 @@ describe("createCompensation", () => {
 
   it("refuse un match antérieur à la première ligne du barème", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: false }], RATES);
+    answer(query, [{ cup: false, plateau: false }], RATES);
     expect(await createCompensation(deps, USER_ID, form({ date: "2025-12-31" }))).toEqual({
       status: "no_rate_at_date",
     });
@@ -303,7 +356,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       [{ id: null, effective_from: null, game_amount_cents: null, cents_per_km: null }],
     );
     expect(await createCompensation(deps, USER_ID, form())).toEqual({
@@ -313,7 +366,7 @@ describe("createCompensation", () => {
 
   it("refuse un club d'équipe 2 qui n'est pas à l'utilisateur", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: false }], RATES, [{ id: CLUB_A, address_id: ADDRESS_A }]);
+    answer(query, [{ cup: false, plateau: false }], RATES, [{ id: CLUB_A, address_id: ADDRESS_A }]);
     expect(await createCompensation(deps, USER_ID, form())).toEqual({
       status: "not_found",
       field: "team2",
@@ -322,7 +375,7 @@ describe("createCompensation", () => {
 
   it("refuse une adresse d'exception qui n'est pas à l'utilisateur", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: false }], RATES, BOTH_CLUBS, []);
+    answer(query, [{ cup: false, plateau: false }], RATES, BOTH_CLUBS, []);
     expect(
       await createCompensation(
         deps,
@@ -336,7 +389,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       [{ id: CLUB_B, address_id: ADDRESS_B }],
       [{ id: ADDRESS_A }],
@@ -355,7 +408,7 @@ describe("createCompensation", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -380,7 +433,7 @@ describe("première indemnité de la saison (bloc 12d)", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -402,7 +455,7 @@ describe("première indemnité de la saison (bloc 12d)", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -422,7 +475,7 @@ describe("première indemnité de la saison (bloc 12d)", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -443,7 +496,7 @@ describe("updateCompensation", () => {
     answer(
       query,
       [{ cup_round: null }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -473,6 +526,8 @@ describe("updateCompensation", () => {
       null,
       false,
       null,
+      null,
+      null,
     ]);
     // Bloc 9 : le match complet lié reçoit les mêmes informations, dans la même transaction.
     expect(query.mock.calls[7]?.[0]).toContain("UPDATE game g");
@@ -493,7 +548,7 @@ describe("updateCompensation", () => {
   it("fête une finale tout juste enregistrée, pas une finale déjà enregistrée (§15.4.6)", async () => {
     const finalRows = (previous: string | null) => [
       [{ cup_round: previous }],
-      [{ cup: true }],
+      [{ cup: true, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -523,6 +578,7 @@ describe("updateCompensation", () => {
       type: "Feminin",
       level: "U18",
       cup: true,
+      plateau: false,
       department: "56",
     });
     expect(first.query.mock.calls[8]?.[1]).toEqual([DIVISION_ID, ADDRESS_A, USER_ID]);
@@ -541,7 +597,7 @@ describe("updateCompensation", () => {
 
   it("transmet les refus de la résolution", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup_round: null }], [{ cup: false }], RATES);
+    answer(query, [{ cup_round: null }], [{ cup: false, plateau: false }], RATES);
     expect(
       await updateCompensation(deps, USER_ID, COMPENSATION_ID, form({ date: "2025-12-31" })),
     ).toEqual({ status: "no_rate_at_date" });

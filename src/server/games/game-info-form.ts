@@ -80,7 +80,7 @@ export function gameInfoFormValues(game: GameForEdit): Record<string, string> {
     divisionId: game.divisionId,
     cupRound: game.cupRound ?? "",
     team1Club: game.team1ClubId,
-    team2Club: game.team2ClubId,
+    team2Club: game.team2ClubId ?? "",
   };
   if (game.addressId !== game.team1AddressId) {
     values.venueException = "on";

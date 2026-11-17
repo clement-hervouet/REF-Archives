@@ -11,7 +11,9 @@
  *   d'un nouveau club, §15.4.1) ;
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
  *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*) ;
- * - travelShared : case « doublé », déplacement déjà compté sur un autre match (§15.4.5).
+ * - travelShared : case « doublé », déplacement déjà compté sur un autre match (§15.4.5) ;
+ * - gameCount, plateauGameAmount : nombre de matchs et montant par match (euros) d'un
+ *   plateau (§15.4.7), dont la liste team2Club est alors absente (club organisateur seul).
  */
 import { z } from "zod";
 import {
@@ -73,8 +75,12 @@ function readAddress(formData: FormData, prefix: "venue"): Record<AddressPart, s
   };
 }
 
-function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string, unknown> {
+function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string, unknown> | null {
   const club = readText(formData, `${prefix}Club`);
+  // Liste de l'équipe 2 absente : plateau, club organisateur seul (§15.4.7).
+  if (club === undefined && prefix === "team2") {
+    return null;
+  }
   if (club === NEW_CHOICE) {
     // Nouveau club : nom et code postal seulement (§15.4.1).
     return {
@@ -114,6 +120,8 @@ export function readCompensationFormData(formData: FormData): Record<string, unk
     oneWayDistance: readText(formData, "oneWayDistance"),
     // Case à cocher : absente du FormData quand elle n'est pas cochée.
     travelShared: readText(formData, "travelShared") === "on",
+    gameCount: readText(formData, "gameCount") ?? "",
+    plateauGameAmount: readText(formData, "plateauGameAmount") ?? "",
   };
 }
 
@@ -213,6 +221,11 @@ export async function handleDeleteCompensation(
   return deleted ? { status: "deleted" } : { status: "not_found" };
 }
 
+/** Centimes → saisie en euros relue par le formulaire : 1500 → « 15,00 ». */
+function centsToEuroInput(cents: number): string {
+  return `${String(Math.floor(cents / 100))},${String(cents % 100).padStart(2, "0")}`;
+}
+
 /**
  * Valeurs du formulaire pour modifier une indemnité : mêmes noms de champs que la
  * saisie. L'adresse du match n'est une « exception » que si elle diffère de celle du
@@ -228,7 +241,10 @@ export function compensationFormValues(compensation: CompensationForEdit): Recor
     scaleId: compensation.scaleId,
     payer: compensation.payer ?? "",
     team1Club: compensation.team1ClubId,
-    team2Club: compensation.team2ClubId,
+    team2Club: compensation.team2ClubId ?? "",
+    gameCount: compensation.gameCount === null ? "" : String(compensation.gameCount),
+    plateauGameAmount:
+      compensation.plateauGameCents === null ? "" : centsToEuroInput(compensation.plateauGameCents),
     // Doublé enregistré sans distance : champ vide plutôt que « 0 ».
     oneWayDistance:
       compensation.travelShared && compensation.distanceM === 0

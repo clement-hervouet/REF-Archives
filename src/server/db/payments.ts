@@ -24,10 +24,13 @@ export type UnpaidCompensation = {
   startsAt: Date;
   division: MatchDivision;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Name: string | null;
   distanceM: number;
   /** Doublé (§15.4.5) : kilométrage déjà compté sur un autre match. */
   travelShared: boolean;
+  /** Nombre de matchs payés : celui d'un plateau (§15.4.7), sinon 1. */
+  gameCount: number;
   gameAmountCents: number;
   centsPerKm: string;
   /** Organisme qui verse (choix enregistré, sinon déduit), ou `null` si inconnu. */
@@ -36,8 +39,11 @@ export type UnpaidCompensation = {
 
 // Index partiel `compensation_unpaid_idx` (migration 015).
 const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared,
+  COALESCE(c.game_count, 1) AS game_count,
   ${matchPartiesColumns("c")},
-  r.game_amount_cents, r.cents_per_km::text AS cents_per_km,
+  -- Plateau (§15.4.7) : montant par match saisi sur l'indemnité.
+  COALESCE(c.plateau_game_cents, r.game_amount_cents) AS game_amount_cents,
+  r.cents_per_km::text AS cents_per_km,
   c.payer AS payer_override, a.postal_code, a.country
 FROM compensation c
 JOIN division d ON d.id = c.division_id
@@ -63,6 +69,7 @@ const unpaidRowSchema = z.object({
   starts_at: z.date(),
   distance_m: z.number().int(),
   travel_shared: z.boolean(),
+  game_count: z.number().int(),
   ...matchPartiesFields,
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
@@ -88,6 +95,7 @@ export async function listUnpaidPlayedCompensations(
       ...toMatchParties(row),
       distanceM: row.distance_m,
       travelShared: row.travel_shared,
+      gameCount: row.game_count,
       gameAmountCents: row.game_amount_cents,
       centsPerKm: row.cents_per_km,
       payer: effectivePayer({

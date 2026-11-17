@@ -72,6 +72,8 @@ export function fieldError(field: CompensationField, state: CompensationFormStat
     case "time":
     case "divisionId":
     case "cupRound":
+    case "gameCount":
+    case "plateauGameAmount":
     case "scaleId":
     case "payer":
     case "venue":
@@ -112,4 +114,18 @@ export function celebrationMessages(state: CompensationFormState): string[] {
     );
   }
   return messages;
+}
+
+/**
+ * Montant des matchs dans un détail (« match {game} ») : le montant seul, ou pour un
+ * plateau (§15.4.7) le total détaillé « 90,00 € (3 × 30,00 €) ».
+ */
+export function gamesAmountText(gameCents: number, gameCount: number): string {
+  if (gameCount <= 1) {
+    return formatCents(gameCents);
+  }
+  return t.recap.plateauGames
+    .replace("{total}", formatCents(gameCents))
+    .replace("{count}", String(gameCount))
+    .replace("{unit}", formatCents(Math.round(gameCents / gameCount)));
 }

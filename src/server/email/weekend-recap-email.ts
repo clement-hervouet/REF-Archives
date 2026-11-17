@@ -5,6 +5,7 @@
  * gabarit les échappe dans le HTML, et ils n'apparaissent jamais dans le sujet. Email non essentiel,
  * donc désactivable (§9).
  */
+import { withTeams } from "@/lib/match-teams";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { officialsSummary } from "@/components/features/games/officials-summary";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
@@ -39,10 +40,8 @@ export type WeekendRecapEmailInput = {
  * suivi des officiels quand le match complet existe.
  */
 export function weekendMatchLine(match: WeekendMatch): string {
-  const line = t.matchLine
+  const line = withTeams(t.matchLine, match.team1Name, match.team2Name)
     .replace("{when}", formatWeekdayDateTime(match.startsAt))
-    .replace("{team1}", match.team1Name)
-    .replace("{team2}", match.team2Name)
     .replace("{division}", matchLevelLabel(match.division))
     .replace("{address}", addressLabel(match.address));
   const officials = officialsSummary(match.officials);

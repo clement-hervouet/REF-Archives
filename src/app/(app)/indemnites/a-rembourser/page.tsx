@@ -1,3 +1,4 @@
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { PaymentForm } from "@/components/features/payments/payment-form";
 import type { PayableGroup } from "@/components/features/payments/payment-form";
@@ -36,9 +37,7 @@ export default async function UnpaidCompensationsPage() {
       dateLabel: fr.compensations.list.matchOn
         .replace("{date}", formatMatchDay(row.startsAt))
         .replace("{time}", toParisTimeOfDay(row.startsAt)),
-      teams: fr.compensations.list.teams
-        .replace("{team1}", row.team1Name)
-        .replace("{team2}", row.team2Name),
+      teams: withTeams(fr.compensations.list.teams, row.team1Name, row.team2Name),
       details: matchLevelLabel(row.division),
       totalCents: computeCompensation(row, row).totalCents,
     })),

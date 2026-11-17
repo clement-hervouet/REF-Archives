@@ -34,7 +34,8 @@ export type UpcomingMatchRow = {
   startsAt: Date;
   division: MatchDivision;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Name: string | null;
   address: MatchAddress;
   /** Match complet lié, s'il existe. */
   gameId: string | null;

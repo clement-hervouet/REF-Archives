@@ -57,6 +57,7 @@ describe("findCupFinal", () => {
       type: "Masculin",
       level: "Seniors",
       cup: true,
+      plateau: false,
       department: "56",
     });
     expect(query.mock.calls[0]?.[0]).toContain("a.user_id = $3");
@@ -215,6 +216,8 @@ describe("insertCompensation", () => {
     addressId: ADDRESS_ID,
     payer: "cd-35",
     cupRound: null,
+    gameCount: null,
+    plateauGameCents: null,
   };
 
   it("crée l'indemnité sous la limite", async () => {
@@ -233,6 +236,8 @@ describe("insertCompensation", () => {
       "cd-35",
       false,
       null,
+      null,
+      null,
     ]);
   });
 
@@ -250,6 +255,7 @@ describe("listCompensationAmounts", () => {
         starts_at: startsAt,
         distance_m: 47_000,
         travel_shared: false,
+        game_count: 1,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         paid_on: "2026-11-20",
@@ -264,6 +270,7 @@ describe("listCompensationAmounts", () => {
         startsAt,
         distanceM: 47_000,
         travelShared: false,
+        gameCount: 1,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
         paidOn: "2026-11-20",
@@ -287,12 +294,14 @@ describe("listCompensationsInRange", () => {
         starts_at: startsAt,
         distance_m: 47_000,
         travel_shared: false,
+        game_count: 1,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         division: "Regional",
         type: "Masculin",
         level: "1",
         cup: false,
+        plateau: false,
         cup_round: null,
         cup_postal_code: null,
         cup_country: null,
@@ -315,6 +324,7 @@ describe("listCompensationsInRange", () => {
         startsAt,
         distanceM: 47_000,
         travelShared: false,
+        gameCount: 1,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
         division: {
@@ -322,6 +332,7 @@ describe("listCompensationsInRange", () => {
           type: "Masculin",
           level: "1",
           cup: false,
+          plateau: false,
           cupRound: null,
           department: null,
         },
@@ -349,6 +360,8 @@ describe("findCompensationForEdit", () => {
         starts_at: startsAt,
         division_id: DIVISION_ID,
         cup_round: null,
+        game_count: null,
+        plateau_game_cents: null,
         address_id: ADDRESS_ID,
         distance_m: 47_000,
         travel_shared: false,
@@ -366,6 +379,8 @@ describe("findCompensationForEdit", () => {
       startsAt,
       divisionId: DIVISION_ID,
       cupRound: null,
+      gameCount: null,
+      plateauGameCents: null,
       team1ClubId: CLUB_A,
       team2ClubId: CLUB_B,
       addressId: ADDRESS_ID,
@@ -413,6 +428,8 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
         addressId: ADDRESS_ID,
         payer: null,
         cupRound: "R16",
+        gameCount: 3,
+        plateauGameCents: 1500,
       }),
     ).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([
@@ -428,6 +445,8 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
       null,
       true,
       "R16",
+      3,
+      1500,
     ]);
   });
 

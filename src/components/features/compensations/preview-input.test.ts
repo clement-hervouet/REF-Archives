@@ -13,7 +13,14 @@ const EDITED_COMPENSATION = "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e62";
 
 const DATA: CompensationFormData = {
   divisions: [
-    { id: DIVISION, category: "Departemental", type: "Masculin", level: "1", cup: false },
+    {
+      id: DIVISION,
+      category: "Departemental",
+      type: "Masculin",
+      level: "1",
+      cup: false,
+      plateau: false,
+    },
   ],
   frequentDivisionIds: [],
   scales: [{ id: SCALE, name: "Comité" }],

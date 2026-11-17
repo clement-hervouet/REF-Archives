@@ -26,6 +26,11 @@ export type Division = {
   level: DivisionLevel;
   /** Niveau de coupe (§15.4.6) : en bas de la liste, avec un tour sur chaque match. */
   cup: boolean;
+  /**
+   * Niveau de plateau (§15.4.7) : plusieurs matchs chez un club organisateur, en bas de la
+   * liste avant les coupes, proposé seulement de juillet à octobre.
+   */
+  plateau: boolean;
 };
 
 const divisionRowSchema = z.object({
@@ -34,15 +39,16 @@ const divisionRowSchema = z.object({
   type: divisionTypeSchema,
   level: divisionLevelSchema,
   cup: z.boolean(),
+  plateau: z.boolean(),
 });
 
 // Les types énumérés se trient dans l'ordre de leur déclaration (Départemental → Pro).
-// Les coupes viennent après tous les championnats (false < true) : en bas de la liste.
-const LIST_DIVISIONS_SQL = `SELECT id, division, type, level, cup
+// Championnats, puis plateaux, puis coupes (false < true) : en bas de la liste.
+const LIST_DIVISIONS_SQL = `SELECT id, division, type, level, cup, plateau
 FROM division
-ORDER BY cup, division, type, level`;
+ORDER BY cup, plateau, division, type, level`;
 
-/** Toutes les divisions, de la plus locale à la plus haute, puis les coupes. */
+/** Toutes les divisions, de la plus locale à la plus haute, puis les plateaux et les coupes. */
 export async function listDivisions(db: Queryable): Promise<Division[]> {
   const result = await db.query(LIST_DIVISIONS_SQL, []);
   return result.rows.map((raw) => {
@@ -53,6 +59,7 @@ export async function listDivisions(db: Queryable): Promise<Division[]> {
       type: row.type,
       level: row.level,
       cup: row.cup,
+      plateau: row.plateau,
     };
   });
 }
@@ -83,19 +90,23 @@ export async function listFrequentDivisionIds(
   return result.rows.map((raw) => frequentDivisionRowSchema.parse(raw).division_id);
 }
 
-const DIVISION_CUP_SQL = `SELECT cup FROM division WHERE id = $1`;
+const DIVISION_KIND_SQL = `SELECT cup, plateau FROM division WHERE id = $1`;
 
-const divisionCupRowSchema = z.object({ cup: z.boolean() });
+const divisionKindRowSchema = z.object({ cup: z.boolean(), plateau: z.boolean() });
+
+/** Nature d'une division (coupe, plateau, sinon championnat). */
+export type DivisionKind = { cup: boolean; plateau: boolean };
 
 /**
- * Nature d'une division : `{ cup }` si elle existe dans le référentiel global, `null` sinon.
- * Sert à vérifier le niveau d'un match et l'obligation d'un tour de coupe (§15.4.6).
+ * Nature d'une division si elle existe dans le référentiel global, `null` sinon. Sert à
+ * vérifier le niveau d'un match : tour de coupe (§15.4.6), équipe 2 et nombre de matchs
+ * d'un plateau (§15.4.7).
  */
-export async function findDivisionCup(
+export async function findDivisionKind(
   db: Queryable,
   divisionId: string,
-): Promise<{ cup: boolean } | null> {
-  const result = await db.query(DIVISION_CUP_SQL, [divisionId]);
+): Promise<DivisionKind | null> {
+  const result = await db.query(DIVISION_KIND_SQL, [divisionId]);
   const raw: unknown = result.rows[0];
-  return raw === undefined ? null : divisionCupRowSchema.parse(raw);
+  return raw === undefined ? null : divisionKindRowSchema.parse(raw);
 }

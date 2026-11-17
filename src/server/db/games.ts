@@ -29,7 +29,8 @@ export type GameDetail = {
   startsAt: Date;
   division: MatchDivision;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Name: string | null;
   address: MatchAddress;
   /** Indemnité active liée, s'il y en a une. */
   compensationId: string | null;
@@ -49,7 +50,7 @@ const compensationForGameRowSchema = z.object({
   starts_at: z.date(),
   game_id: z.uuid().nullable(),
   team1_name: z.string(),
-  team2_name: z.string(),
+  team2_name: z.string().nullable(),
 });
 
 /** Indemnité vue depuis la page « Compléter le match ». */
@@ -58,7 +59,8 @@ export type CompensationForGame = {
   startsAt: Date;
   gameId: string | null;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (§15.4.7). */
+  team2Name: string | null;
 };
 
 /** Indemnité active de l'utilisateur et son match lié ; `null` si introuvable ou supprimée. */
@@ -92,7 +94,7 @@ const FIND_GAME_FOR_EDIT_SQL = `SELECT g.id, g.starts_at, g.division_id, g.cup_r
 FROM game g
 JOIN team t1 ON t1.id = g.team1_id AND t1.user_id = g.user_id
 JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = g.user_id
-JOIN team t2 ON t2.id = g.team2_id AND t2.user_id = g.user_id
+LEFT JOIN team t2 ON t2.id = g.team2_id AND t2.user_id = g.user_id
 LEFT JOIN compensation c ON c.game_id = g.id AND c.user_id = g.user_id AND c.deleted_at IS NULL
 WHERE g.id = $1 AND g.user_id = $2 AND g.deleted_at IS NULL`;
 
@@ -103,7 +105,7 @@ const gameForEditRowSchema = z.object({
   cup_round: cupRoundSchema.nullable(),
   address_id: z.uuid(),
   team1_club_id: z.uuid(),
-  team2_club_id: z.uuid(),
+  team2_club_id: z.uuid().nullable(),
   team1_address_id: z.uuid(),
   compensation_id: z.uuid().nullable(),
 });
@@ -116,7 +118,8 @@ export type GameForEdit = {
   /** Tour de coupe (§15.4.6), `null` hors coupe. */
   cupRound: CupRound | null;
   team1ClubId: string;
-  team2ClubId: string;
+  /** `null` pour un plateau (§15.4.7). */
+  team2ClubId: string | null;
   addressId: string;
   /** Adresse du club de l'équipe 1 : si c'est celle du match, pas d'« exception ». */
   team1AddressId: string;

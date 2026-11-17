@@ -2,6 +2,7 @@
  * Résumé « À rembourser » de l'accueil (bloc 10) : total dû pour les matchs déjà joués,
  * leur nombre et le plus ancien en attente, avec un lien vers la validation des paiements.
  */
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
@@ -62,9 +63,11 @@ export function UnpaidSummaryCard({ summary, byPayer }: Props) {
               .replace("{date}", formatMatchDay(summary.oldest.startsAt))
               .replace(
                 "{teams}",
-                fr.compensations.list.teams
-                  .replace("{team1}", summary.oldest.team1Name)
-                  .replace("{team2}", summary.oldest.team2Name),
+                withTeams(
+                  fr.compensations.list.teams,
+                  summary.oldest.team1Name,
+                  summary.oldest.team2Name,
+                ),
               )}
           </p>
           <Link

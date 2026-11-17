@@ -209,3 +209,39 @@ describe("compensationFormSchema : tour de coupe (§15.4.6)", () => {
     }
   });
 });
+
+describe("compensationFormSchema : plateau (§15.4.7)", () => {
+  it("équipe 2 absente : null (club organisateur seul)", () => {
+    expect(compensationFormSchema.parse(input({ team2: null })).team2).toBeNull();
+  });
+
+  it("nombre de matchs : vide = null, 1 à 10 accepté", () => {
+    expect(compensationFormSchema.parse(input()).gameCount).toBeNull();
+    expect(compensationFormSchema.parse(input({ gameCount: "3" })).gameCount).toBe(3);
+    expect(compensationFormSchema.parse(input({ gameCount: "10" })).gameCount).toBe(10);
+  });
+
+  it("refuse un nombre de matchs impossible, sur le champ gameCount", () => {
+    for (const gameCount of ["0", "11", "2,5", "-1", "abc"]) {
+      expect(errorPaths({ gameCount })).toEqual(["gameCount"]);
+    }
+  });
+});
+
+describe("compensationFormSchema : montant par match d'un plateau (§15.4.7)", () => {
+  it("vide ou absent : null ; en euros → centimes", () => {
+    expect(compensationFormSchema.parse(input()).plateauGameCents).toBeNull();
+    expect(compensationFormSchema.parse(input({ plateauGameAmount: "15" })).plateauGameCents).toBe(
+      1500,
+    );
+    expect(
+      compensationFormSchema.parse(input({ plateauGameAmount: "12,5" })).plateauGameCents,
+    ).toBe(1250);
+  });
+
+  it("refuse un montant invalide, sur le champ plateauGameAmount", () => {
+    for (const plateauGameAmount of ["-3", "12,555", "abc", "1000000"]) {
+      expect(errorPaths({ plateauGameAmount })).toEqual(["plateauGameAmount"]);
+    }
+  });
+});

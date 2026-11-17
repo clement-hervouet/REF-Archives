@@ -21,6 +21,7 @@ const MATCH: CalendarMatch = {
     type: "Masculin",
     level: "2",
     cup: false,
+    plateau: false,
     cupRound: null,
     department: null,
   },

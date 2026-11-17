@@ -44,7 +44,10 @@ export type ApplicableRate = {
 // ─── Finale de coupe ────────────────────────────────────────────────────────
 
 /** Coupe dont une finale vient d'être enregistrée : de quoi la nommer (« CBU18F »). */
-export type CupFinal = Pick<MatchDivision, "category" | "type" | "level" | "cup" | "department">;
+export type CupFinal = Pick<
+  MatchDivision,
+  "category" | "type" | "level" | "cup" | "plateau" | "department"
+>;
 
 // L'adresse est filtrée par propriétaire ; la division est un référentiel global.
 const FIND_CUP_FINAL_SQL = `SELECT d.division, d.type, d.level, a.postal_code, a.country
@@ -83,6 +86,7 @@ export async function findCupFinal(
     type: row.type,
     level: row.level,
     cup: true,
+    plateau: false,
     department: departmentFromPostalCode(row.postal_code, row.country),
   };
 }
@@ -185,6 +189,8 @@ export type CompensationAmountRow = {
   distanceM: number;
   /** Doublé (§15.4.5) : kilométrage déjà compté sur un autre match. */
   travelShared: boolean;
+  /** Nombre de matchs payés : celui d'un plateau (§15.4.7), sinon 1. */
+  gameCount: number;
   gameAmountCents: number;
   centsPerKm: string;
   /** Jour du paiement `AAAA-MM-JJ` (bloc 10), ou `null` s'il n'est pas encore payé. */
@@ -197,7 +203,8 @@ export type CompensationListItem = CompensationAmountRow & {
   id: string;
   division: MatchDivision;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Name: string | null;
   address: MatchAddress;
   scaleName: string;
   /** Match complet lié (bloc 9), s'il existe. */
@@ -211,8 +218,13 @@ export type CompensationForEdit = {
   divisionId: string;
   /** Tour de coupe (§15.4.6), `null` hors coupe. */
   cupRound: CupRound | null;
+  /** Nombre de matchs d'un plateau (§15.4.7), `null` hors plateau. */
+  gameCount: number | null;
+  /** Montant par match saisi pour un plateau (centimes), `null` hors plateau. */
+  plateauGameCents: number | null;
   team1ClubId: string;
-  team2ClubId: string;
+  /** `null` pour un plateau (club organisateur seul). */
+  team2ClubId: string | null;
   addressId: string;
   /** Adresse du club de l'équipe 1 : si c'est celle du match, la case « exception » est décochée. */
   team1AddressId: string;
@@ -225,7 +237,10 @@ export type CompensationForEdit = {
 
 // Les jointures reprennent user_id : on ne lit jamais l'équipe, le club ou l'adresse d'un autre.
 // Niveau, code postal et pays : de quoi déduire l'organisme qui verse (bloc 10).
-const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, c.travel_shared, r.game_amount_cents,
+// Plateau (§15.4.7) : le montant par match saisi sur l'indemnité remplace celui du barème.
+const LIST_AMOUNTS_SQL = `SELECT c.starts_at, c.distance_m, c.travel_shared,
+  COALESCE(c.game_count, 1) AS game_count,
+  COALESCE(c.plateau_game_cents, r.game_amount_cents) AS game_amount_cents,
   r.cents_per_km::text AS cents_per_km, c.paid_on::text AS paid_on,
   c.payer AS payer_override, d.division, a.postal_code, a.country
 FROM compensation c
@@ -236,11 +251,13 @@ WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 
 // `paid_on::text` : une colonne `date` lue telle quelle deviendrait un Date JavaScript à
 // minuit dans le fuseau du serveur, et pourrait changer de jour.
-const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared, c.game_id, c.paid_on::text AS paid_on,
+const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared,
+  COALESCE(c.game_count, 1) AS game_count, c.game_id, c.paid_on::text AS paid_on,
   c.payer AS payer_override,
   ${matchPartiesColumns("c")},
   ${MATCH_ADDRESS_COLUMNS}, a.country,
-  s.name AS scale_name, r.game_amount_cents, r.cents_per_km::text AS cents_per_km
+  s.name AS scale_name, COALESCE(c.plateau_game_cents, r.game_amount_cents) AS game_amount_cents,
+  r.cents_per_km::text AS cents_per_km
 FROM compensation c
 JOIN division d ON d.id = c.division_id
 ${matchTeamJoins("c")}
@@ -250,14 +267,15 @@ JOIN scale s ON s.id = r.scale_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
 ORDER BY c.starts_at, c.id`;
 
-const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.cup_round, c.address_id,
-  c.distance_m, c.travel_shared, c.payer,
+const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.cup_round, c.game_count,
+  c.plateau_game_cents,
+  c.address_id, c.distance_m, c.travel_shared, c.payer,
   t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
   club1.address_id AS team1_address_id, r.scale_id
 FROM compensation c
 JOIN team t1 ON t1.id = c.team1_id AND t1.user_id = c.user_id
 JOIN club club1 ON club1.id = t1.club_id AND club1.user_id = c.user_id
-JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
+LEFT JOIN team t2 ON t2.id = c.team2_id AND t2.user_id = c.user_id
 JOIN scale_rate r ON r.id = c.scale_rate_id
 WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
 
@@ -265,6 +283,7 @@ const amountRowSchema = z.object({
   starts_at: z.date(),
   distance_m: z.number().int(),
   travel_shared: z.boolean(),
+  game_count: z.number().int(),
   game_amount_cents: z.number().int(),
   cents_per_km: z.string(),
   paid_on: z.string().nullable(),
@@ -289,11 +308,13 @@ const editRowSchema = z.object({
   starts_at: z.date(),
   division_id: z.uuid(),
   cup_round: cupRoundSchema.nullable(),
+  game_count: z.number().int().nullable(),
+  plateau_game_cents: z.number().int().nullable(),
   address_id: z.uuid(),
   distance_m: z.number().int(),
   travel_shared: z.boolean(),
   team1_club_id: z.uuid(),
-  team2_club_id: z.uuid(),
+  team2_club_id: z.uuid().nullable(),
   team1_address_id: z.uuid(),
   scale_id: z.uuid(),
   payer: z.string().nullable(),
@@ -304,6 +325,7 @@ function toAmountRow(row: z.infer<typeof amountRowSchema>): CompensationAmountRo
     startsAt: row.starts_at,
     distanceM: row.distance_m,
     travelShared: row.travel_shared,
+    gameCount: row.game_count,
     gameAmountCents: row.game_amount_cents,
     centsPerKm: row.cents_per_km,
     paidOn: row.paid_on,
@@ -360,6 +382,8 @@ export async function findCompensationForEdit(
     startsAt: row.starts_at,
     divisionId: row.division_id,
     cupRound: row.cup_round,
+    gameCount: row.game_count,
+    plateauGameCents: row.plateau_game_cents,
     team1ClubId: row.team1_club_id,
     team2ClubId: row.team2_club_id,
     addressId: row.address_id,

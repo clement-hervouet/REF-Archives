@@ -12,7 +12,10 @@
  * - doublé (§15.4.5) : case « déplacement déjà compté sur un autre match », kilométrage à 0 ;
  *   la distance devient alors facultative (vide = 0) ;
  * - tour de coupe (§15.4.6) : vide (`null`) hors coupe ; son obligation pour un niveau de
- *   coupe se vérifie en base, avec le niveau (le schéma ne sait pas si c'en est un).
+ *   coupe se vérifie en base, avec le niveau (le schéma ne sait pas si c'en est un) ;
+ * - plateau (§15.4.7) : pas d'équipe 2 (`null`, club organisateur seul), un nombre de
+ *   matchs et un montant par match saisi (le barème ne donne alors que le taux km) ; comme
+ *   le tour, leur cohérence avec le niveau se vérifie en base.
  */
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
@@ -20,6 +23,8 @@ import { MAX_ONE_WAY_DISTANCE_M, ONE_WAY_KM_PATTERN, oneWayKmToMeters } from "@/
 import { ValidationError } from "@/lib/errors";
 import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
 import { parsePayerKey } from "@/lib/payers";
+import { MAX_GAME_COUNT } from "@/server/compensation/amount";
+import { gameAmountSchema } from "./scales";
 import { cupRoundSchema } from "@/server/db/divisions";
 
 /** Bornes raisonnables pour la date d'un match. */
@@ -97,9 +102,24 @@ const matchFieldsShape = {
     .optional()
     .transform((value) => (value === undefined || value === "" ? null : value)),
   team1: teamChoiceSchema,
-  team2: teamChoiceSchema,
+  /** `null` : liste absente (plateau, club organisateur seul). */
+  team2: teamChoiceSchema.nullable(),
   venue: venueChoiceSchema,
 };
+
+/** Nombre de matchs d'un plateau (§15.4.7) : vide ou absent = `null` (hors plateau). */
+const gameCountSchema = z
+  .union([
+    z
+      .string()
+      .trim()
+      .regex(/^\d{1,2}$/)
+      .transform(Number)
+      .refine((value) => value >= 1 && value <= MAX_GAME_COUNT),
+    z.literal(""),
+  ])
+  .optional()
+  .transform((value) => (value === undefined || value === "" ? null : value));
 
 /**
  * Organisme qui verse (bloc 10) : vide = déduit automatiquement du niveau et de l'adresse
@@ -120,12 +140,20 @@ const emptyDistanceSchema = z
   .max(0)
   .transform(() => null);
 
+/** Montant par match d'un plateau, en euros (§15.4.7) : vide ou absent = `null` (hors plateau). */
+const plateauGameAmountSchema = z
+  .union([gameAmountSchema, z.literal("")])
+  .optional()
+  .transform((value) => (value === undefined || value === "" ? null : value));
+
 const compensationFieldsSchema = z.object({
   ...matchFieldsShape,
   scaleId: z.uuid(),
   payer: payerChoiceSchema,
   oneWayDistance: z.union([oneWayDistanceSchema, emptyDistanceSchema]),
   travelShared: z.boolean(),
+  gameCount: gameCountSchema,
+  plateauGameAmount: plateauGameAmountSchema,
 });
 
 /** Doublé (§15.4.5) : sans case cochée, la distance reste obligatoire. */
@@ -146,7 +174,7 @@ type MatchFieldsValue = z.output<typeof matchFieldsSchema>;
 function refineMatchFields(value: MatchFieldsValue, ctx: z.RefinementCtx): void {
   if (
     value.team1.kind === "existing" &&
-    value.team2.kind === "existing" &&
+    value.team2?.kind === "existing" &&
     value.team1.clubId === value.team2.clubId
   ) {
     ctx.addIssue({ code: "custom", path: ["team2"], message: "same_club" });
@@ -205,6 +233,9 @@ export const compensationFormSchema = compensationFieldsSchema
       // Doublé sans distance : 0 m, le kilométrage vaut 0 de toute façon.
       distanceM: value.oneWayDistance ?? 0,
       travelShared: value.travelShared,
+      gameCount: value.gameCount,
+      /** Montant par match du plateau, en centimes. */
+      plateauGameCents: value.plateauGameAmount,
     };
   });
 

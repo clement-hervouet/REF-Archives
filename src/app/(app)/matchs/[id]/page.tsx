@@ -1,3 +1,4 @@
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -63,7 +64,7 @@ export default async function GamePage(props: GamePageProps) {
         <MatchDate startsAt={game.startsAt} />
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-2xl font-semibold break-words">
-            {t.detail.title.replace("{team1}", game.team1Name).replace("{team2}", game.team2Name)}
+            {withTeams(t.detail.title, game.team1Name, game.team2Name)}
           </h1>
           <p className="break-words">
             {t.detail.details

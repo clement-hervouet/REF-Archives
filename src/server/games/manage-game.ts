@@ -32,28 +32,23 @@ import type { GameDeps, GameRejection } from "./rejection";
 import { resolveOfficials } from "./resolve-officials";
 
 /**
- * Niveau de coupe sans tour (§15.4.6) : rendu sans rien écrire (vérifié avant toute
- * écriture), avec la même forme qu'une erreur de validation du formulaire.
+ * Champ obligatoire pour ce niveau (tour de coupe §15.4.6, équipe 2 hors plateau §15.4.7) :
+ * rendu sans rien écrire (vérifié avant toute écriture), avec la même forme qu'une erreur
+ * de validation du formulaire.
  */
-type CupRoundMissing = {
+type LevelFieldsMissing = {
   status: "invalid";
   fields: CompensationField[];
   officials: Partial<Record<OfficialSlot, never>>;
 };
 
-const CUP_ROUND_MISSING: CupRoundMissing = {
-  status: "invalid",
-  fields: ["cupRound"],
-  officials: {},
-};
-
 export type CreateGameResult = { status: "created"; gameId: string } | GameRejection;
 
-export type CreateStandaloneGameResult = CreateGameResult | CupRoundMissing;
+export type CreateStandaloneGameResult = CreateGameResult | LevelFieldsMissing;
 
 export type UpdateOfficialsResult = { status: "updated" } | GameRejection;
 
-export type UpdateGameInfoResult = { status: "updated" } | GameRejection | CupRoundMissing;
+export type UpdateGameInfoResult = { status: "updated" } | GameRejection | LevelFieldsMissing;
 
 /** Niveau du match vérifié : refus « introuvable » levé, tour manquant rendu tel quel. */
 async function checkGameLevel(
@@ -125,13 +120,13 @@ export async function createStandaloneGame(
 ): Promise<CreateStandaloneGameResult> {
   return runRejectable(deps, async (db): Promise<CreateStandaloneGameResult> => {
     const level = await checkGameLevel(db, info);
-    if (level.status === "cup_round_required") {
-      return CUP_ROUND_MISSING;
+    if (level.status === "invalid") {
+      return { status: "invalid", fields: level.fields, officials: {} };
     }
     const match = await resolveMatchInfo(
       db,
       userId,
-      { ...info, cupRound: level.cupRound },
+      { ...info, cupRound: level.cupRound, team2: level.team2 },
       rejectGame,
     );
     const officialIds = await resolveOfficials(db, userId, officials);
@@ -160,8 +155,8 @@ export async function updateGameInfo(
       rejectGame({ status: "not_found", field: "game" });
     }
     const level = await checkGameLevel(db, info);
-    if (level.status === "cup_round_required") {
-      return CUP_ROUND_MISSING;
+    if (level.status === "invalid") {
+      return { status: "invalid", fields: level.fields, officials: {} };
     }
     let scaleRateId: string | null = null;
     if (linked !== null) {
@@ -174,7 +169,7 @@ export async function updateGameInfo(
     const match = await resolveMatchInfo(
       db,
       userId,
-      { ...info, cupRound: level.cupRound },
+      { ...info, cupRound: level.cupRound, team2: level.team2 },
       rejectGame,
     );
     await updateGameInfoRow(db, { gameId, userId, match });

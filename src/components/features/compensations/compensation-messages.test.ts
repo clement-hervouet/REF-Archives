@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import {
   celebrationMessages,
+  gamesAmountText,
   compensationStatusMessage,
   fieldError,
 } from "./compensation-messages";
@@ -85,6 +86,7 @@ describe("celebrationMessages", () => {
     type: "Feminin",
     level: "U18",
     cup: true,
+    plateau: false,
     department: "56",
   } as const;
 
@@ -115,5 +117,12 @@ describe("celebrationMessages", () => {
       "Première indemnité de la saison : bon début de saison 2026-2027\u00a0!",
       "Félicitations pour cette sélection en finale CBU18F\u00a0!",
     ]);
+  });
+});
+
+describe("gamesAmountText (§15.4.7)", () => {
+  it("montant seul pour un match, détaillé pour un plateau", () => {
+    expect(gamesAmountText(3000, 1)).toBe("30,00\u00a0€");
+    expect(gamesAmountText(4500, 3)).toBe("45,00\u00a0€ (3 × 15,00\u00a0€)");
   });
 });

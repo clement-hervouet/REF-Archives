@@ -5,8 +5,10 @@
  */
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import { departmentFromPostalCode } from "@/lib/payers";
+import { gameAmountSchema } from "@/lib/schemas/scales";
 import type { DepartmentCode } from "@/lib/payers";
 import type { CompensationFormData } from "@/server/compensation/form-data";
+import { MAX_GAME_COUNT } from "@/server/compensation/amount";
 import type { PreviewInput } from "@/server/compensation/preview";
 
 export type FormPreview = PreviewInput & {
@@ -71,6 +73,18 @@ export function matchDepartment(read: Read, data: CompensationFormData): Departm
   return place === null ? null : departmentFromPostalCode(place.postalCode, place.country);
 }
 
+/** Nombre de matchs choisi dans la liste d'un plateau (§15.4.7), `null` s'il ne l'est pas. */
+function gameCountOf(value: string): number | null {
+  const count = Number(value);
+  return Number.isInteger(count) && count >= 1 && count <= MAX_GAME_COUNT ? count : null;
+}
+
+/** Montant par match saisi pour un plateau (§15.4.7), en centimes, ou `null`. */
+function plateauGameCentsOf(value: string): number | null {
+  const parsed = gameAmountSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 export function previewInputFromForm(read: Read, data: CompensationFormData): FormPreview {
   const scaleId = read("scaleId");
   const division = data.divisions.find((candidate) => candidate.id === read("divisionId"));
@@ -81,10 +95,14 @@ export function previewInputFromForm(read: Read, data: CompensationFormData): Fo
     rates: data.ratesByScale[scaleId] ?? [],
     oneWayDistance: read("oneWayDistance"),
     travelShared: read("travelShared") === "on",
+    gameCount: division?.plateau === true ? gameCountOf(read("gameCount")) : 1,
+    plateauGameCents:
+      division?.plateau === true ? plateauGameCentsOf(read("plateauGameAmount")) : null,
     payerChoice: read("payer"),
     venue: venue(read, data),
     team1Name: teamName(read, "team1", data),
-    team2Name: teamName(read, "team2", data),
+    team2Name: division?.plateau === true ? null : teamName(read, "team2", data),
+    plateau: division?.plateau === true,
     scaleName: data.scales.find((scale) => scale.id === scaleId)?.name ?? null,
   };
 }

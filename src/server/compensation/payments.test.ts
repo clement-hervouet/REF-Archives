@@ -27,6 +27,7 @@ describe("summarizeUnpaid", () => {
         centsPerKm: "40.00",
         distanceM: 24_000,
         travelShared: false,
+        gameCount: 1,
       }, // 30 + 9,60
       {
         id: "b",
@@ -34,6 +35,7 @@ describe("summarizeUnpaid", () => {
         centsPerKm: "42.50",
         distanceM: 46_000,
         travelShared: false,
+        gameCount: 1,
       }, // 48 + 19,55
     ];
     expect(summarizeUnpaid(rows)).toEqual({ count: 2, totalCents: 10_715, oldest: rows[0] });
@@ -47,6 +49,7 @@ describe("summarizeUnpaid", () => {
         centsPerKm: "40.00",
         distanceM: 24_000,
         travelShared: false,
+        gameCount: 1,
       }, // 30 + 9,60
       {
         id: "b",
@@ -54,6 +57,7 @@ describe("summarizeUnpaid", () => {
         centsPerKm: "40.00",
         distanceM: 24_000,
         travelShared: true,
+        gameCount: 1,
       }, // 30
     ];
     expect(summarizeUnpaid(rows).totalCents).toBe(6960);
@@ -139,6 +143,7 @@ describe("groupByPayer", () => {
     centsPerKm: "40.00",
     distanceM: 24_000,
     travelShared: false,
+    gameCount: 1,
   }; // 39,60 €
   const cd35 = { kind: "committee", department: "35" } as const;
   const bzh = { kind: "league", league: "bretagne" } as const;

@@ -586,6 +586,27 @@ export const fr = {
         },
       },
       /**
+       * Niveaux de plateau (§15.4.7) : en bas de la liste, avant les coupes. Nom d'usage
+       * selon le lieu pour le départemental (« PlaD56MU15 »), fixe pour le régional
+       * (« PlaRMU15 ») ; sans match, « Plateau départemental U15 Masculin ».
+       */
+      plateau: {
+        name: {
+          Departemental: "Plateau départemental",
+          Regional: "Plateau régional",
+        },
+        group: {
+          Departemental: "Plateaux départementaux",
+          Regional: "Plateaux régionaux",
+        },
+        label: "{plateau} {level} {type}",
+        abbreviation: {
+          departmental: "PlaD{department}{type}{level}",
+          departmentalUnknown: "PlaD{type}{level}",
+          regional: "PlaR{type}{level}",
+        },
+      },
+      /**
        * Niveaux de coupe (§15.4.6) : en bas de la liste, dans leurs propres groupes. Le nom
        * d'usage dépend du lieu du match (« COUPE 56 SM 1/2 », « CBU18F (1/16) ») ; sans match
        * (barèmes, niveaux par défaut), libellé complet « Coupe départementale Seniors Masculin ».
@@ -652,6 +673,8 @@ export const fr = {
     },
   },
   compensations: {
+    /** Plateau (§15.4.7) : club organisateur seul, à la place de « équipe 1 – équipe 2 ». */
+    plateauHost: "Plateau chez {club}",
     list: {
       title: "Mes indemnités",
       intro:
@@ -703,6 +726,8 @@ export const fr = {
         "Ce barème n'a pas de montant à cette date : choisissez-en un autre ou ajoutez une ligne au barème.",
       detail: "Match {game} + kilométrage {mileage} ({distance} aller-retour)",
       detailShared: "Match {game}, déplacement déjà compté sur l'autre match (doublé)",
+      /** Plateau (§15.4.7) : montant des matchs détaillé, à la place de {game}. */
+      plateauGames: "{total} ({count} × {unit})",
       rateLine: "{scale}, montants en vigueur depuis le {date}",
     },
     payers: {
@@ -763,6 +788,8 @@ export const fr = {
       match: "Match",
       team1: "Équipe 1 (reçoit)",
       team2: "Équipe 2",
+      /** Plateau (§15.4.7) : le seul club demandé. */
+      host: "Club organisateur du plateau",
       venue: "Adresse du match",
       travel: "Déplacement",
     },
@@ -774,6 +801,16 @@ export const fr = {
       frequentDivisions: "Souvent arbitrés",
       cupRound: "Tour de coupe",
       chooseCupRound: "Choisir un tour",
+      gameCount: "Nombre de matchs arbitrés",
+      gameCountHint:
+        "Indemnité du plateau : montant par match × nombre de matchs, plus le kilométrage.",
+      plateauGameAmount: "Montant par match (€)",
+      plateauGameAmountHint:
+        "Montant versé pour chaque match de ce plateau, par exemple 15 ou 12,50.",
+      scaleHintPlateau: "Pour un plateau, le barème ne sert qu'au taux kilométrique.",
+      chooseGameCount: "Choisir le nombre",
+      gameCountOne: "1 match",
+      gameCountMany: "{count} matchs",
       scale: "Barème",
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",
@@ -816,6 +853,8 @@ export const fr = {
       time: "Saisissez une heure valide, qui existe ce jour-là à Paris (attention au changement d'heure).",
       divisionId: "Choisissez un niveau.",
       cupRound: "Choisissez le tour de la coupe.",
+      gameCount: "Choisissez le nombre de matchs du plateau.",
+      plateauGameAmount: "Montant invalide : saisissez par exemple 15 ou 12,50.",
       scaleId: "Choisissez un barème.",
       payer: "Choisissez un organisme de la liste.",
       team: "Choisissez un club, différent pour chaque équipe, ou créez-en un nouveau.",

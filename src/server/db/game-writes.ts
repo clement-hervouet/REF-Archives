@@ -116,7 +116,8 @@ export type GameInfoRow = {
   /** Tour de coupe (§15.4.6), `null` hors coupe. */
   cupRound: CupRound | null;
   team1Id: string;
-  team2Id: string;
+  /** `null` pour un plateau (§15.4.7). */
+  team2Id: string | null;
   addressId: string;
 };
 
@@ -154,7 +155,17 @@ FOR UPDATE OF c`;
 
 const UPDATE_COMPENSATION_FROM_GAME_SQL = `UPDATE compensation
 SET starts_at = $3, division_id = $4, address_id = $5, team1_id = $6, team2_id = $7,
-  cup_round = $8, scale_rate_id = $9
+  cup_round = $8, scale_rate_id = $9,
+  -- Plateau (§15.4.7) : le nombre de matchs n'est saisi que sur l'indemnité. Devenu plateau
+  -- depuis la fiche du match : 1 match par défaut ; plus un plateau : plus de nombre.
+  game_count = CASE WHEN (SELECT plateau FROM division WHERE id = $4::uuid)
+    THEN COALESCE(game_count, 1) END,
+  -- Pas de doublé sur un plateau.
+  travel_shared = travel_shared AND NOT (SELECT plateau FROM division WHERE id = $4::uuid),
+  -- Montant par match du plateau : celui saisi, sinon celui du barème à défaut.
+  plateau_game_cents = CASE WHEN (SELECT plateau FROM division WHERE id = $4::uuid)
+    THEN COALESCE(plateau_game_cents,
+      (SELECT game_amount_cents FROM scale_rate WHERE id = $9::uuid)) END
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`;
 
 const linkedCompensationRowSchema = z.object({ id: z.uuid(), scale_id: z.uuid() });

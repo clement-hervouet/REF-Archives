@@ -10,6 +10,7 @@ const match: WeekendMatch = {
     type: "Feminin",
     level: "U15",
     cup: false,
+    plateau: false,
     cupRound: null,
     department: null,
   },

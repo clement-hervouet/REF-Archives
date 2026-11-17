@@ -72,7 +72,28 @@ describe("computeMileageCents", () => {
 });
 
 describe("computeCompensation", () => {
-  const travel = (distanceM: number, travelShared = false) => ({ distanceM, travelShared });
+  const travel = (distanceM: number, travelShared = false, gameCount = 1) => ({
+    distanceM,
+    travelShared,
+    gameCount,
+  });
+
+  it("multiplie le montant par match par le nombre de matchs d'un plateau (§15.4.7)", () => {
+    expect(
+      computeCompensation({ gameAmountCents: 1500, centsPerKm: "40.00" }, travel(20_000, false, 3)),
+    ).toEqual({ gameCents: 4500, mileageCents: 800, totalCents: 5300 });
+  });
+
+  it("refuse un nombre de matchs impossible", () => {
+    for (const count of [0, 11, 1.5]) {
+      expect(() =>
+        computeCompensation(
+          { gameAmountCents: 1500, centsPerKm: "40.00" },
+          travel(0, false, count),
+        ),
+      ).toThrow();
+    }
+  });
 
   it("additionne le match et le kilométrage", () => {
     expect(

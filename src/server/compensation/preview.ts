@@ -25,6 +25,12 @@ export type PreviewInput = {
   oneWayDistance: string;
   /** Case « doublé » cochée : déplacement déjà compté sur un autre match (§15.4.5). */
   travelShared: boolean;
+  /** Matchs payés : nombre choisi pour un plateau (§15.4.7), sinon 1 ; `null` : pas encore choisi. */
+  gameCount: number | null;
+  /** Niveau de plateau choisi (§15.4.7) : club organisateur seul, montant par match saisi. */
+  plateau: boolean;
+  /** Montant par match saisi pour un plateau (centimes), `null` s'il manque ou est invalide. */
+  plateauGameCents: number | null;
   /** Valeur de la liste « Organisme » : vide = automatique. */
   payerChoice: string;
   /** Adresse du match retenue (club de l'équipe 1 ou exception), ou `null` si pas encore connue. */
@@ -89,7 +95,13 @@ function previewAmount(input: PreviewInput): AmountPreview {
     input.travelShared && input.oneWayDistance.trim() === ""
       ? 0
       : parseOneWayDistance(input.oneWayDistance);
-  if (!isIsoDate(input.date) || input.rates.length === 0 || distanceM === null) {
+  if (
+    !isIsoDate(input.date) ||
+    input.rates.length === 0 ||
+    distanceM === null ||
+    input.gameCount === null ||
+    (input.plateau && input.plateauGameCents === null)
+  ) {
     return { status: "incomplete" };
   }
   const rate = findEffectiveRate(input.rates, input.date);
@@ -98,7 +110,15 @@ function previewAmount(input: PreviewInput): AmountPreview {
   }
   return {
     status: "ok",
-    amount: computeCompensation(rate, { distanceM, travelShared: input.travelShared }),
+    // Plateau : le montant par match saisi remplace celui du barème (taux km seulement).
+    amount: computeCompensation(
+      { ...rate, gameAmountCents: input.plateauGameCents ?? rate.gameAmountCents },
+      {
+        distanceM,
+        travelShared: input.travelShared,
+        gameCount: input.gameCount,
+      },
+    ),
     distanceM,
     effectiveFrom: rate.effectiveFrom,
   };

@@ -217,7 +217,7 @@ describe("createStandaloneGame", () => {
     const { deps, query, transactionCount } = setup();
     answer(
       query,
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -250,7 +250,7 @@ describe("createStandaloneGame", () => {
     const { deps, query } = setup();
     answer(
       query,
-      [{ cup: true }],
+      [{ cup: true, plateau: false }],
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -270,7 +270,7 @@ describe("createStandaloneGame", () => {
 
   it("refuse un niveau de coupe sans tour, avant toute écriture", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: true }]);
+    answer(query, [{ cup: true, plateau: false }]);
     expect(await createStandaloneGame(deps, USER_ID, info(), officials(SELF_ONLY_INPUT))).toEqual({
       status: "invalid",
       fields: ["cupRound"],
@@ -291,7 +291,7 @@ describe("createStandaloneGame", () => {
 
   it("refuse un club qui n'est pas à l'utilisateur", async () => {
     const { deps, query } = setup();
-    answer(query, [{ cup: false }], [{ id: CLUB_A, address_id: ADDRESS_A }]);
+    answer(query, [{ cup: false, plateau: false }], [{ id: CLUB_A, address_id: ADDRESS_A }]);
     expect(await createStandaloneGame(deps, USER_ID, info(), officials(SELF_ONLY_INPUT))).toEqual({
       status: "not_found",
       field: "team2",
@@ -306,7 +306,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -350,7 +350,7 @@ describe("updateGameInfo", () => {
       query,
       [],
       [{ id: GAME_ID }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -366,7 +366,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       RATES,
     );
     expect(await updateGameInfo(deps, USER_ID, GAME_ID, info("2025-12-31"))).toEqual({
@@ -381,7 +381,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       [],
     );
     expect(await updateGameInfo(deps, USER_ID, GAME_ID, info())).toEqual({

@@ -1,3 +1,4 @@
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
@@ -53,9 +54,7 @@ export default async function CompleteGamePage(props: CompleteGamePageProps) {
           {t.complete.matchOf
             .replace(
               "{teams}",
-              t.detail.title
-                .replace("{team1}", compensation.team1Name)
-                .replace("{team2}", compensation.team2Name),
+              withTeams(t.detail.title, compensation.team1Name, compensation.team2Name),
             )
             .replace("{date}", formatIsoDate(toParisIsoDate(compensation.startsAt)))
             .replace("{time}", toParisTimeOfDay(compensation.startsAt))}

@@ -3,6 +3,7 @@
  * place occupée, extrait du texte, nombre de clips, et les échelles renseignées en couleur
  * (avec le chiffre). Les liens des clips restent sur la fiche du match.
  */
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
@@ -37,10 +38,10 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
         <h2 className="font-semibold break-words">
           <Link
             href={gamePath(item.gameId)}
-            aria-label={`${t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}, ${t.openLabel.replace("{date}", date)}`}
+            aria-label={`${withTeams(t.teams, item.team1Name, item.team2Name)}, ${t.openLabel.replace("{date}", date)}`}
             className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
           >
-            {t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}
+            {withTeams(t.teams, item.team1Name, item.team2Name)}
           </Link>
         </h2>
         <p className="text-sm text-muted-foreground">

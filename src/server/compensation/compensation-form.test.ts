@@ -67,6 +67,8 @@ describe("readCompensationFormData", () => {
       venue: { kind: "team1" },
       oneWayDistance: "23,5",
       travelShared: false,
+      gameCount: "",
+      plateauGameAmount: "",
     });
   });
 
@@ -150,7 +152,7 @@ describe("handleCreateCompensation", () => {
   it("crée l'indemnité et renvoie son montant", async () => {
     const { deps, query } = setup();
     for (const rows of [
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       [
         {
           id: RATE_ID,
@@ -243,7 +245,7 @@ describe("handleUpdateCompensation", () => {
     const { deps, query } = setup();
     for (const rows of [
       [{ cup_round: null }],
-      [{ cup: false }],
+      [{ cup: false, plateau: false }],
       [
         {
           id: RATE_ID,
@@ -309,6 +311,8 @@ describe("compensationFormValues", () => {
     startsAt: new Date("2026-11-14T18:00:00Z"),
     divisionId: DIVISION_ID,
     cupRound: null,
+    gameCount: null,
+    plateauGameCents: null,
     team1ClubId: CLUB_A,
     team2ClubId: CLUB_B,
     addressId: ADDRESS_A,
@@ -330,6 +334,8 @@ describe("compensationFormValues", () => {
       payer: "",
       team1Club: CLUB_A,
       team2Club: CLUB_B,
+      gameCount: "",
+      plateauGameAmount: "",
       oneWayDistance: "23,5",
     });
   });
@@ -338,6 +344,16 @@ describe("compensationFormValues", () => {
     expect(compensationFormValues({ ...compensation, cupRound: "R2" as const }).cupRound).toBe(
       "R2",
     );
+  });
+
+  it("préremplit le nombre et le montant par match d'un plateau (§15.4.7)", () => {
+    const values = compensationFormValues({
+      ...compensation,
+      gameCount: 3,
+      plateauGameCents: 1250,
+    });
+    expect(values.gameCount).toBe("3");
+    expect(values.plateauGameAmount).toBe("12,50");
   });
 
   it("préremplit l'organisme choisi", () => {

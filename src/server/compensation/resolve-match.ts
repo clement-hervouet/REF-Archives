@@ -35,7 +35,8 @@ export type ResolvedMatch = {
   /** Tour de coupe déjà vérifié (§15.4.6), `null` hors coupe. */
   cupRound: CupRound | null;
   team1Id: string;
-  team2Id: string;
+  /** `null` pour un plateau : club organisateur seul (§15.4.7). */
+  team2Id: string | null;
   addressId: string;
 };
 
@@ -91,15 +92,21 @@ export async function resolveMatchInfo(
   reject: Reject,
 ): Promise<ResolvedMatch> {
   const existingClubIds = [info.team1, info.team2].flatMap((team) =>
-    team.kind === "existing" ? [team.clubId] : [],
+    team?.kind === "existing" ? [team.clubId] : [],
   );
   const lockedClubs = await lockOwnedClubs(db, { userId, clubIds: existingClubIds });
   const club1 = await resolveClub(db, userId, info.team1, "team1", lockedClubs, reject);
-  const club2 = await resolveClub(db, userId, info.team2, "team2", lockedClubs, reject);
+  const club2 =
+    info.team2 === null
+      ? null
+      : await resolveClub(db, userId, info.team2, "team2", lockedClubs, reject);
   const addressId = await resolveVenue(db, userId, info.venue, club1, reject);
 
   const team1Id = await ensureTeam(db, { userId, clubId: club1.id, divisionId: info.divisionId });
-  const team2Id = await ensureTeam(db, { userId, clubId: club2.id, divisionId: info.divisionId });
+  const team2Id =
+    club2 === null
+      ? null
+      : await ensureTeam(db, { userId, clubId: club2.id, divisionId: info.divisionId });
 
   return {
     startsAt: info.startsAt,

@@ -15,6 +15,9 @@ function input(overrides: Partial<PreviewInput> = {}): PreviewInput {
     rates: RATES,
     oneWayDistance: "23",
     travelShared: false,
+    gameCount: 1,
+    plateau: false,
+    plateauGameCents: null,
     payerChoice: "",
     venue: { postalCode: "35000", country: null },
     ...overrides,
@@ -22,6 +25,26 @@ function input(overrides: Partial<PreviewInput> = {}): PreviewInput {
 }
 
 describe("previewCompensation : montant", () => {
+  it("plateau : montant par match saisi × nombre de matchs, barème pour le km seulement", () => {
+    const preview = previewCompensation(
+      input({ plateau: true, gameCount: 3, plateauGameCents: 1500, oneWayDistance: "10" }),
+    );
+    expect(preview.amount.status === "ok" && preview.amount.amount).toEqual({
+      gameCents: 4500,
+      // 20 km × 0,425 €/km (barème du 01/09).
+      mileageCents: 850,
+      totalCents: 5350,
+    });
+    expect(
+      previewCompensation(input({ plateau: true, gameCount: null, plateauGameCents: 1500 })).amount
+        .status,
+    ).toBe("incomplete");
+    expect(
+      previewCompensation(input({ plateau: true, gameCount: 3, plateauGameCents: null })).amount
+        .status,
+    ).toBe("incomplete");
+  });
+
   it("calcule un doublé sans distance saisie", () => {
     expect(previewCompensation(input({ travelShared: true, oneWayDistance: "" })).amount).toEqual({
       status: "ok",
