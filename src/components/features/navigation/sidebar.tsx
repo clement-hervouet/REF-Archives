@@ -7,6 +7,7 @@
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AppLogo } from "@/components/features/common/app-logo";
 import { fr } from "@/i18n/fr";
 import { cn } from "@/lib/utils";
 import { NavBadge } from "./nav-badge";
@@ -99,8 +100,9 @@ export function Sidebar({ user, logoutAction }: Props) {
       <div className="flex flex-col gap-1 px-5 pt-6 pb-5">
         <Link
           href="/"
-          className="self-start text-sm text-sidebar-muted hover:text-sidebar-foreground"
+          className="flex items-center gap-2 self-start text-sm text-sidebar-muted hover:text-sidebar-foreground"
         >
+          <AppLogo className="size-6 text-sidebar-foreground" />
           {fr.app.name}
         </Link>
         <p className="text-2xl leading-tight font-semibold [font-stretch:85%]">{user.firstname}</p>
