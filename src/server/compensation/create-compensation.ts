@@ -12,11 +12,9 @@ import { toParisIsoDate } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import type { CompensationForm } from "@/lib/schemas/compensations";
 import { seasonOf, seasonRange } from "@/lib/seasons";
-import {
-  countCompensationsInRange,
-  divisionExists,
-  listApplicableRates,
-} from "../db/compensations";
+import type { CompensationField } from "@/lib/compensation-form-fields";
+import { countCompensationsInRange, findCupFinal, listApplicableRates } from "../db/compensations";
+import type { CupFinal } from "../db/compensations";
 import type { ApplicableRate } from "../db/compensations";
 import {
   insertCompensation,
@@ -25,10 +23,12 @@ import {
 } from "../db/compensation-writes";
 import type { NewCompensation } from "../db/compensation-writes";
 import { syncGameFromCompensation } from "../db/game-writes";
+import type { CupRound } from "../db/divisions";
 import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
+import { checkMatchLevel } from "./match-level";
 import { resolveMatchInfo } from "./resolve-match";
 
 export type CompensationDeps = { transaction: Transaction };
@@ -41,6 +41,11 @@ type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "c
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }
+  /**
+   * Champ obligatoire pour ce niveau (tour de coupe §15.4.6 ; équipe 2 hors plateau, nombre
+   * de matchs d'un plateau §15.4.7) : vérifié avec le niveau, en base.
+   */
+  | { status: "invalid"; fields: CompensationField[] }
   /** Le barème choisi n'a aucune ligne en vigueur à la date du match. */
   | { status: "no_rate_at_date" }
   | { status: "limit_reached"; resource: "club" | "compensation" };
@@ -55,11 +60,14 @@ export type CreateCompensationResult =
        * indemnité de cette saison pour l'utilisateur (confettis, bloc 12d), sinon `null`.
        */
       firstOfSeason: number | null;
+      /** Finale de coupe tout juste enregistrée (confettis, §15.4.6), sinon `null`. */
+      final: CupFinal | null;
     }
   | CreateCompensationRejection;
 
 export type UpdateCompensationResult =
-  { status: "updated"; amount: CompensationAmount } | CreateCompensationRejection;
+  | { status: "updated"; amount: CompensationAmount; final: CupFinal | null }
+  | CreateCompensationRejection;
 
 /** Refus levé dans la transaction pour la faire annuler ; jamais visible hors de ce module. */
 class CompensationRejected extends AppError {
@@ -89,8 +97,12 @@ async function resolveCompensation(
   userId: string,
   form: CompensationForm,
 ): Promise<ResolvedCompensation> {
-  if (!(await divisionExists(db, form.divisionId))) {
+  const level = await checkMatchLevel(db, form);
+  if (level.status === "not_found") {
     reject({ status: "not_found", field: "divisionId" });
+  }
+  if (level.status === "invalid") {
+    reject({ status: "invalid", fields: level.fields });
   }
   const rates = await listApplicableRates(db, { scaleId: form.scaleId, userId });
   if (rates === null) {
@@ -102,7 +114,12 @@ async function resolveCompensation(
     reject({ status: "no_rate_at_date" });
   }
 
-  const match = await resolveMatchInfo(db, userId, form, reject);
+  const match = await resolveMatchInfo(
+    db,
+    userId,
+    { ...form, cupRound: level.cupRound, team2: level.team2 },
+    reject,
+  );
 
   return {
     rate,
@@ -111,9 +128,40 @@ async function resolveCompensation(
       scaleRateId: rate.id,
       distanceM: form.distanceM,
       payer: form.payer,
-      travelShared: form.travelShared,
+      // Pas de doublé sur un plateau (§15.4.7) : une case envoyée quand même est ignorée.
+      travelShared: level.plateau ? false : form.travelShared,
+      gameCount: level.gameCount,
+      plateauGameCents: level.plateauGameCents,
     },
   };
+}
+
+/**
+ * Montant de l'indemnité enregistrée : 1 match au montant du barème hors plateau ; pour un
+ * plateau (§15.4.7), le montant par match saisi × le nombre de matchs (barème : taux km).
+ */
+function amountOf(rate: ApplicableRate, row: ResolvedCompensation["row"]): CompensationAmount {
+  return computeCompensation(
+    { ...rate, gameAmountCents: row.plateauGameCents ?? rate.gameAmountCents },
+    { ...row, gameCount: row.gameCount ?? 1 },
+  );
+}
+
+/**
+ * Finale à fêter : l'indemnité enregistrée est une finale de coupe qui ne l'était pas
+ * avant (`previousRound`, `null` à la création). Modifier une finale déjà enregistrée ne
+ * relance pas les confettis.
+ */
+async function finalToCelebrate(
+  db: Queryable,
+  userId: string,
+  row: ResolvedCompensation["row"],
+  previousRound: CupRound | null,
+): Promise<CupFinal | null> {
+  if (row.cupRound !== "F" || previousRound === "F") {
+    return null;
+  }
+  return findCupFinal(db, { divisionId: row.divisionId, addressId: row.addressId, userId });
 }
 
 /** Exécute `action` dans une transaction et transforme un refus en résultat. */
@@ -165,8 +213,9 @@ export async function createCompensation(
     return {
       status: "created",
       compensationId,
-      amount: computeCompensation(rate, form),
+      amount: amountOf(rate, row),
       firstOfSeason: await firstOfSeason(db, userId, form.startsAt),
+      final: await finalToCelebrate(db, userId, row, null),
     };
   });
 }
@@ -184,12 +233,17 @@ export async function updateCompensation(
 ): Promise<UpdateCompensationResult> {
   return runRejectable(deps, async (db): Promise<UpdateCompensationResult> => {
     // Verrou d'abord : une suppression simultanée ne peut pas passer entre-temps.
-    if (!(await lockCompensation(db, { compensationId, userId }))) {
+    const locked = await lockCompensation(db, { compensationId, userId });
+    if (locked === null) {
       reject({ status: "not_found", field: "compensation" });
     }
     const { rate, row } = await resolveCompensation(db, userId, form);
     await updateCompensationRow(db, { ...row, compensationId, userId });
     await syncGameFromCompensation(db, { compensationId, userId });
-    return { status: "updated", amount: computeCompensation(rate, form) };
+    return {
+      status: "updated",
+      amount: amountOf(rate, row),
+      final: await finalToCelebrate(db, userId, row, locked.cupRound),
+    };
   });
 }

@@ -6,13 +6,14 @@
  * pour les matchs du weekend de l'accueil (bloc 13). Ni montant ni barème : c'est une
  * fiche pratique pour se rendre au match.
  */
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { ActionsMenu } from "@/components/features/compensations/actions-menu";
 import { addressLabel, isCompleteAddress } from "@/components/features/compensations/address-label";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { MENU_ITEM_CLASS } from "@/components/features/compensations/menu-styles";
 import { officialsSummary } from "@/components/features/games/officials-summary";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -63,9 +64,9 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
 
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="font-semibold break-words">
-          {t.teams.replace("{team1}", match.team1Name).replace("{team2}", match.team2Name)}
+          {withTeams(t.teams, match.team1Name, match.team2Name)}
         </h3>
-        <p className="text-sm text-muted-foreground">{divisionLabel(match.division)}</p>
+        <p className="text-sm text-muted-foreground">{matchLevelLabel(match.division)}</p>
         <p className="text-sm break-words">{address}</p>
         {officials !== null && (
           <p className="text-sm break-words">{t.officials.replace("{officials}", officials)}</p>

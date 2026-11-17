@@ -8,7 +8,11 @@
  */
 import { useId, useState } from "react";
 import { RevealResult } from "@/components/features/common/reveal-result";
-import { divisionAbbreviation, divisionLabel } from "@/components/features/scales/division-label";
+import {
+  divisionAbbreviation,
+  divisionLabel,
+  groupDivisions,
+} from "@/components/features/scales/division-label";
 import {
   FormMessage,
   SUBMIT_BUTTON_CLASS,
@@ -19,16 +23,29 @@ import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { CompensationFormData } from "@/server/compensation/form-data";
+import { toParisIsoDate } from "@/lib/dates";
+import { isPlateauPeriod } from "@/lib/plateaux";
+import { MAX_GAME_COUNT } from "@/server/compensation/amount";
+import { CUP_ROUNDS } from "@/server/db/divisions";
 import type { Division } from "@/server/db/divisions";
 import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
 import { ClubFields } from "./club-fields";
 import { previewCompensation } from "@/server/compensation/preview";
-import { compensationStatusMessage, fieldError } from "./compensation-messages";
+import {
+  celebrationMessages,
+  compensationStatusMessage,
+  fieldError,
+} from "./compensation-messages";
 import { CompensationRecap } from "./compensation-recap";
 import { PayerSelect } from "./payer-select";
-import { SeasonStartCelebration } from "./season-start-celebration";
-import { hasSameDayMatch, previewInputFromForm, readFormData } from "./preview-input";
+import { Celebration } from "./celebration";
+import {
+  hasSameDayMatch,
+  matchDepartment,
+  previewInputFromForm,
+  readFormData,
+} from "./preview-input";
 import { SelectField } from "./select-field";
 
 const t = fr.compensations;
@@ -59,6 +76,7 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   );
   const labels = editing ? t.edit : t.new;
   const compensationId = valueOf("compensationId");
+  const celebration = celebrationMessages(state);
 
   // Récapitulatif en direct (bloc 10) : relu dans le formulaire à chaque saisie. Lié au
   // `formKey` : après un envoi (formulaire remonté), il repart des valeurs conservées.
@@ -73,10 +91,8 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
   return (
     <RevealResult submission={formKey} className="flex flex-col gap-4">
       <FormMessage message={compensationStatusMessage(state)} />
-      {/* Première indemnité d'une saison FFBB (bloc 12d) : une salve par saisie (clé). */}
-      {state.status === "created" && state.firstOfSeason !== null && (
-        <SeasonStartCelebration key={formKey} season={state.firstOfSeason} />
-      )}
+      {/* Début de saison FFBB (bloc 12d), finale de coupe (§15.4.6) : une salve par envoi (clé). */}
+      {celebration.length > 0 && <Celebration key={formKey} messages={celebration} />}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
         <form
@@ -122,17 +138,6 @@ type FieldsProps = {
   liveRead?: (name: string) => string;
 };
 
-/** Niveaux regroupés par catégorie (Départemental, Régional…), dans l'ordre reçu. */
-function groupByCategory(divisions: readonly Division[]): [Division["category"], Division[]][] {
-  const groups = new Map<Division["category"], Division[]>();
-  for (const division of divisions) {
-    const group = groups.get(division.category) ?? [];
-    group.push(division);
-    groups.set(division.category, group);
-  }
-  return [...groups.entries()];
-}
-
 /**
  * Niveaux souvent arbitrés, dans l'ordre de fréquence. Ils restent aussi dans leur catégorie :
  * la liste complète garde le même ordre d'une saisie à l'autre.
@@ -158,6 +163,10 @@ export function MatchFields({
   const [scaleId, setScaleId] = useState(
     valueOf("scaleId") || (data.defaultScaleByDivision[valueOf("divisionId")] ?? ""),
   );
+  const [cupRound, setCupRound] = useState(valueOf("cupRound"));
+  const [gameCount, setGameCount] = useState(valueOf("gameCount"));
+  // Date du match suivie en direct : elle décide si les plateaux sont proposés (§15.4.7).
+  const [matchDate, setMatchDate] = useState(valueOf("date"));
   const [team1Club, setTeam1Club] = useState(valueOf("team1Club"));
   const [team2Club, setTeam2Club] = useState(valueOf("team2Club"));
   const [venueException, setVenueException] = useState(valueOf("venueException") === "on");
@@ -169,17 +178,56 @@ export function MatchFields({
       ? valueOf("travelShared") === "on"
       : null,
   );
-  const sameDayMatch = withCompensation && hasSameDayMatch(liveRead, data);
-  const travelSharedChecked = travelShared ?? sameDayMatch;
 
   const club1 = data.clubs.find((club) => club.id === team1Club);
-  const frequent = frequentDivisions(data.divisions, data.frequentDivisionIds);
+  // Plateaux (§15.4.7) : proposés pour un match de juillet à fin octobre (date du jour tant
+  // qu'aucune n'est saisie), et toujours s'ils sont déjà choisis (modification).
+  const plateauPeriod = isPlateauPeriod(matchDate === "" ? toParisIsoDate(new Date()) : matchDate);
+  const offered = data.divisions.filter(
+    (division) => !division.plateau || plateauPeriod || division.id === divisionId,
+  );
+  const isPlateau = data.divisions.some(
+    (division) => division.id === divisionId && division.plateau,
+  );
+  const frequent = frequentDivisions(offered, data.frequentDivisionIds);
+  // Pas de doublé sur un plateau (§15.4.7) : ni case, ni détection, distance obligatoire.
+  const sameDayMatch = withCompensation && !isPlateau && hasSameDayMatch(liveRead, data);
+  const travelSharedChecked = !isPlateau && (travelShared ?? sameDayMatch);
+  // Coupes (§15.4.6) : le tour n'est demandé que pour un niveau de coupe, et le nom de la
+  // coupe suit le département du match (listes contrôlées ici, codes postaux saisis lus en
+  // direct).
+  const isCup = data.divisions.some((division) => division.id === divisionId && division.cup);
+  const department = matchDepartment((name) => {
+    switch (name) {
+      case "team1Club":
+        return team1Club;
+      case "venueException":
+        return venueException ? "on" : "";
+      case "venueAddress":
+        return venueAddress;
+      default:
+        return liveRead(name);
+    }
+  }, data);
+  const divisionOption = (division: Division) => (
+    <option key={division.id} value={division.id} title={divisionLabel(division)}>
+      {divisionAbbreviation(division, department)}
+    </option>
+  );
   const venueHintId = `${id}-venue-default`;
   const travelHintId = `${id}-travel-shared-hint`;
 
   return (
     <>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
+      <fieldset
+        className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4"
+        onChange={(event) => {
+          const target = event.target;
+          if (target instanceof HTMLInputElement && target.name === "date") {
+            setMatchDate(target.value);
+          }
+        }}
+      >
         <legend className="px-1 font-semibold">{t.sections.match}</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
@@ -212,30 +260,70 @@ export function MatchFields({
           >
             <option value="">{t.fields.chooseDivision}</option>
             {frequent.length > 0 && (
-              <optgroup label={t.fields.frequentDivisions}>
-                {frequent.map((division) => (
-                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
-                    {divisionAbbreviation(division)}
-                  </option>
-                ))}
-              </optgroup>
+              <optgroup label={t.fields.frequentDivisions}>{frequent.map(divisionOption)}</optgroup>
             )}
-            {groupByCategory(data.divisions).map(([category, divisions]) => (
-              <optgroup key={category} label={fr.scales.divisions.category[category]}>
-                {divisions.map((division) => (
-                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
-                    {divisionAbbreviation(division)}
-                  </option>
-                ))}
+            {/* Championnats par catégorie, puis plateaux et coupes en bas de la liste. */}
+            {groupDivisions(offered).map((group) => (
+              <optgroup key={group.key} label={group.label}>
+                {group.divisions.map(divisionOption)}
               </optgroup>
             ))}
           </SelectField>
+          {isPlateau && withCompensation && (
+            <SelectField
+              id={`${id}-game-count`}
+              name="gameCount"
+              label={t.fields.gameCount}
+              hint={t.fields.gameCountHint}
+              value={gameCount}
+              onChange={setGameCount}
+              error={fieldError("gameCount", state)}
+            >
+              <option value="">{t.fields.chooseGameCount}</option>
+              {Array.from({ length: MAX_GAME_COUNT }, (_, index) => index + 1).map((count) => (
+                <option key={count} value={String(count)}>
+                  {count === 1
+                    ? t.fields.gameCountOne
+                    : t.fields.gameCountMany.replace("{count}", String(count))}
+                </option>
+              ))}
+            </SelectField>
+          )}
+          {isPlateau && withCompensation && (
+            <TextField
+              id={`${id}-plateau-game-amount`}
+              name="plateauGameAmount"
+              inputMode="decimal"
+              label={t.fields.plateauGameAmount}
+              hint={t.fields.plateauGameAmountHint}
+              maxLength={8}
+              defaultValue={valueOf("plateauGameAmount")}
+              error={fieldError("plateauGameAmount", state)}
+            />
+          )}
+          {isCup && (
+            <SelectField
+              id={`${id}-cup-round`}
+              name="cupRound"
+              label={t.fields.cupRound}
+              value={cupRound}
+              onChange={setCupRound}
+              error={fieldError("cupRound", state)}
+            >
+              <option value="">{t.fields.chooseCupRound}</option>
+              {CUP_ROUNDS.map((round) => (
+                <option key={round} value={round}>
+                  {fr.scales.divisions.cup.round[round]}
+                </option>
+              ))}
+            </SelectField>
+          )}
           {withCompensation && (
             <SelectField
               id={`${id}-scale`}
               name="scaleId"
               label={t.fields.scale}
-              hint={t.fields.scaleHint}
+              hint={isPlateau ? t.fields.scaleHintPlateau : t.fields.scaleHint}
               value={scaleId}
               onChange={setScaleId}
               error={fieldError("scaleId", state)}
@@ -266,23 +354,26 @@ export function MatchFields({
         <ClubFields
           idBase={`${id}-team1`}
           prefix="team1"
-          legend={t.sections.team1}
+          legend={isPlateau ? t.sections.host : t.sections.team1}
           clubs={data.clubs}
           value={team1Club}
           onChange={setTeam1Club}
           valueOf={valueOf}
           state={state}
         />
-        <ClubFields
-          idBase={`${id}-team2`}
-          prefix="team2"
-          legend={t.sections.team2}
-          clubs={data.clubs}
-          value={team2Club}
-          onChange={setTeam2Club}
-          valueOf={valueOf}
-          state={state}
-        />
+        {/* Plateau (§15.4.7) : club organisateur seul, pas d'équipe 2. */}
+        {!isPlateau && (
+          <ClubFields
+            idBase={`${id}-team2`}
+            prefix="team2"
+            legend={t.sections.team2}
+            clubs={data.clubs}
+            value={team2Club}
+            onChange={setTeam2Club}
+            valueOf={valueOf}
+            state={state}
+          />
+        )}
       </div>
 
       <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
@@ -340,30 +431,35 @@ export function MatchFields({
         <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
           <legend className="px-1 font-semibold">{t.sections.travel}</legend>
           {/* Choix explicite : conservé si le formulaire revient avec une erreur. */}
-          {travelShared !== null && <input type="hidden" name="travelSharedSet" value="1" />}
-          <div className="flex flex-col gap-1">
-            <label className="flex min-h-11 items-center gap-3">
-              <input
-                type="checkbox"
-                name="travelShared"
-                checked={travelSharedChecked}
-                onChange={(event) => {
-                  setTravelShared(event.target.checked);
-                }}
-                aria-describedby={travelHintId}
-                className="h-5 w-5 shrink-0"
-              />
-              <span>{t.fields.travelShared}</span>
-            </label>
-            <p id={travelHintId} className="text-sm text-muted-foreground">
-              {sameDayMatch && (
-                <span className="font-medium text-foreground">
-                  {t.fields.travelSharedDetected}{" "}
-                </span>
-              )}
-              {t.fields.travelSharedHint}
-            </p>
-          </div>
+          {travelShared !== null && !isPlateau && (
+            <input type="hidden" name="travelSharedSet" value="1" />
+          )}
+          {/* Pas de doublé sur un plateau (§15.4.7). */}
+          {!isPlateau && (
+            <div className="flex flex-col gap-1">
+              <label className="flex min-h-11 items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="travelShared"
+                  checked={travelSharedChecked}
+                  onChange={(event) => {
+                    setTravelShared(event.target.checked);
+                  }}
+                  aria-describedby={travelHintId}
+                  className="h-5 w-5 shrink-0"
+                />
+                <span>{t.fields.travelShared}</span>
+              </label>
+              <p id={travelHintId} className="text-sm text-muted-foreground">
+                {sameDayMatch && (
+                  <span className="font-medium text-foreground">
+                    {t.fields.travelSharedDetected}{" "}
+                  </span>
+                )}
+                {t.fields.travelSharedHint}
+              </p>
+            </div>
+          )}
           <div className="md:max-w-xs">
             {/* Doublé : distance facultative (vide = 0), le kilométrage vaut 0 de toute façon. */}
             <TextField

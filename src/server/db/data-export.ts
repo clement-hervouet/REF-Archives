@@ -13,7 +13,8 @@
 import { z } from "zod";
 import type { Queryable } from "./users";
 
-const DIVISION_JSON = `json_build_object('division', d.division, 'type', d.type, 'level', d.level)`;
+const DIVISION_JSON = `json_build_object('division', d.division, 'type', d.type, 'level', d.level,
+  'cup', d.cup)`;
 
 const ACCOUNT_SQL = `(SELECT json_build_object(
     'id', u.id, 'email', u.email, 'firstname', u.firstname, 'lastname', u.lastname,
@@ -73,11 +74,11 @@ const SCALES_SQL = list(`SELECT json_agg(json_build_object(
 const LEVEL_DEFAULT_SCALES_SQL = list(`SELECT json_agg(json_build_object(
     'division', ${DIVISION_JSON}, 'scaleId', l.scale_id,
     'createdAt', l.created_at, 'updatedAt', l.updated_at)
-    ORDER BY d.division, d.type, d.level)
+    ORDER BY d.cup, d.division, d.type, d.level)
   FROM level_default_scale l JOIN division d ON d.id = l.division_id WHERE l.user_id = $1`);
 
 const GAMES_SQL = list(`SELECT json_agg(json_build_object(
-    'id', g.id, 'startsAt', g.starts_at, 'division', ${DIVISION_JSON},
+    'id', g.id, 'startsAt', g.starts_at, 'division', ${DIVISION_JSON}, 'cupRound', g.cup_round,
     'addressId', g.address_id, 'team1Id', g.team1_id, 'team2Id', g.team2_id,
     'referee1Id', g.referee1_id, 'referee2Id', g.referee2_id, 'referee3Id', g.referee3_id,
     'observerId', g.observer_id, 'createdAt', g.created_at, 'updatedAt', g.updated_at,
@@ -100,8 +101,9 @@ const NOTES_SQL = list(`SELECT json_agg(json_build_object(
 // commun. L'indemnité, elle, est filtrée par propriétaire.
 const COMPENSATIONS_SQL = list(`SELECT json_agg(json_build_object(
     'id', c.id, 'gameId', c.game_id, 'startsAt', c.starts_at, 'division', ${DIVISION_JSON},
-    'team1Id', c.team1_id, 'team2Id', c.team2_id, 'addressId', c.address_id,
+    'cupRound', c.cup_round, 'team1Id', c.team1_id, 'team2Id', c.team2_id, 'addressId', c.address_id,
     'distanceMeters', c.distance_m, 'travelShared', c.travel_shared, 'payer', c.payer,
+    'gameCount', c.game_count, 'plateauGameCents', c.plateau_game_cents,
     'paidOn', c.paid_on,
     'scaleRate', json_build_object(
       'id', r.id, 'scaleId', s.id, 'scaleName', s.name, 'effectiveFrom', r.effective_from,

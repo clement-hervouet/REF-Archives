@@ -5,8 +5,9 @@
  * L'UID dérive de l'identifiant de l'indemnité : modifier le match met à jour l'événement
  * dans l'agenda au lieu d'en créer un second, et le supprimer le retire du flux.
  */
+import { withTeams } from "@/lib/match-teams";
 import { addressLabel } from "@/components/features/compensations/address-label";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { formatWeekdayDateTime } from "@/lib/format";
 import { buildCalendar } from "@/lib/ical";
@@ -46,16 +47,14 @@ export function matchToEvent(match: CalendarMatch): CalendarEvent {
   const start = new Date(match.startsAt.getTime() - ARRIVAL_BEFORE_MS);
   const description = [
     t.event.tipOff.replace("{when}", () => formatWeekdayDateTime(match.startsAt)),
-    t.event.level.replace("{division}", () => divisionLabel(match.division)),
+    t.event.level.replace("{division}", () => matchLevelLabel(match.division)),
     t.event.arrival,
   ].join("\n");
   return {
     uid: matchUid(match.id),
     start,
     end: new Date(start.getTime() + EVENT_DURATION_MS),
-    summary: t.event.summary
-      .replace("{team1}", () => match.team1Name)
-      .replace("{team2}", () => match.team2Name),
+    summary: withTeams(t.event.summary, match.team1Name, match.team2Name),
     location: addressLabel(match.address),
     description,
     lastModified: match.updatedAt,

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
 import {
   MATCH_ADDRESS_COLUMNS,
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
   matchAddressFields,
   matchPartiesFields,
   matchTeamJoins,
@@ -26,12 +26,13 @@ export type CalendarMatch = {
   updatedAt: Date;
   division: MatchDivision;
   team1Name: string;
-  team2Name: string;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Name: string | null;
   address: MatchAddress;
 };
 
 const SELECT_FROM = `SELECT c.id, c.starts_at, c.updated_at,
-  ${MATCH_PARTIES_COLUMNS},
+  ${matchPartiesColumns("c")},
   ${MATCH_ADDRESS_COLUMNS}
 FROM compensation c
 JOIN division d ON d.id = c.division_id

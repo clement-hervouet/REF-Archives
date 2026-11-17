@@ -189,3 +189,59 @@ describe("compensationFormSchema : organisme qui verse (bloc 10)", () => {
     }
   });
 });
+
+describe("compensationFormSchema : tour de coupe (§15.4.6)", () => {
+  it("vide ou absent : pas de tour (null)", () => {
+    expect(compensationFormSchema.parse(input()).cupRound).toBeNull();
+    expect(compensationFormSchema.parse(input({ cupRound: "" })).cupRound).toBeNull();
+  });
+
+  it("garde un tour connu", () => {
+    expect(compensationFormSchema.parse(input({ cupRound: "R16" })).cupRound).toBe("R16");
+    expect(compensationFormSchema.parse(input({ cupRound: "F" })).cupRound).toBe("F");
+  });
+
+  it("refuse un tour inconnu, sur le champ cupRound", () => {
+    for (const cupRound of ["R128", "1/16", "finale"]) {
+      const result = compensationFormSchema.safeParse({ ...input(), cupRound });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.path).toEqual(["cupRound"]);
+    }
+  });
+});
+
+describe("compensationFormSchema : plateau (§15.4.7)", () => {
+  it("équipe 2 absente : null (club organisateur seul)", () => {
+    expect(compensationFormSchema.parse(input({ team2: null })).team2).toBeNull();
+  });
+
+  it("nombre de matchs : vide = null, 1 à 10 accepté", () => {
+    expect(compensationFormSchema.parse(input()).gameCount).toBeNull();
+    expect(compensationFormSchema.parse(input({ gameCount: "3" })).gameCount).toBe(3);
+    expect(compensationFormSchema.parse(input({ gameCount: "10" })).gameCount).toBe(10);
+  });
+
+  it("refuse un nombre de matchs impossible, sur le champ gameCount", () => {
+    for (const gameCount of ["0", "11", "2,5", "-1", "abc"]) {
+      expect(errorPaths({ gameCount })).toEqual(["gameCount"]);
+    }
+  });
+});
+
+describe("compensationFormSchema : montant par match d'un plateau (§15.4.7)", () => {
+  it("vide ou absent : null ; en euros → centimes", () => {
+    expect(compensationFormSchema.parse(input()).plateauGameCents).toBeNull();
+    expect(compensationFormSchema.parse(input({ plateauGameAmount: "15" })).plateauGameCents).toBe(
+      1500,
+    );
+    expect(
+      compensationFormSchema.parse(input({ plateauGameAmount: "12,5" })).plateauGameCents,
+    ).toBe(1250);
+  });
+
+  it("refuse un montant invalide, sur le champ plateauGameAmount", () => {
+    for (const plateauGameAmount of ["-3", "12,555", "abc", "1000000"]) {
+      expect(errorPaths({ plateauGameAmount })).toEqual(["plateauGameAmount"]);
+    }
+  });
+});

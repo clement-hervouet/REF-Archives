@@ -6,11 +6,14 @@
  * le formulaire (`officialsSchema`) AVANT d'appeler ce service. Tout refus annule la
  * transaction entière.
  */
+import type { CompensationField } from "@/lib/compensation-form-fields";
 import { toParisIsoDate } from "@/lib/dates";
 import type { MatchInfo } from "@/lib/schemas/compensations";
-import type { Officials } from "@/lib/schemas/officials";
+import type { OfficialSlot, Officials } from "@/lib/schemas/officials";
+import { checkMatchLevel } from "../compensation/match-level";
+import type { MatchLevelCheck } from "../compensation/match-level";
 import { resolveMatchInfo } from "../compensation/resolve-match";
-import { divisionExists, listApplicableRates } from "../db/compensations";
+import { listApplicableRates } from "../db/compensations";
 import {
   insertGame,
   insertGameFromCompensation,
@@ -22,16 +25,42 @@ import {
   updateGameInfo as updateGameInfoRow,
   updateGameOfficials,
 } from "../db/game-writes";
+import type { Queryable } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { rejectGame, runRejectable } from "./rejection";
 import type { GameDeps, GameRejection } from "./rejection";
 import { resolveOfficials } from "./resolve-officials";
 
+/**
+ * Champ obligatoire pour ce niveau (tour de coupe §15.4.6, équipe 2 hors plateau §15.4.7) :
+ * rendu sans rien écrire (vérifié avant toute écriture), avec la même forme qu'une erreur
+ * de validation du formulaire.
+ */
+type LevelFieldsMissing = {
+  status: "invalid";
+  fields: CompensationField[];
+  officials: Partial<Record<OfficialSlot, never>>;
+};
+
 export type CreateGameResult = { status: "created"; gameId: string } | GameRejection;
+
+export type CreateStandaloneGameResult = CreateGameResult | LevelFieldsMissing;
 
 export type UpdateOfficialsResult = { status: "updated" } | GameRejection;
 
-export type UpdateGameInfoResult = { status: "updated" } | GameRejection;
+export type UpdateGameInfoResult = { status: "updated" } | GameRejection | LevelFieldsMissing;
+
+/** Niveau du match vérifié : refus « introuvable » levé, tour manquant rendu tel quel. */
+async function checkGameLevel(
+  db: Queryable,
+  info: MatchInfo,
+): Promise<Exclude<MatchLevelCheck, { status: "not_found" }>> {
+  const level = await checkMatchLevel(db, info);
+  if (level.status === "not_found") {
+    rejectGame({ status: "not_found", field: "divisionId" });
+  }
+  return level;
+}
 
 /**
  * Crée le match complet d'une indemnité de `userId` : date, niveau, équipes et adresse
@@ -88,12 +117,18 @@ export async function createStandaloneGame(
   userId: string,
   info: MatchInfo,
   officials: Officials,
-): Promise<CreateGameResult> {
-  return runRejectable(deps, async (db): Promise<CreateGameResult> => {
-    if (!(await divisionExists(db, info.divisionId))) {
-      rejectGame({ status: "not_found", field: "divisionId" });
+): Promise<CreateStandaloneGameResult> {
+  return runRejectable(deps, async (db): Promise<CreateStandaloneGameResult> => {
+    const level = await checkGameLevel(db, info);
+    if (level.status === "invalid") {
+      return { status: "invalid", fields: level.fields, officials: {} };
     }
-    const match = await resolveMatchInfo(db, userId, info, rejectGame);
+    const match = await resolveMatchInfo(
+      db,
+      userId,
+      { ...info, cupRound: level.cupRound, team2: level.team2 },
+      rejectGame,
+    );
     const officialIds = await resolveOfficials(db, userId, officials);
     const gameId =
       (await insertGame(db, { userId, match, officials: officialIds })) ??
@@ -119,8 +154,9 @@ export async function updateGameInfo(
     if (!(await lockGame(db, { gameId, userId }))) {
       rejectGame({ status: "not_found", field: "game" });
     }
-    if (!(await divisionExists(db, info.divisionId))) {
-      rejectGame({ status: "not_found", field: "divisionId" });
+    const level = await checkGameLevel(db, info);
+    if (level.status === "invalid") {
+      return { status: "invalid", fields: level.fields, officials: {} };
     }
     let scaleRateId: string | null = null;
     if (linked !== null) {
@@ -130,7 +166,12 @@ export async function updateGameInfo(
       const rate = rates === null ? null : findEffectiveRate(rates, toParisIsoDate(info.startsAt));
       scaleRateId = rate?.id ?? rejectGame({ status: "no_rate_at_date" });
     }
-    const match = await resolveMatchInfo(db, userId, info, rejectGame);
+    const match = await resolveMatchInfo(
+      db,
+      userId,
+      { ...info, cupRound: level.cupRound, team2: level.team2 },
+      rejectGame,
+    );
     await updateGameInfoRow(db, { gameId, userId, match });
     if (linked !== null && scaleRateId !== null) {
       await updateCompensationFromGame(db, {

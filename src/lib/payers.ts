@@ -118,66 +118,94 @@ export const DEPARTMENTS: readonly { code: DepartmentCode; name: string }[] = [
   { code: "976", name: "Mayotte" },
 ];
 
-/** Ligues régionales : identifiant stable, nom affiché, départements couverts. */
-export const LEAGUES: readonly { key: string; name: string; departments: readonly string[] }[] = [
+/**
+ * Ligues régionales : identifiant stable, code de la coupe régionale (« B » → « CBU18F »,
+ * §15.4.6), nom affiché, départements couverts.
+ */
+export const LEAGUES: readonly {
+  key: string;
+  cupCode: string;
+  name: string;
+  departments: readonly string[];
+}[] = [
   {
     key: "auvergne-rhone-alpes",
+    cupCode: "ARA",
     name: "Ligue d'Auvergne-Rhône-Alpes",
     departments: ["01", "03", "07", "15", "26", "38", "42", "43", "63", "69", "73", "74"],
   },
   {
     key: "bourgogne-franche-comte",
+    cupCode: "BFC",
     name: "Ligue de Bourgogne-Franche-Comté",
     departments: ["21", "25", "39", "58", "70", "71", "89", "90"],
   },
-  { key: "bretagne", name: "Ligue de Bretagne", departments: ["22", "29", "35", "56"] },
+  {
+    key: "bretagne",
+    cupCode: "B",
+    name: "Ligue de Bretagne",
+    departments: ["22", "29", "35", "56"],
+  },
   {
     key: "centre-val-de-loire",
+    cupCode: "CVL",
     name: "Ligue du Centre-Val de Loire",
     departments: ["18", "28", "36", "37", "41", "45"],
   },
-  { key: "corse", name: "Ligue de Corse", departments: ["2A", "2B"] },
+  { key: "corse", cupCode: "CO", name: "Ligue de Corse", departments: ["2A", "2B"] },
   {
     key: "grand-est",
+    cupCode: "GE",
     name: "Ligue du Grand Est",
     departments: ["08", "10", "51", "52", "54", "55", "57", "67", "68", "88"],
   },
   {
     key: "hauts-de-france",
+    cupCode: "HDF",
     name: "Ligue des Hauts-de-France",
     departments: ["02", "59", "60", "62", "80"],
   },
   {
     key: "ile-de-france",
+    cupCode: "IDF",
     name: "Ligue d'Île-de-France",
     departments: ["75", "77", "78", "91", "92", "93", "94", "95"],
   },
-  { key: "normandie", name: "Ligue de Normandie", departments: ["14", "27", "50", "61", "76"] },
+  {
+    key: "normandie",
+    cupCode: "N",
+    name: "Ligue de Normandie",
+    departments: ["14", "27", "50", "61", "76"],
+  },
   {
     key: "nouvelle-aquitaine",
+    cupCode: "NA",
     name: "Ligue de Nouvelle-Aquitaine",
     departments: ["16", "17", "19", "23", "24", "33", "40", "47", "64", "79", "86", "87"],
   },
   {
     key: "occitanie",
+    cupCode: "O",
     name: "Ligue d'Occitanie",
     departments: ["09", "11", "12", "30", "31", "32", "34", "46", "48", "65", "66", "81", "82"],
   },
   {
     key: "pays-de-la-loire",
+    cupCode: "PDL",
     name: "Ligue des Pays de la Loire",
     departments: ["44", "49", "53", "72", "85"],
   },
   {
     key: "provence-alpes-cote-d-azur",
+    cupCode: "PACA",
     name: "Ligue Provence-Alpes-Côte d'Azur",
     departments: ["04", "05", "06", "13", "83", "84"],
   },
-  { key: "guadeloupe", name: "Ligue de la Guadeloupe", departments: ["971"] },
-  { key: "martinique", name: "Ligue de la Martinique", departments: ["972"] },
-  { key: "guyane", name: "Ligue de la Guyane", departments: ["973"] },
-  { key: "la-reunion", name: "Ligue de La Réunion", departments: ["974"] },
-  { key: "mayotte", name: "Ligue de Mayotte", departments: ["976"] },
+  { key: "guadeloupe", cupCode: "GP", name: "Ligue de la Guadeloupe", departments: ["971"] },
+  { key: "martinique", cupCode: "MQ", name: "Ligue de la Martinique", departments: ["972"] },
+  { key: "guyane", cupCode: "GF", name: "Ligue de la Guyane", departments: ["973"] },
+  { key: "la-reunion", cupCode: "RE", name: "Ligue de La Réunion", departments: ["974"] },
+  { key: "mayotte", cupCode: "YT", name: "Ligue de Mayotte", departments: ["976"] },
 ];
 
 export type Payer =
@@ -193,6 +221,11 @@ const LEAGUE_BY_DEPARTMENT = new Map(
   LEAGUES.flatMap((league) => league.departments.map((code) => [code, league] as const)),
 );
 const LEAGUE_BY_KEY = new Map(LEAGUES.map((league) => [league.key, league] as const));
+
+/** Code de coupe d'une ligue (« B » pour la Bretagne), ou `null` si la clé est inconnue. */
+export function leagueCupCode(leagueKey: string): string | null {
+  return LEAGUE_BY_KEY.get(leagueKey)?.cupCode ?? null;
+}
 
 /** Pays considérés comme la France pour une adresse (champ libre, facultatif). */
 const FRANCE_NAMES = new Set(["", "france", "fr", "fra"]);

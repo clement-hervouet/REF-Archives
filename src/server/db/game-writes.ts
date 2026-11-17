@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 import type { OfficialSlot } from "@/lib/schemas/officials";
+import type { CupRound } from "./divisions";
 import type { Queryable } from "./users";
 
 /** Limite anti-abus, alignée sur celle des indemnités. */
@@ -60,16 +61,16 @@ const INSERT_GAME_FROM_COMPENSATION_SQL = `WITH allowed AS (
   ) < $7::integer AS ok
 ),
 source AS (
-  SELECT starts_at, division_id, address_id, team1_id, team2_id
+  SELECT starts_at, division_id, cup_round, address_id, team1_id, team2_id
   FROM compensation
   WHERE id = $2::uuid AND user_id = $1::uuid AND deleted_at IS NULL
 ),
 inserted AS (
   INSERT INTO game (
-    user_id, starts_at, division_id, address_id, team1_id, team2_id,
+    user_id, starts_at, division_id, cup_round, address_id, team1_id, team2_id,
     referee1_id, referee2_id, referee3_id, observer_id
   )
-  SELECT $1::uuid, s.starts_at, s.division_id, s.address_id, s.team1_id, s.team2_id,
+  SELECT $1::uuid, s.starts_at, s.division_id, s.cup_round, s.address_id, s.team1_id, s.team2_id,
     $3::uuid, $4::uuid, $5::uuid, $6::uuid
   FROM source s, allowed
   WHERE allowed.ok
@@ -112,8 +113,11 @@ export async function linkCompensationToGame(
 export type GameInfoRow = {
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1Id: string;
-  team2Id: string;
+  /** `null` pour un plateau (§15.4.7). */
+  team2Id: string | null;
   addressId: string;
 };
 
@@ -126,10 +130,10 @@ const INSERT_GAME_SQL = `WITH allowed AS (
 inserted AS (
   INSERT INTO game (
     user_id, starts_at, division_id, address_id, team1_id, team2_id,
-    referee1_id, referee2_id, referee3_id, observer_id
+    referee1_id, referee2_id, referee3_id, observer_id, cup_round
   )
   SELECT $1::uuid, $2::timestamptz, $3::uuid, $4::uuid, $5::uuid, $6::uuid,
-    $7::uuid, $8::uuid, $9::uuid, $10::uuid
+    $7::uuid, $8::uuid, $9::uuid, $10::uuid, $12::cup_round
   FROM allowed
   WHERE ok
   RETURNING id
@@ -137,7 +141,8 @@ inserted AS (
 SELECT (SELECT id FROM inserted) AS id`;
 
 const UPDATE_GAME_INFO_SQL = `UPDATE game
-SET starts_at = $3, division_id = $4, address_id = $5, team1_id = $6, team2_id = $7
+SET starts_at = $3, division_id = $4, address_id = $5, team1_id = $6, team2_id = $7,
+  cup_round = $8
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`;
 
 // Verrou de l'indemnité AVANT celui du match : même ordre que la modification d'une
@@ -150,13 +155,30 @@ FOR UPDATE OF c`;
 
 const UPDATE_COMPENSATION_FROM_GAME_SQL = `UPDATE compensation
 SET starts_at = $3, division_id = $4, address_id = $5, team1_id = $6, team2_id = $7,
-  scale_rate_id = $8
+  cup_round = $8, scale_rate_id = $9,
+  -- Plateau (§15.4.7) : le nombre de matchs n'est saisi que sur l'indemnité. Devenu plateau
+  -- depuis la fiche du match : 1 match par défaut ; plus un plateau : plus de nombre.
+  game_count = CASE WHEN (SELECT plateau FROM division WHERE id = $4::uuid)
+    THEN COALESCE(game_count, 1) END,
+  -- Pas de doublé sur un plateau.
+  travel_shared = travel_shared AND NOT (SELECT plateau FROM division WHERE id = $4::uuid),
+  -- Montant par match du plateau : celui saisi, sinon celui du barème à défaut.
+  plateau_game_cents = CASE WHEN (SELECT plateau FROM division WHERE id = $4::uuid)
+    THEN COALESCE(plateau_game_cents,
+      (SELECT game_amount_cents FROM scale_rate WHERE id = $9::uuid)) END
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`;
 
 const linkedCompensationRowSchema = z.object({ id: z.uuid(), scale_id: z.uuid() });
 
 function gameInfoParams(match: GameInfoRow): unknown[] {
-  return [match.startsAt, match.divisionId, match.addressId, match.team1Id, match.team2Id];
+  return [
+    match.startsAt,
+    match.divisionId,
+    match.addressId,
+    match.team1Id,
+    match.team2Id,
+    match.cupRound,
+  ];
 }
 
 /** Crée un match sans indemnité. `null` si l'utilisateur a atteint la limite de matchs. */
@@ -173,6 +195,7 @@ export async function insertGame(
     input.match.team2Id,
     ...officialParams(input.officials),
     MAX_GAMES_PER_USER,
+    input.match.cupRound,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
@@ -232,8 +255,8 @@ WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`;
 // Recopie les informations communes de l'indemnité vers son match lié (§3.11). Sans match
 // lié (ou match supprimé), la requête ne touche aucune ligne.
 const SYNC_GAME_FROM_COMPENSATION_SQL = `UPDATE game g
-SET starts_at = c.starts_at, division_id = c.division_id, address_id = c.address_id,
-  team1_id = c.team1_id, team2_id = c.team2_id
+SET starts_at = c.starts_at, division_id = c.division_id, cup_round = c.cup_round,
+  address_id = c.address_id, team1_id = c.team1_id, team2_id = c.team2_id
 FROM compensation c
 WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL
   AND g.id = c.game_id AND g.user_id = c.user_id AND g.deleted_at IS NULL`;

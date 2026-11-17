@@ -1,3 +1,4 @@
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -6,7 +7,7 @@ import { NoteForm } from "@/components/features/games/note-form";
 import { OfficialsForm } from "@/components/features/games/officials-form";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { MatchDate } from "@/components/features/compensations/match-date";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { GAME_NOTES_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
@@ -63,11 +64,11 @@ export default async function GamePage(props: GamePageProps) {
         <MatchDate startsAt={game.startsAt} />
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-2xl font-semibold break-words">
-            {t.detail.title.replace("{team1}", game.team1Name).replace("{team2}", game.team2Name)}
+            {withTeams(t.detail.title, game.team1Name, game.team2Name)}
           </h1>
           <p className="break-words">
             {t.detail.details
-              .replace("{division}", divisionLabel(game.division))
+              .replace("{division}", matchLevelLabel(game.division))
               .replace("{address}", addressLabel(game.address))}
           </p>
           {game.compensationId === null && (

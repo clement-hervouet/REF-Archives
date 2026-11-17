@@ -9,6 +9,8 @@
  */
 import { z } from "zod";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
+import { cupRoundSchema } from "./divisions";
+import type { CupRound } from "./divisions";
 import type { Queryable } from "./users";
 
 /** Limite anti-abus (application potentiellement publique). */
@@ -37,13 +39,20 @@ export type NewCompensation = {
   distanceM: number;
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1Id: string;
-  team2Id: string;
+  /** `null` pour un plateau (§15.4.7). */
+  team2Id: string | null;
   addressId: string;
   /** Organisme choisi explicitement (clé validée), ou `null` : déduit à l'affichage (bloc 10). */
   payer: string | null;
   /** Doublé (§15.4.5) : déplacement déjà indemnisé sur un autre match, kilométrage à 0. */
   travelShared: boolean;
+  /** Nombre de matchs d'un plateau (§15.4.7), `null` hors plateau. */
+  gameCount: number | null;
+  /** Montant par match saisi pour un plateau (centimes), `null` hors plateau. */
+  plateauGameCents: number | null;
 };
 
 const idRowSchema = z.object({ id: z.uuid() });
@@ -172,10 +181,10 @@ const INSERT_COMPENSATION_SQL = `WITH allowed AS (
 inserted AS (
   INSERT INTO compensation (
     user_id, scale_rate_id, distance_m, starts_at, division_id, team1_id, team2_id, address_id,
-    payer, travel_shared
+    payer, travel_shared, cup_round, game_count, plateau_game_cents
   )
   SELECT $1::uuid, $2::uuid, $3::integer, $4::timestamptz, $5::uuid, $6::uuid, $7::uuid, $8::uuid,
-    $10::varchar, $11::boolean
+    $10::varchar, $11::boolean, $12::cup_round, $13::smallint, $14::integer
   FROM allowed
   WHERE ok
   RETURNING id
@@ -199,19 +208,24 @@ export async function insertCompensation(
     MAX_COMPENSATIONS_PER_USER,
     input.payer,
     input.travelShared,
+    input.cupRound,
+    input.gameCount,
+    input.plateauGameCents,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
 
 // ─── Modification et suppression ───────────────────────────────────────────
 
-const LOCK_COMPENSATION_SQL = `SELECT id FROM compensation
+// Le tour actuel sert à ne fêter une finale qu'au moment où elle est enregistrée (§15.4.6).
+const LOCK_COMPENSATION_SQL = `SELECT cup_round FROM compensation
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 FOR UPDATE`;
 
 const UPDATE_COMPENSATION_SQL = `UPDATE compensation
 SET scale_rate_id = $3, distance_m = $4, starts_at = $5, division_id = $6,
-  team1_id = $7, team2_id = $8, address_id = $9, payer = $10, travel_shared = $11
+  team1_id = $7, team2_id = $8, address_id = $9, payer = $10, travel_shared = $11,
+  cup_round = $12, game_count = $13, plateau_game_cents = $14
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
@@ -221,16 +235,20 @@ SET deleted_at = now()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
+const lockedCompensationRowSchema = z.object({ cup_round: cupRoundSchema.nullable() });
+
 /**
- * Verrouille une indemnité active de l'utilisateur jusqu'à la fin de la transaction.
- * Faux si elle n'existe pas, est supprimée ou appartient à un autre utilisateur.
+ * Verrouille une indemnité active de l'utilisateur jusqu'à la fin de la transaction et
+ * renvoie son tour de coupe actuel. `null` si elle n'existe pas, est supprimée ou
+ * appartient à un autre utilisateur.
  */
 export async function lockCompensation(
   db: Queryable,
   input: { compensationId: string; userId: string },
-): Promise<boolean> {
+): Promise<{ cupRound: CupRound | null } | null> {
   const result = await db.query(LOCK_COMPENSATION_SQL, [input.compensationId, input.userId]);
-  return result.rows.length > 0;
+  const raw: unknown = result.rows[0];
+  return raw === undefined ? null : { cupRound: lockedCompensationRowSchema.parse(raw).cup_round };
 }
 
 /** Remplace les informations d'une indemnité active de l'utilisateur. */
@@ -250,6 +268,9 @@ export async function updateCompensation(
     input.addressId,
     input.payer,
     input.travelShared,
+    input.cupRound,
+    input.gameCount,
+    input.plateauGameCents,
   ]);
   return result.rows.length > 0;
 }

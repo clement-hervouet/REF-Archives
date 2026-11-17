@@ -11,6 +11,9 @@ import { ValidationError } from "@/lib/errors";
  */
 const CENTS_PER_KM_PATTERN = /^(\d{1,4})(?:\.(\d{1,2}))?$/;
 
+/** Nombre maximal de matchs d'un plateau (§15.4.7), comme la contrainte de la colonne. */
+export const MAX_GAME_COUNT = 10;
+
 /** Mètres par km × centièmes de centime par centime : diviseur pour obtenir des centimes. */
 const MILEAGE_DIVISOR = 1000 * 100;
 
@@ -63,9 +66,17 @@ export type CompensationTravel = {
    * endroit. Le kilométrage vaut alors 0 ; la distance reste valide et enregistrée.
    */
   travelShared: boolean;
+  /**
+   * Nombre de matchs payés au montant par match : celui d'un plateau (§15.4.7), sinon 1
+   * (colonne `game_count`, NULL hors plateau).
+   */
+  gameCount: number;
 };
 
-/** Montant complet d'une indemnité : match + kilométrage (0 sur le second match d'un doublé). */
+/**
+ * Montant complet d'une indemnité : matchs (montant par match × nombre de matchs, 1 hors
+ * plateau) + kilométrage (0 sur le second match d'un doublé).
+ */
 export function computeCompensation(
   rate: CompensationRate,
   travel: CompensationTravel,
@@ -73,12 +84,16 @@ export function computeCompensation(
   if (!Number.isSafeInteger(rate.gameAmountCents) || rate.gameAmountCents < 0) {
     throw new ValidationError("invalid_game_amount");
   }
+  if (
+    !Number.isInteger(travel.gameCount) ||
+    travel.gameCount < 1 ||
+    travel.gameCount > MAX_GAME_COUNT
+  ) {
+    throw new ValidationError("invalid_game_count");
+  }
   // Distance validée même sur un doublé : une valeur impossible reste une erreur.
   const fullMileageCents = computeMileageCents(travel.distanceM, rate.centsPerKm);
   const mileageCents = travel.travelShared ? 0 : fullMileageCents;
-  return {
-    gameCents: rate.gameAmountCents,
-    mileageCents,
-    totalCents: rate.gameAmountCents + mileageCents,
-  };
+  const gameCents = rate.gameAmountCents * travel.gameCount;
+  return { gameCents, mileageCents, totalCents: gameCents + mileageCents };
 }

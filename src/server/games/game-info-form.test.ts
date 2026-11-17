@@ -106,6 +106,7 @@ describe("gameInfoFormValues", () => {
     id: GAME_ID,
     startsAt: new Date("2026-11-14T18:00:00Z"),
     divisionId: DIVISION_ID,
+    cupRound: null,
     team1ClubId: CLUB_A,
     team2ClubId: CLUB_B,
     addressId: ADDRESS_A,
@@ -114,12 +115,17 @@ describe("gameInfoFormValues", () => {
   };
 
   it("préremplit date et heure de Paris, niveau et clubs", () => {
-    expect(gameInfoFormValues(game)).toEqual({ ...MATCH_FIELDS });
+    expect(gameInfoFormValues(game)).toEqual({ ...MATCH_FIELDS, cupRound: "" });
+  });
+
+  it("préremplit le tour d'une coupe", () => {
+    expect(gameInfoFormValues({ ...game, cupRound: "F" }).cupRound).toBe("F");
   });
 
   it("coche l'exception quand l'adresse diffère de celle du club de l'équipe 1", () => {
     expect(gameInfoFormValues({ ...game, addressId: ADDRESS_B })).toEqual({
       ...MATCH_FIELDS,
+      cupRound: "",
       venueException: "on",
       venueAddress: ADDRESS_B,
     });

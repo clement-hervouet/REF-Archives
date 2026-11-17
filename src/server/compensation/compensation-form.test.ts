@@ -59,6 +59,7 @@ describe("readCompensationFormData", () => {
       date: "2026-11-14",
       time: "19:00",
       divisionId: DIVISION_ID,
+      cupRound: "",
       scaleId: SCALE_ID,
       payer: "",
       team1: { kind: "existing", clubId: CLUB_A },
@@ -66,7 +67,13 @@ describe("readCompensationFormData", () => {
       venue: { kind: "team1" },
       oneWayDistance: "23,5",
       travelShared: false,
+      gameCount: "",
+      plateauGameAmount: "",
     });
+  });
+
+  it("lit le tour de coupe (§15.4.6)", () => {
+    expect(readCompensationFormData(form({ ...BASE, cupRound: "R16" })).cupRound).toBe("R16");
   });
 
   it("lit l'organisme choisi (bloc 10)", () => {
@@ -145,7 +152,7 @@ describe("handleCreateCompensation", () => {
   it("crée l'indemnité et renvoie son montant", async () => {
     const { deps, query } = setup();
     for (const rows of [
-      [{ id: DIVISION_ID }],
+      [{ cup: false, plateau: false }],
       [
         {
           id: RATE_ID,
@@ -169,6 +176,7 @@ describe("handleCreateCompensation", () => {
       status: "created",
       amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
       firstOfSeason: null,
+      final: null,
     });
   });
 
@@ -236,8 +244,8 @@ describe("handleUpdateCompensation", () => {
   it("modifie l'indemnité de l'utilisateur", async () => {
     const { deps, query } = setup();
     for (const rows of [
-      [{ id: COMPENSATION_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup_round: null }],
+      [{ cup: false, plateau: false }],
       [
         {
           id: RATE_ID,
@@ -265,6 +273,7 @@ describe("handleUpdateCompensation", () => {
     ).toEqual({
       status: "updated",
       amount: { gameCents: 3000, mileageCents: 1880, totalCents: 4880 },
+      final: null,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
   });
@@ -301,6 +310,9 @@ describe("compensationFormValues", () => {
     id: COMPENSATION_ID,
     startsAt: new Date("2026-11-14T18:00:00Z"),
     divisionId: DIVISION_ID,
+    cupRound: null,
+    gameCount: null,
+    plateauGameCents: null,
     team1ClubId: CLUB_A,
     team2ClubId: CLUB_B,
     addressId: ADDRESS_A,
@@ -317,12 +329,31 @@ describe("compensationFormValues", () => {
       date: "2026-11-14",
       time: "19:00",
       divisionId: DIVISION_ID,
+      cupRound: "",
       scaleId: SCALE_ID,
       payer: "",
       team1Club: CLUB_A,
       team2Club: CLUB_B,
+      gameCount: "",
+      plateauGameAmount: "",
       oneWayDistance: "23,5",
     });
+  });
+
+  it("préremplit le tour d'une coupe", () => {
+    expect(compensationFormValues({ ...compensation, cupRound: "R2" as const }).cupRound).toBe(
+      "R2",
+    );
+  });
+
+  it("préremplit le nombre et le montant par match d'un plateau (§15.4.7)", () => {
+    const values = compensationFormValues({
+      ...compensation,
+      gameCount: 3,
+      plateauGameCents: 1250,
+    });
+    expect(values.gameCount).toBe("3");
+    expect(values.plateauGameAmount).toBe("12,50");
   });
 
   it("préremplit l'organisme choisi", () => {

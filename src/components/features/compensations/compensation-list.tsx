@@ -3,12 +3,14 @@
  * de match), le match, le détail du montant, l'état du paiement, « Modifier » et le menu
  * « Plus d'actions ». Une liste de cartes plutôt qu'un tableau : lisible à 375 px.
  */
+import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
+import { gamesAmountText } from "./compensation-messages";
 import { formatCents, formatIsoDate } from "@/lib/format";
 import { payerLabel } from "@/lib/payers";
 import { cn } from "@/lib/utils";
@@ -69,18 +71,18 @@ function CompensationCard({
 
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="font-semibold break-words">
-          {t.teams.replace("{team1}", item.team1Name).replace("{team2}", item.team2Name)}
+          {withTeams(t.teams, item.team1Name, item.team2Name)}
         </h3>
         <p className="text-sm break-words">
           {t.details
-            .replace("{division}", divisionLabel(item.division))
+            .replace("{division}", matchLevelLabel(item.division))
             .replace("{address}", addressLabel(item.address))}
         </p>
         <p className="text-sm font-medium">{t.payer.replace("{payer}", payerLabel(item.payer))}</p>
         <p className="text-sm break-words text-muted-foreground">
           {(item.travelShared ? t.rateDetailsShared : t.rateDetails)
             .replace("{scale}", item.scaleName)
-            .replace("{game}", formatCents(item.amount.gameCents))
+            .replace("{game}", gamesAmountText(item.amount.gameCents, item.gameCount))
             .replace("{mileage}", formatCents(item.amount.mileageCents))
             .replace("{distance}", formatRoundTripKm(item.distanceM))}
         </p>

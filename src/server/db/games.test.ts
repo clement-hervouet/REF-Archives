@@ -170,6 +170,11 @@ describe("findGame", () => {
         division: "Regional",
         type: "Masculin",
         level: "1",
+        cup: false,
+        plateau: false,
+        cup_round: null,
+        cup_postal_code: null,
+        cup_country: null,
         team1_name: "Club Alpha",
         team2_name: "Club Beta",
         street: "Avenue du Sport",
@@ -186,7 +191,15 @@ describe("findGame", () => {
     expect(await findGame(db, { gameId: GAME_ID, userId: USER_ID })).toEqual({
       id: GAME_ID,
       startsAt,
-      division: { category: "Regional", type: "Masculin", level: "1" },
+      division: {
+        category: "Regional",
+        type: "Masculin",
+        level: "1",
+        cup: false,
+        plateau: false,
+        cupRound: null,
+        department: null,
+      },
       team1Name: "Club Alpha",
       team2Name: "Club Beta",
       address: { street: "Avenue du Sport", number: "2", postalCode: "62400", city: "Béthune" },
@@ -255,6 +268,7 @@ const STARTS_AT = new Date("2026-11-14T18:00:00Z");
 const MATCH = {
   startsAt: STARTS_AT,
   divisionId: DIVISION_ID,
+  cupRound: "R2" as const,
   team1Id: TEAM_1,
   team2Id: TEAM_2,
   addressId: ADDRESS_ID,
@@ -278,6 +292,7 @@ describe("insertGame", () => {
       null,
       null,
       MAX_GAMES_PER_USER,
+      "R2",
     ]);
   });
 
@@ -301,6 +316,7 @@ describe("updateGameInfo", () => {
       ADDRESS_ID,
       TEAM_1,
       TEAM_2,
+      "R2",
     ]);
   });
 });
@@ -339,6 +355,7 @@ describe("updateCompensationFromGame", () => {
       ADDRESS_ID,
       TEAM_1,
       TEAM_2,
+      "R2",
       RATE_ID,
     ]);
   });
@@ -351,6 +368,7 @@ describe("findGameForEdit", () => {
         id: GAME_ID,
         starts_at: STARTS_AT,
         division_id: DIVISION_ID,
+        cup_round: null,
         address_id: ADDRESS_ID,
         team1_club_id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
         team2_club_id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
@@ -362,6 +380,7 @@ describe("findGameForEdit", () => {
       id: GAME_ID,
       startsAt: STARTS_AT,
       divisionId: DIVISION_ID,
+      cupRound: null,
       team1ClubId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
       team2ClubId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
       addressId: ADDRESS_ID,

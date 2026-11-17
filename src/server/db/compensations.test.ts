@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_COMPENSATIONS_PER_USER,
   addressBelongsTo,
-  divisionExists,
   findCompensationForEdit,
+  findCupFinal,
   listApplicableRates,
   listCompensationAmounts,
   listCompensationsInRange,
@@ -39,16 +39,37 @@ const ADDRESS = {
   country: null,
 };
 
-describe("divisionExists", () => {
-  it("vrai si la division existe", async () => {
-    const { db, query } = makeFakeDb([{ id: DIVISION_ID }]);
-    expect(await divisionExists(db, DIVISION_ID)).toBe(true);
-    expect(query.mock.calls[0]?.[1]).toEqual([DIVISION_ID]);
+describe("findCupFinal", () => {
+  it("nomme la coupe d'après le département de l'adresse de l'utilisateur", async () => {
+    const { db, query } = makeFakeDb([
+      {
+        division: "Departemental",
+        type: "Masculin",
+        level: "Seniors",
+        postal_code: "56000",
+        country: null,
+      },
+    ]);
+    expect(
+      await findCupFinal(db, { divisionId: DIVISION_ID, addressId: ADDRESS_ID, userId: USER_ID }),
+    ).toEqual({
+      category: "Departemental",
+      type: "Masculin",
+      level: "Seniors",
+      cup: true,
+      plateau: false,
+      department: "56",
+    });
+    expect(query.mock.calls[0]?.[0]).toContain("a.user_id = $3");
+    expect(query.mock.calls[0]?.[0]).toContain("d.cup");
+    expect(query.mock.calls[0]?.[1]).toEqual([DIVISION_ID, ADDRESS_ID, USER_ID]);
   });
 
-  it("faux sinon", async () => {
+  it("null hors coupe ou pour l'adresse d'un autre", async () => {
     const { db } = makeFakeDb();
-    expect(await divisionExists(db, DIVISION_ID)).toBe(false);
+    expect(
+      await findCupFinal(db, { divisionId: DIVISION_ID, addressId: ADDRESS_ID, userId: USER_ID }),
+    ).toBeNull();
   });
 });
 
@@ -194,6 +215,9 @@ describe("insertCompensation", () => {
     team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
     addressId: ADDRESS_ID,
     payer: "cd-35",
+    cupRound: null,
+    gameCount: null,
+    plateauGameCents: null,
   };
 
   it("crée l'indemnité sous la limite", async () => {
@@ -211,6 +235,9 @@ describe("insertCompensation", () => {
       MAX_COMPENSATIONS_PER_USER,
       "cd-35",
       false,
+      null,
+      null,
+      null,
     ]);
   });
 
@@ -228,6 +255,7 @@ describe("listCompensationAmounts", () => {
         starts_at: startsAt,
         distance_m: 47_000,
         travel_shared: false,
+        game_count: 1,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         paid_on: "2026-11-20",
@@ -242,6 +270,7 @@ describe("listCompensationAmounts", () => {
         startsAt,
         distanceM: 47_000,
         travelShared: false,
+        gameCount: 1,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
         paidOn: "2026-11-20",
@@ -265,11 +294,17 @@ describe("listCompensationsInRange", () => {
         starts_at: startsAt,
         distance_m: 47_000,
         travel_shared: false,
+        game_count: 1,
         game_amount_cents: 4800,
         cents_per_km: "42.50",
         division: "Regional",
         type: "Masculin",
         level: "1",
+        cup: false,
+        plateau: false,
+        cup_round: null,
+        cup_postal_code: null,
+        cup_country: null,
         team1_name: "Club Alpha",
         team2_name: "Club Beta",
         street: "Rue Nationale",
@@ -289,9 +324,18 @@ describe("listCompensationsInRange", () => {
         startsAt,
         distanceM: 47_000,
         travelShared: false,
+        gameCount: 1,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
-        division: { category: "Regional", type: "Masculin", level: "1" },
+        division: {
+          category: "Regional",
+          type: "Masculin",
+          level: "1",
+          cup: false,
+          plateau: false,
+          cupRound: null,
+          department: null,
+        },
         team1Name: "Club Alpha",
         team2Name: "Club Beta",
         address: { street: "Rue Nationale", number: "10", postalCode: "59000", city: "Lille" },
@@ -315,6 +359,9 @@ describe("findCompensationForEdit", () => {
         id: COMPENSATION_ID,
         starts_at: startsAt,
         division_id: DIVISION_ID,
+        cup_round: null,
+        game_count: null,
+        plateau_game_cents: null,
         address_id: ADDRESS_ID,
         distance_m: 47_000,
         travel_shared: false,
@@ -331,6 +378,9 @@ describe("findCompensationForEdit", () => {
       id: COMPENSATION_ID,
       startsAt,
       divisionId: DIVISION_ID,
+      cupRound: null,
+      gameCount: null,
+      plateauGameCents: null,
       team1ClubId: CLUB_A,
       team2ClubId: CLUB_B,
       addressId: ADDRESS_ID,
@@ -355,8 +405,8 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
   const ids = { compensationId: COMPENSATION_ID, userId: USER_ID };
 
   it("filtrent toujours par utilisateur", async () => {
-    const { db, query } = makeFakeDb([{ id: COMPENSATION_ID }]);
-    expect(await lockCompensation(db, ids)).toBe(true);
+    const { db, query } = makeFakeDb([{ cup_round: "F", id: COMPENSATION_ID }]);
+    expect(await lockCompensation(db, ids)).toEqual({ cupRound: "F" });
     expect(await softDeleteCompensation(db, ids)).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
     expect(query.mock.calls[1]?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
@@ -377,6 +427,9 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
         team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
         addressId: ADDRESS_ID,
         payer: null,
+        cupRound: "R16",
+        gameCount: 3,
+        plateauGameCents: 1500,
       }),
     ).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([
@@ -391,12 +444,15 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
       ADDRESS_ID,
       null,
       true,
+      "R16",
+      3,
+      1500,
     ]);
   });
 
   it("répondent faux quand rien n'est touché", async () => {
     const { db } = makeFakeDb();
-    expect(await lockCompensation(db, ids)).toBe(false);
+    expect(await lockCompensation(db, ids)).toBeNull();
     expect(await softDeleteCompensation(db, ids)).toBe(false);
   });
 });

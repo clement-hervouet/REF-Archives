@@ -2,8 +2,10 @@
  * Récapitulatif en direct du formulaire d'indemnité (bloc 10) : le match, l'horaire,
  * l'organisme qui versera et le montant, recalculés à chaque saisie. Sans état.
  */
+import { withTeams } from "@/lib/match-teams";
 import { fr } from "@/i18n/fr";
 import { formatRoundTripKm } from "@/lib/distance";
+import { gamesAmountText } from "./compensation-messages";
 import { formatCents, formatIsoDate, formatWeekdayDateTime } from "@/lib/format";
 import { payerLabel } from "@/lib/payers";
 import { cn } from "@/lib/utils";
@@ -30,11 +32,10 @@ type Props = {
 };
 
 export function CompensationRecap({ input, preview, className }: Props) {
+  // Plateau (§15.4.7) : club organisateur seul.
   const teams =
-    input.team1Name !== null && input.team2Name !== null
-      ? fr.compensations.list.teams
-          .replace("{team1}", input.team1Name)
-          .replace("{team2}", input.team2Name)
+    input.team1Name !== null && (input.plateau || input.team2Name !== null)
+      ? withTeams(fr.compensations.list.teams, input.team1Name, input.team2Name)
       : null;
   const payer =
     preview.payer.status === "pending"
@@ -74,7 +75,7 @@ export function CompensationRecap({ input, preview, className }: Props) {
             </p>
             <p className="text-sm">
               {(input.travelShared ? t.detailShared : t.detail)
-                .replace("{game}", formatCents(amount.amount.gameCents))
+                .replace("{game}", gamesAmountText(amount.amount.gameCents, input.gameCount ?? 1))
                 .replace("{mileage}", formatCents(amount.amount.mileageCents))
                 .replace("{distance}", formatRoundTripKm(amount.distanceM))}
             </p>
