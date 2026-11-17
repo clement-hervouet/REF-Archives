@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { NewPasswordFields } from "@/components/features/account/new-password-fields";
 import { fr } from "@/i18n/fr";
 import { resetPasswordAction } from "./actions";
 import type { ResetPasswordFormState } from "./actions";
@@ -41,7 +42,6 @@ function errorMessage(state: ResetPasswordFormState): string | null {
 export function ResetForm({ token }: { token: string }) {
   const [state, formAction, isPending] = useActionState(resetPasswordAction, { status: "idle" });
   const message = errorMessage(state);
-  const describedBy = message !== null ? "reset-error reset-password-hint" : "reset-password-hint";
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -64,37 +64,15 @@ export function ResetForm({ token }: { token: string }) {
         </Link>
       )}
       <input type="hidden" name="token" value={token} />
-      <div className="flex flex-col gap-1">
-        <label htmlFor="reset-password" className="text-sm font-medium">
-          {t.password}
-        </label>
-        <input
-          id="reset-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          aria-describedby={describedBy}
-          className={FIELD_CLASS}
-        />
-        <p id="reset-password-hint" className="text-sm text-muted-foreground">
-          {fr.invitation.passwordHint}
-        </p>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="reset-confirmation" className="text-sm font-medium">
-          {t.confirmation}
-        </label>
-        <input
-          id="reset-confirmation"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-          aria-describedby={message !== null ? "reset-error" : undefined}
-          className={FIELD_CLASS}
-        />
-      </div>
+      <NewPasswordFields
+        idPrefix="reset"
+        name="password"
+        passwordLabel={t.password}
+        confirmationLabel={t.confirmation}
+        hint={fr.invitation.passwordHint}
+        errorId={message !== null ? "reset-error" : undefined}
+        fieldClassName={FIELD_CLASS}
+      />
       <button
         type="submit"
         disabled={isPending}

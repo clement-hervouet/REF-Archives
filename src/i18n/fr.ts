@@ -66,6 +66,19 @@ export const fr = {
     passwordTooCommon: "Ce mot de passe est trop courant : choisissez-en un autre.",
     passwordInvalid: "Le mot de passe n'est pas valide.",
   },
+  // Vérification pendant la saisie d'un nouveau mot de passe (new-password-fields.tsx).
+  passwordRules: {
+    label: "Règles du mot de passe",
+    length: "Au moins 12 caractères ({count}/12)",
+    notCommon: "Pas un mot de passe courant ni un motif répété",
+    match: "Les deux mots de passe sont identiques",
+    mismatch: "Les deux mots de passe sont différents",
+    states: {
+      empty: "à vérifier",
+      ok: "respectée",
+      ko: "non respectée",
+    },
+  },
   invitation: {
     title: "Créer votre compte",
     intro:

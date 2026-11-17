@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { NewPasswordFields } from "@/components/features/account/new-password-fields";
 import { ProfileFields } from "@/components/features/account/profile-fields";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
@@ -44,7 +45,6 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
     [],
   );
   const messages = errorMessages(state);
-  const describedBy = messages.length > 0 ? "accept-errors accept-hint" : "accept-hint";
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-4">
@@ -67,36 +67,15 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
         defaults={{ firstname: valueOf("firstname"), lastname: valueOf("lastname") }}
         issues={state.status === "invalid_profile" ? state.issues : []}
       />
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          {t.password}
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          aria-describedby={describedBy}
-          className={FIELD_CLASS}
-        />
-        <p id="accept-hint" className="text-sm text-muted-foreground">
-          {t.passwordHint}
-        </p>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="confirmation" className="text-sm font-medium">
-          {t.confirmation}
-        </label>
-        <input
-          id="confirmation"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-          className={FIELD_CLASS}
-        />
-      </div>
+      <NewPasswordFields
+        idPrefix={`${id}-new`}
+        name="password"
+        passwordLabel={t.password}
+        confirmationLabel={t.confirmation}
+        hint={t.passwordHint}
+        errorId={messages.length > 0 ? "accept-errors" : undefined}
+        fieldClassName={FIELD_CLASS}
+      />
       <button
         type="submit"
         disabled={isPending}

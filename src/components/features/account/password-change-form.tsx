@@ -7,9 +7,14 @@
  */
 import { useActionState, useId } from "react";
 import { Disclosure } from "@/components/features/common/disclosure";
-import { FIELD_CLASS, FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
+import {
+  FIELD_CLASS,
+  FormMessage,
+  SUBMIT_BUTTON_CLASS,
+} from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import type { ChangePasswordState } from "@/app/(app)/parametres/password-actions";
+import { NewPasswordFields } from "./new-password-fields";
 import { changePasswordMessage } from "./password-change-messages";
 
 const t = fr.changePassword;
@@ -52,39 +57,16 @@ export function PasswordChangeForm({ action }: Props) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-new`} className="text-sm font-medium">
-              {t.newPassword}
-            </label>
-            <input
-              id={`${id}-new`}
-              name="newPassword"
-              type="password"
-              required
-              autoComplete="new-password"
-              aria-invalid={newError}
-              aria-describedby={`${id}-new-hint`}
-              className={`${FIELD_CLASS} sm:max-w-md`}
-            />
-            <p id={`${id}-new-hint`} className="text-sm text-muted-foreground">
-              {t.newPasswordHint}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-confirmation`} className="text-sm font-medium">
-              {t.confirmation}
-            </label>
-            <input
-              id={`${id}-confirmation`}
-              name="confirmation"
-              type="password"
-              required
-              autoComplete="new-password"
-              aria-invalid={confirmationError}
-              className={`${FIELD_CLASS} sm:max-w-md`}
-            />
-          </div>
+          <NewPasswordFields
+            idPrefix={`${id}-new`}
+            name="newPassword"
+            passwordLabel={t.newPassword}
+            confirmationLabel={t.confirmation}
+            hint={t.newPasswordHint}
+            passwordInvalid={newError}
+            confirmationInvalid={confirmationError}
+            fieldClassName={`${FIELD_CLASS} sm:max-w-md`}
+          />
 
           <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
             {isPending ? t.submitting : t.submit}
