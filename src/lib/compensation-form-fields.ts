@@ -16,6 +16,7 @@ export const COMPENSATION_FIELDS = [
   "date",
   "time",
   "divisionId",
+  "cupRound",
   "scaleId",
   "payer",
   "team1",

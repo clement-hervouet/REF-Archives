@@ -1,13 +1,14 @@
 /**
- * Barème par défaut de chaque niveau, regroupé par catégorie (Départemental, Régional…).
- * Composant serveur : chaque ligne est un petit formulaire client.
+ * Barème par défaut de chaque niveau, regroupé par catégorie (Départemental, Régional…),
+ * puis par portée de coupe (§15.4.6). Composant serveur : chaque ligne est un petit
+ * formulaire client.
  */
 import { ChevronDown } from "lucide-react";
 import { fr } from "@/i18n/fr";
-import type { Division, DivisionCategory } from "@/server/db/divisions";
+import type { Division } from "@/server/db/divisions";
 import type { LevelDefaultRow } from "@/server/db/scales";
 import type { LevelDefaultState } from "@/server/scales/manage-scales";
-import { divisionLabel } from "./division-label";
+import { divisionLabel, groupDivisions } from "./division-label";
 import { LevelDefaultForm } from "./level-default-form";
 
 const t = fr.scales;
@@ -18,16 +19,6 @@ type Props = {
   scales: readonly { id: string; name: string }[];
   action: (previous: LevelDefaultState, formData: FormData) => Promise<LevelDefaultState>;
 };
-
-function groupByCategory(divisions: readonly Division[]): Map<DivisionCategory, Division[]> {
-  const groups = new Map<DivisionCategory, Division[]>();
-  for (const division of divisions) {
-    const group = groups.get(division.category) ?? [];
-    group.push(division);
-    groups.set(division.category, group);
-  }
-  return groups;
-}
 
 function customizedLabel(count: number): string {
   if (count === 0) return t.defaults.customizedNone;
@@ -40,12 +31,12 @@ export function LevelDefaults({ divisions, defaults, scales, action }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      {[...groupByCategory(divisions)].map(([category, group]) => {
+      {groupDivisions(divisions).map(({ key, label, divisions: group }) => {
         const customized = group.filter((division) => chosen.has(division.id)).length;
         return (
-          <details key={category} className="group rounded-md border border-border">
+          <details key={key} className="group rounded-md border border-border">
             <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 select-none hover:bg-accent [&::-webkit-details-marker]:hidden">
-              <span className="font-medium">{t.divisions.category[category]}</span>
+              <span className="font-medium">{label}</span>
               <span className="ml-auto text-sm text-muted-foreground">
                 {customizedLabel(customized)}
               </span>

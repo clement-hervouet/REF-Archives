@@ -12,7 +12,7 @@ import { addressLabel, isCompleteAddress } from "@/components/features/compensat
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { MENU_ITEM_CLASS } from "@/components/features/compensations/menu-styles";
 import { officialsSummary } from "@/components/features/games/officials-summary";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -65,7 +65,7 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
         <h3 className="font-semibold break-words">
           {t.teams.replace("{team1}", match.team1Name).replace("{team2}", match.team2Name)}
         </h3>
-        <p className="text-sm text-muted-foreground">{divisionLabel(match.division)}</p>
+        <p className="text-sm text-muted-foreground">{matchLevelLabel(match.division)}</p>
         <p className="text-sm break-words">{address}</p>
         {officials !== null && (
           <p className="text-sm break-words">{t.officials.replace("{officials}", officials)}</p>

@@ -4,7 +4,7 @@
  * « Plus d'actions ». Une liste de cartes plutôt qu'un tableau : lisible à 375 px.
  */
 import Link from "next/link";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
@@ -73,7 +73,7 @@ function CompensationCard({
         </h3>
         <p className="text-sm break-words">
           {t.details
-            .replace("{division}", divisionLabel(item.division))
+            .replace("{division}", matchLevelLabel(item.division))
             .replace("{address}", addressLabel(item.address))}
         </p>
         <p className="text-sm font-medium">{t.payer.replace("{payer}", payerLabel(item.payer))}</p>

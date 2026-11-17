@@ -7,13 +7,30 @@
  * lit jamais l'équipe, le club ou l'adresse d'un autre (§6.2).
  */
 import { z } from "zod";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
-import type { DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
+import { departmentFromPostalCode } from "@/lib/payers";
+import type { DepartmentCode } from "@/lib/payers";
+import {
+  cupRoundSchema,
+  divisionCategorySchema,
+  divisionLevelSchema,
+  divisionTypeSchema,
+} from "./divisions";
+import type { CupRound, DivisionCategory, DivisionLevel, DivisionType } from "./divisions";
 
+/** Niveau d'un match : sa division, et pour une coupe son tour et le département du lieu. */
 export type MatchDivision = {
   category: DivisionCategory;
   type: DivisionType;
   level: DivisionLevel;
+  /** Niveau de coupe (§15.4.6). */
+  cup: boolean;
+  /** Tour de coupe, `null` hors coupe. */
+  cupRound: CupRound | null;
+  /**
+   * Département de l'adresse du match, qui donne son nom à la coupe (« COUPE 56 »,
+   * « CB… ») ; `null` hors coupe ou si l'adresse est à l'étranger.
+   */
+  department: DepartmentCode | null;
 };
 /** Adresse du match ; rue et ville `null` si c'est celle d'un club pas encore complétée (§15.4.1). */
 export type MatchAddress = {
@@ -23,9 +40,19 @@ export type MatchAddress = {
   city: string | null;
 };
 
-/** Colonnes de la division et des équipes (alias `d`, `club1`, `club2` : sans table de base). */
-export const MATCH_PARTIES_COLUMNS = `d.division, d.type, d.level,
+/**
+ * Colonnes de la division et des équipes (alias `d`, `club1`, `club2`), plus le tour et le
+ * lieu d'un match de coupe, lus depuis la table de base (`c` ou `g`). Le code postal n'est
+ * lu que pour une coupe (sous-requête filtrée par propriétaire, sur la clé primaire).
+ */
+export function matchPartiesColumns(base: "c" | "g"): string {
+  return `d.division, d.type, d.level, d.cup, ${base}.cup_round,
+  CASE WHEN d.cup THEN (SELECT cup_a.postal_code FROM address cup_a
+    WHERE cup_a.id = ${base}.address_id AND cup_a.user_id = ${base}.user_id) END AS cup_postal_code,
+  CASE WHEN d.cup THEN (SELECT cup_a.country FROM address cup_a
+    WHERE cup_a.id = ${base}.address_id AND cup_a.user_id = ${base}.user_id) END AS cup_country,
   club1.name AS team1_name, club2.name AS team2_name`;
+}
 
 /** Colonnes de l'adresse du match (alias `a`). */
 export const MATCH_ADDRESS_COLUMNS = `a.street, a.number, a.postal_code, a.city`;
@@ -43,6 +70,10 @@ export const matchPartiesFields = {
   division: divisionCategorySchema,
   type: divisionTypeSchema,
   level: divisionLevelSchema,
+  cup: z.boolean(),
+  cup_round: cupRoundSchema.nullable(),
+  cup_postal_code: z.string().nullable(),
+  cup_country: z.string().nullable(),
   team1_name: z.string(),
   team2_name: z.string(),
 };
@@ -55,16 +86,38 @@ export const matchAddressFields = {
   city: z.string().nullable(),
 };
 
-/** Division et noms d'équipes d'une ligne, en forme applicative. */
-export function toMatchParties(row: {
+type MatchDivisionRow = {
   division: DivisionCategory;
   type: DivisionType;
   level: DivisionLevel;
-  team1_name: string;
-  team2_name: string;
-}): { division: MatchDivision; team1Name: string; team2Name: string } {
+  cup: boolean;
+  cup_round: CupRound | null;
+  cup_postal_code: string | null;
+  cup_country: string | null;
+};
+
+/** Niveau du match d'une ligne (colonnes de `matchPartiesColumns`), en forme applicative. */
+function toMatchDivision(row: MatchDivisionRow): MatchDivision {
   return {
-    division: { category: row.division, type: row.type, level: row.level },
+    category: row.division,
+    type: row.type,
+    level: row.level,
+    cup: row.cup,
+    // Un tour hors coupe ne s'affiche pas (la base ne lie pas les deux colonnes).
+    cupRound: row.cup ? row.cup_round : null,
+    department:
+      row.cup && row.cup_postal_code !== null
+        ? departmentFromPostalCode(row.cup_postal_code, row.cup_country)
+        : null,
+  };
+}
+
+/** Division et noms d'équipes d'une ligne, en forme applicative. */
+export function toMatchParties(
+  row: MatchDivisionRow & { team1_name: string; team2_name: string },
+): { division: MatchDivision; team1Name: string; team2Name: string } {
+  return {
+    division: toMatchDivision(row),
     team1Name: row.team1_name,
     team2Name: row.team2_name,
   };

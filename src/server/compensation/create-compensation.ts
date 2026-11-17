@@ -12,11 +12,8 @@ import { toParisIsoDate } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import type { CompensationForm } from "@/lib/schemas/compensations";
 import { seasonOf, seasonRange } from "@/lib/seasons";
-import {
-  countCompensationsInRange,
-  divisionExists,
-  listApplicableRates,
-} from "../db/compensations";
+import type { CompensationField } from "@/lib/compensation-form-fields";
+import { countCompensationsInRange, listApplicableRates } from "../db/compensations";
 import type { ApplicableRate } from "../db/compensations";
 import {
   insertCompensation,
@@ -29,6 +26,7 @@ import type { Queryable, Transaction } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { computeCompensation } from "./amount";
 import type { CompensationAmount } from "./amount";
+import { checkMatchLevel } from "./match-level";
 import { resolveMatchInfo } from "./resolve-match";
 
 export type CompensationDeps = { transaction: Transaction };
@@ -41,6 +39,8 @@ type NotFoundField = "divisionId" | "scaleId" | "team1" | "team2" | "venue" | "c
 
 export type CreateCompensationRejection =
   | { status: "not_found"; field: NotFoundField }
+  /** Niveau de coupe sans tour (§15.4.6) : vérifié avec le niveau, en base. */
+  | { status: "invalid"; fields: CompensationField[] }
   /** Le barème choisi n'a aucune ligne en vigueur à la date du match. */
   | { status: "no_rate_at_date" }
   | { status: "limit_reached"; resource: "club" | "compensation" };
@@ -89,8 +89,12 @@ async function resolveCompensation(
   userId: string,
   form: CompensationForm,
 ): Promise<ResolvedCompensation> {
-  if (!(await divisionExists(db, form.divisionId))) {
+  const level = await checkMatchLevel(db, form);
+  if (level.status === "not_found") {
     reject({ status: "not_found", field: "divisionId" });
+  }
+  if (level.status === "cup_round_required") {
+    reject({ status: "invalid", fields: ["cupRound"] });
   }
   const rates = await listApplicableRates(db, { scaleId: form.scaleId, userId });
   if (rates === null) {
@@ -102,7 +106,7 @@ async function resolveCompensation(
     reject({ status: "no_rate_at_date" });
   }
 
-  const match = await resolveMatchInfo(db, userId, form, reject);
+  const match = await resolveMatchInfo(db, userId, { ...form, cupRound: level.cupRound }, reject);
 
   return {
     rate,

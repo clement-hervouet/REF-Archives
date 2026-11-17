@@ -10,10 +10,12 @@
 import { z } from "zod";
 import { effectivePayer } from "@/lib/payers";
 import type { Payer } from "@/lib/payers";
-import { divisionCategorySchema, divisionLevelSchema, divisionTypeSchema } from "./divisions";
+import { cupRoundSchema, divisionCategorySchema } from "./divisions";
+import type { CupRound } from "./divisions";
 import {
   MATCH_ADDRESS_COLUMNS,
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
+  matchPartiesFields,
   matchTeamJoins,
   toMatchAddress,
   toMatchParties,
@@ -33,16 +35,6 @@ export type ApplicableRate = {
   /** Centimes par km, chaîne `numeric` exacte (ex. `"40.00"`). */
   centsPerKm: string;
 };
-
-// ─── Référentiel ────────────────────────────────────────────────────────────
-
-const DIVISION_EXISTS_SQL = `SELECT id FROM division WHERE id = $1`;
-
-/** Vrai si la division (niveau) existe dans le référentiel global. */
-export async function divisionExists(db: Queryable, divisionId: string): Promise<boolean> {
-  const result = await db.query(DIVISION_EXISTS_SQL, [divisionId]);
-  return result.rows.length > 0;
-}
 
 // ─── Barème applicable ──────────────────────────────────────────────────────
 
@@ -166,6 +158,8 @@ export type CompensationForEdit = {
   id: string;
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1ClubId: string;
   team2ClubId: string;
   addressId: string;
@@ -193,7 +187,7 @@ WHERE c.user_id = $1 AND c.deleted_at IS NULL`;
 // minuit dans le fuseau du serveur, et pourrait changer de jour.
 const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared, c.game_id, c.paid_on::text AS paid_on,
   c.payer AS payer_override,
-  ${MATCH_PARTIES_COLUMNS},
+  ${matchPartiesColumns("c")},
   ${MATCH_ADDRESS_COLUMNS}, a.country,
   s.name AS scale_name, r.game_amount_cents, r.cents_per_km::text AS cents_per_km
 FROM compensation c
@@ -205,8 +199,8 @@ JOIN scale s ON s.id = r.scale_id
 WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2 AND c.starts_at < $3
 ORDER BY c.starts_at, c.id`;
 
-const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.address_id, c.distance_m,
-  c.travel_shared, c.payer,
+const FIND_FOR_EDIT_SQL = `SELECT c.id, c.starts_at, c.division_id, c.cup_round, c.address_id,
+  c.distance_m, c.travel_shared, c.payer,
   t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
   club1.address_id AS team1_address_id, r.scale_id
 FROM compensation c
@@ -231,10 +225,7 @@ const amountRowSchema = z.object({
 
 const listItemRowSchema = amountRowSchema.extend({
   id: z.uuid(),
-  type: divisionTypeSchema,
-  level: divisionLevelSchema,
-  team1_name: z.string(),
-  team2_name: z.string(),
+  ...matchPartiesFields,
   street: z.string().nullable(),
   number: z.string().nullable(),
   city: z.string().nullable(),
@@ -246,6 +237,7 @@ const editRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   division_id: z.uuid(),
+  cup_round: cupRoundSchema.nullable(),
   address_id: z.uuid(),
   distance_m: z.number().int(),
   travel_shared: z.boolean(),
@@ -316,6 +308,7 @@ export async function findCompensationForEdit(
     id: row.id,
     startsAt: row.starts_at,
     divisionId: row.division_id,
+    cupRound: row.cup_round,
     team1ClubId: row.team1_club_id,
     team2ClubId: row.team2_club_id,
     addressId: row.address_id,

@@ -8,7 +8,7 @@ import { z } from "zod";
 import type { NoteLevelField, OfficialSlot } from "@/lib/game-form-fields";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
 import {
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
   toMatchParties,
@@ -46,7 +46,7 @@ export type GameNotesPage = { items: GameNoteListItem[]; hasMore: boolean };
 
 // Enumérations comparées en texte : le paramètre reste un simple texte lié.
 // LIMIT + 1 : la ligne en trop indique seulement qu'une page suivante existe.
-const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, ${MATCH_PARTIES_COLUMNS},
+const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
   CASE
     WHEN g.referee1_id = s.id THEN 'referee1'
     WHEN g.referee2_id = s.id THEN 'referee2'

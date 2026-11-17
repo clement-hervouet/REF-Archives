@@ -6,7 +6,7 @@ import { NoteForm } from "@/components/features/games/note-form";
 import { OfficialsForm } from "@/components/features/games/officials-form";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { MatchDate } from "@/components/features/compensations/match-date";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { GAME_NOTES_PATH } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
@@ -67,7 +67,7 @@ export default async function GamePage(props: GamePageProps) {
           </h1>
           <p className="break-words">
             {t.detail.details
-              .replace("{division}", divisionLabel(game.division))
+              .replace("{division}", matchLevelLabel(game.division))
               .replace("{address}", addressLabel(game.address))}
           </p>
           {game.compensationId === null && (

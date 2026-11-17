@@ -585,6 +585,56 @@ export const fr = {
           },
         },
       },
+      /**
+       * Niveaux de coupe (§15.4.6) : en bas de la liste, dans leurs propres groupes. Le nom
+       * d'usage dépend du lieu du match (« COUPE 56 SM 1/2 », « CBU18F (1/16) ») ; sans match
+       * (barèmes, niveaux par défaut), libellé complet « Coupe départementale Seniors Masculin ».
+       */
+      cup: {
+        name: {
+          Departemental: "Coupe départementale",
+          Regional: "Coupe régionale",
+          National: "Coupe de France",
+        },
+        group: {
+          Departemental: "Coupes départementales",
+          Regional: "Coupes régionales",
+          National: "Coupe de France",
+        },
+        label: "{cup} {level} {type}",
+        abbreviation: {
+          level: { U13: "U13", U15: "U15", U18: "U18", Seniors: "S" },
+          /** {league} : code de la ligue (« B » pour Bretagne → « CBU18F »). */
+          departmental: "COUPE {department} {level}{type}",
+          departmentalUnknown: "COUPE DÉP. {level}{type}",
+          regional: "C{league}{level}{type}",
+          regionalUnknown: "COUPE RÉG. {level}{type}",
+          national: "CDF {level}{type}",
+          withRound: {
+            Departemental: "{name} {round}",
+            Regional: "{name} ({round})",
+            National: "{name} {round}",
+          },
+        },
+        round: {
+          R64: "1/64 de finale",
+          R32: "1/32 de finale",
+          R16: "1/16 de finale",
+          R8: "1/8 de finale",
+          R4: "Quart de finale",
+          R2: "Demi-finale",
+          F: "Finale",
+        },
+        roundShort: {
+          R64: "1/64",
+          R32: "1/32",
+          R16: "1/16",
+          R8: "1/8",
+          R4: "1/4",
+          R2: "1/2",
+          F: "Finale",
+        },
+      },
     },
     errors: {
       name: "Le nom doit contenir entre 1 et 100 caractères, sur une seule ligne.",
@@ -720,6 +770,8 @@ export const fr = {
       division: "Niveau",
       chooseDivision: "Choisir un niveau",
       frequentDivisions: "Souvent arbitrés",
+      cupRound: "Tour de coupe",
+      chooseCupRound: "Choisir un tour",
       scale: "Barème",
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",
@@ -761,6 +813,7 @@ export const fr = {
       date: "Saisissez une date valide, entre 2000 et 2100.",
       time: "Saisissez une heure valide, qui existe ce jour-là à Paris (attention au changement d'heure).",
       divisionId: "Choisissez un niveau.",
+      cupRound: "Choisissez le tour de la coupe.",
       scaleId: "Choisissez un barème.",
       payer: "Choisissez un organisme de la liste.",
       team: "Choisissez un club, différent pour chaque équipe, ou créez-en un nouveau.",

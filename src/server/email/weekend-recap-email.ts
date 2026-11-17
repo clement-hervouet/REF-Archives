@@ -7,7 +7,7 @@
  */
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { officialsSummary } from "@/components/features/games/officials-summary";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { UPCOMING_PATH } from "@/lib/app-paths";
 import { formatWeekdayDateTime } from "@/lib/format";
@@ -43,7 +43,7 @@ export function weekendMatchLine(match: WeekendMatch): string {
     .replace("{when}", formatWeekdayDateTime(match.startsAt))
     .replace("{team1}", match.team1Name)
     .replace("{team2}", match.team2Name)
-    .replace("{division}", divisionLabel(match.division))
+    .replace("{division}", matchLevelLabel(match.division))
     .replace("{address}", addressLabel(match.address));
   const officials = officialsSummary(match.officials);
   return officials === null

@@ -15,7 +15,14 @@ const MATCH: CalendarMatch = {
   // 20:30 à Paris (heure d'hiver, UTC+1).
   startsAt: new Date("2026-11-06T19:30:00.000Z"),
   updatedAt: new Date("2026-11-01T10:00:00.000Z"),
-  division: { category: "Regional", type: "Masculin", level: "2" },
+  division: {
+    category: "Regional",
+    type: "Masculin",
+    level: "2",
+    cup: false,
+    cupRound: null,
+    department: null,
+  },
   team1Name: "BC Béthune",
   team2Name: "US Arras",
   address: { street: "Avenue du Sport", number: "2", postalCode: "62400", city: "Béthune" },

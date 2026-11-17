@@ -200,11 +200,12 @@ const BOTH_CLUBS = [
   { id: CLUB_B, address_id: ADDRESS_B },
 ];
 
-function info(date = "2026-11-14") {
+function info(date = "2026-11-14", cupRound = "") {
   return matchInfoFormSchema.parse({
     date,
     time: "19:00",
     divisionId: DIVISION_ID,
+    cupRound,
     team1: { kind: "existing", clubId: CLUB_A },
     team2: { kind: "existing", clubId: CLUB_B },
     venue: { kind: "team1" },
@@ -216,7 +217,7 @@ describe("createStandaloneGame", () => {
     const { deps, query, transactionCount } = setup();
     answer(
       query,
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -241,7 +242,41 @@ describe("createStandaloneGame", () => {
       null,
       null,
       MAX_GAMES_PER_USER,
+      null,
     ]);
+  });
+
+  it("enregistre le tour d'un match de coupe (§15.4.6)", async () => {
+    const { deps, query } = setup();
+    answer(
+      query,
+      [{ cup: true }],
+      BOTH_CLUBS,
+      [{ id: TEAM_1 }],
+      [{ id: TEAM_2 }],
+      [],
+      [{ id: SELF_ID }],
+      [{ id: GAME_ID }],
+    );
+    const result = await createStandaloneGame(
+      deps,
+      USER_ID,
+      info("2026-11-14", "R2"),
+      officials(SELF_ONLY_INPUT),
+    );
+    expect(result).toEqual({ status: "created", gameId: GAME_ID });
+    expect(query.mock.calls.at(-1)?.[1]?.at(-1)).toBe("R2");
+  });
+
+  it("refuse un niveau de coupe sans tour, avant toute écriture", async () => {
+    const { deps, query } = setup();
+    answer(query, [{ cup: true }]);
+    expect(await createStandaloneGame(deps, USER_ID, info(), officials(SELF_ONLY_INPUT))).toEqual({
+      status: "invalid",
+      fields: ["cupRound"],
+      officials: {},
+    });
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
   it("refuse un niveau inconnu avant toute écriture", async () => {
@@ -256,7 +291,7 @@ describe("createStandaloneGame", () => {
 
   it("refuse un club qui n'est pas à l'utilisateur", async () => {
     const { deps, query } = setup();
-    answer(query, [{ id: DIVISION_ID }], [{ id: CLUB_A, address_id: ADDRESS_A }]);
+    answer(query, [{ cup: false }], [{ id: CLUB_A, address_id: ADDRESS_A }]);
     expect(await createStandaloneGame(deps, USER_ID, info(), officials(SELF_ONLY_INPUT))).toEqual({
       status: "not_found",
       field: "team2",
@@ -271,7 +306,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       RATES,
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
@@ -294,6 +329,7 @@ describe("updateGameInfo", () => {
       ADDRESS_A,
       TEAM_1,
       TEAM_2,
+      null,
     ]);
     expect(query.mock.calls[8]?.[1]).toEqual([
       COMPENSATION_ID,
@@ -303,6 +339,7 @@ describe("updateGameInfo", () => {
       ADDRESS_A,
       TEAM_1,
       TEAM_2,
+      null,
       RATE_OLD,
     ]);
   });
@@ -313,7 +350,7 @@ describe("updateGameInfo", () => {
       query,
       [],
       [{ id: GAME_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       BOTH_CLUBS,
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -329,7 +366,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       RATES,
     );
     expect(await updateGameInfo(deps, USER_ID, GAME_ID, info("2025-12-31"))).toEqual({
@@ -344,7 +381,7 @@ describe("updateGameInfo", () => {
       query,
       [{ id: COMPENSATION_ID, scale_id: SCALE_ID }],
       [{ id: GAME_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       [],
     );
     expect(await updateGameInfo(deps, USER_ID, GAME_ID, info())).toEqual({

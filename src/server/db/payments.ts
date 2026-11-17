@@ -10,7 +10,7 @@ import { assertIsoDate } from "@/lib/dates";
 import { effectivePayer } from "@/lib/payers";
 import type { Payer } from "@/lib/payers";
 import {
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
   toMatchParties,
@@ -36,7 +36,7 @@ export type UnpaidCompensation = {
 
 // Index partiel `compensation_unpaid_idx` (migration 015).
 const LIST_UNPAID_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shared,
-  ${MATCH_PARTIES_COLUMNS},
+  ${matchPartiesColumns("c")},
   r.game_amount_cents, r.cents_per_km::text AS cents_per_km,
   c.payer AS payer_override, a.postal_code, a.country
 FROM compensation c

@@ -78,6 +78,7 @@ export function gameInfoFormValues(game: GameForEdit): Record<string, string> {
     date: toParisIsoDate(game.startsAt),
     time: toParisTimeOfDay(game.startsAt),
     divisionId: game.divisionId,
+    cupRound: game.cupRound ?? "",
     team1Club: game.team1ClubId,
     team2Club: game.team2ClubId,
   };

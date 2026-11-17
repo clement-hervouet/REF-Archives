@@ -10,7 +10,9 @@
  *   d'exception (case à cocher) ;
  * - distance : saisie en km aller, stockée en mètres aller-retour (×2) ;
  * - doublé (§15.4.5) : case « déplacement déjà compté sur un autre match », kilométrage à 0 ;
- *   la distance devient alors facultative (vide = 0).
+ *   la distance devient alors facultative (vide = 0) ;
+ * - tour de coupe (§15.4.6) : vide (`null`) hors coupe ; son obligation pour un niveau de
+ *   coupe se vérifie en base, avec le niveau (le schéma ne sait pas si c'en est un).
  */
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
@@ -18,6 +20,7 @@ import { MAX_ONE_WAY_DISTANCE_M, ONE_WAY_KM_PATTERN, oneWayKmToMeters } from "@/
 import { ValidationError } from "@/lib/errors";
 import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
 import { parsePayerKey } from "@/lib/payers";
+import { cupRoundSchema } from "@/server/db/divisions";
 
 /** Bornes raisonnables pour la date d'un match. */
 const MATCH_DATE_MIN = "2000-01-01";
@@ -88,6 +91,11 @@ const matchFieldsShape = {
     .refine((value) => value >= MATCH_DATE_MIN && value <= MATCH_DATE_MAX),
   time: z.string().trim().refine(isTimeOfDay),
   divisionId: z.uuid(),
+  /** Liste « Tour de coupe » : vide ou absente = pas de tour. */
+  cupRound: z
+    .union([cupRoundSchema, z.literal("")])
+    .optional()
+    .transform((value) => (value === undefined || value === "" ? null : value)),
   team1: teamChoiceSchema,
   team2: teamChoiceSchema,
   venue: venueChoiceSchema,
@@ -174,6 +182,7 @@ function toMatchInfo(value: MatchFieldsValue, ctx: z.RefinementCtx) {
   return {
     startsAt,
     divisionId: value.divisionId,
+    cupRound: value.cupRound,
     team1: value.team1,
     team2: value.team2,
     venue: value.venue,

@@ -189,3 +189,23 @@ describe("compensationFormSchema : organisme qui verse (bloc 10)", () => {
     }
   });
 });
+
+describe("compensationFormSchema : tour de coupe (§15.4.6)", () => {
+  it("vide ou absent : pas de tour (null)", () => {
+    expect(compensationFormSchema.parse(input()).cupRound).toBeNull();
+    expect(compensationFormSchema.parse(input({ cupRound: "" })).cupRound).toBeNull();
+  });
+
+  it("garde un tour connu", () => {
+    expect(compensationFormSchema.parse(input({ cupRound: "R16" })).cupRound).toBe("R16");
+    expect(compensationFormSchema.parse(input({ cupRound: "F" })).cupRound).toBe("F");
+  });
+
+  it("refuse un tour inconnu, sur le champ cupRound", () => {
+    for (const cupRound of ["R128", "1/16", "finale"]) {
+      const result = compensationFormSchema.safeParse({ ...input(), cupRound });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.path).toEqual(["cupRound"]);
+    }
+  });
+});

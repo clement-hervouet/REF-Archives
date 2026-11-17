@@ -5,7 +5,7 @@
  */
 import Link from "next/link";
 import { MatchDate } from "@/components/features/compensations/match-date";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { NOTE_LEVEL_FIELDS } from "@/lib/game-form-fields";
 import { gamePath } from "@/lib/app-paths";
@@ -44,7 +44,7 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
           </Link>
         </h2>
         <p className="text-sm text-muted-foreground">
-          {divisionLabel(item.division)}
+          {matchLevelLabel(item.division)}
           {item.selfSlot !== null && (
             <> · {t.selfSlot.replace("{slot}", fr.games.slots[item.selfSlot])}</>
           )}

@@ -5,8 +5,8 @@
  * adresse du match (celle du club de l'équipe 1 sauf exception), équipes retrouvées ou
  * créées au niveau du match.
  *
- * Le niveau (division) n'est pas vérifié ici : chaque service le vérifie avant toute
- * écriture, dans l'ordre qui lui convient. Un refus passe par `reject`, que le service
+ * Le niveau (division) et le tour de coupe ne sont pas vérifiés ici : chaque service les
+ * vérifie avant toute écriture (`match-level.ts`), dans l'ordre qui lui convient. Un refus passe par `reject`, que le service
  * fournit pour annuler sa propre transaction.
  */
 import type { MatchInfo } from "@/lib/schemas/compensations";
@@ -19,6 +19,7 @@ import {
   postalCodeOnlyAddress,
 } from "../db/compensation-writes";
 import type { LockedClub } from "../db/compensation-writes";
+import type { CupRound } from "../db/divisions";
 import type { Queryable } from "../db/users";
 
 type MatchRejection =
@@ -31,6 +32,8 @@ type Reject = (rejection: MatchRejection) => never;
 export type ResolvedMatch = {
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe déjà vérifié (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1Id: string;
   team2Id: string;
   addressId: string;
@@ -98,5 +101,12 @@ export async function resolveMatchInfo(
   const team1Id = await ensureTeam(db, { userId, clubId: club1.id, divisionId: info.divisionId });
   const team2Id = await ensureTeam(db, { userId, clubId: club2.id, divisionId: info.divisionId });
 
-  return { startsAt: info.startsAt, divisionId: info.divisionId, team1Id, team2Id, addressId };
+  return {
+    startsAt: info.startsAt,
+    divisionId: info.divisionId,
+    cupRound: info.cupRound,
+    team1Id,
+    team2Id,
+    addressId,
+  };
 }

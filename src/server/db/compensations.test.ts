@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_COMPENSATIONS_PER_USER,
   addressBelongsTo,
-  divisionExists,
   findCompensationForEdit,
   listApplicableRates,
   listCompensationAmounts,
@@ -38,19 +37,6 @@ const ADDRESS = {
   city: "Béthune",
   country: null,
 };
-
-describe("divisionExists", () => {
-  it("vrai si la division existe", async () => {
-    const { db, query } = makeFakeDb([{ id: DIVISION_ID }]);
-    expect(await divisionExists(db, DIVISION_ID)).toBe(true);
-    expect(query.mock.calls[0]?.[1]).toEqual([DIVISION_ID]);
-  });
-
-  it("faux sinon", async () => {
-    const { db } = makeFakeDb();
-    expect(await divisionExists(db, DIVISION_ID)).toBe(false);
-  });
-});
 
 describe("listApplicableRates", () => {
   it("renvoie les lignes d'un barème choisissable, filtré par utilisateur", async () => {
@@ -194,6 +180,7 @@ describe("insertCompensation", () => {
     team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
     addressId: ADDRESS_ID,
     payer: "cd-35",
+    cupRound: null,
   };
 
   it("crée l'indemnité sous la limite", async () => {
@@ -211,6 +198,7 @@ describe("insertCompensation", () => {
       MAX_COMPENSATIONS_PER_USER,
       "cd-35",
       false,
+      null,
     ]);
   });
 
@@ -270,6 +258,10 @@ describe("listCompensationsInRange", () => {
         division: "Regional",
         type: "Masculin",
         level: "1",
+        cup: false,
+        cup_round: null,
+        cup_postal_code: null,
+        cup_country: null,
         team1_name: "Club Alpha",
         team2_name: "Club Beta",
         street: "Rue Nationale",
@@ -291,7 +283,14 @@ describe("listCompensationsInRange", () => {
         travelShared: false,
         gameAmountCents: 4800,
         centsPerKm: "42.50",
-        division: { category: "Regional", type: "Masculin", level: "1" },
+        division: {
+          category: "Regional",
+          type: "Masculin",
+          level: "1",
+          cup: false,
+          cupRound: null,
+          department: null,
+        },
         team1Name: "Club Alpha",
         team2Name: "Club Beta",
         address: { street: "Rue Nationale", number: "10", postalCode: "59000", city: "Lille" },
@@ -315,6 +314,7 @@ describe("findCompensationForEdit", () => {
         id: COMPENSATION_ID,
         starts_at: startsAt,
         division_id: DIVISION_ID,
+        cup_round: null,
         address_id: ADDRESS_ID,
         distance_m: 47_000,
         travel_shared: false,
@@ -331,6 +331,7 @@ describe("findCompensationForEdit", () => {
       id: COMPENSATION_ID,
       startsAt,
       divisionId: DIVISION_ID,
+      cupRound: null,
       team1ClubId: CLUB_A,
       team2ClubId: CLUB_B,
       addressId: ADDRESS_ID,
@@ -377,6 +378,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
         team2Id: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
         addressId: ADDRESS_ID,
         payer: null,
+        cupRound: "R16",
       }),
     ).toBe(true);
     expect(query.mock.calls[0]?.[1]).toEqual([
@@ -391,6 +393,7 @@ describe("lockCompensation, updateCompensation, softDeleteCompensation", () => {
       ADDRESS_ID,
       null,
       true,
+      "R16",
     ]);
   });
 

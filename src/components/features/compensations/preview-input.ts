@@ -4,6 +4,8 @@
  * Mêmes règles que le serveur : adresse du club de l'équipe 1 sauf exception cochée.
  */
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
+import { departmentFromPostalCode } from "@/lib/payers";
+import type { DepartmentCode } from "@/lib/payers";
 import type { CompensationFormData } from "@/server/compensation/form-data";
 import type { PreviewInput } from "@/server/compensation/preview";
 
@@ -58,6 +60,15 @@ function venue(read: Read, data: CompensationFormData): PreviewInput["venue"] {
   return known === undefined
     ? null
     : { postalCode: known.address.postalCode, country: known.address.country };
+}
+
+/**
+ * Département de l'adresse du match en cours de saisie, ou `null` (pas encore connue, à
+ * l'étranger) : il donne son nom à un niveau de coupe dans la liste (§15.4.6).
+ */
+export function matchDepartment(read: Read, data: CompensationFormData): DepartmentCode | null {
+  const place = venue(read, data);
+  return place === null ? null : departmentFromPostalCode(place.postalCode, place.country);
 }
 
 export function previewInputFromForm(read: Read, data: CompensationFormData): FormPreview {

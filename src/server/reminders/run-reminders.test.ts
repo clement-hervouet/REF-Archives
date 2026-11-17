@@ -30,7 +30,14 @@ const match: WeekendMatch = {
   startsAt: new Date("2026-11-07T19:30:00Z"),
   team1Name: "BC Béthune",
   team2Name: "ES Lens",
-  division: { category: "Regional", type: "Feminin", level: "U15" },
+  division: {
+    category: "Regional",
+    type: "Feminin",
+    level: "U15",
+    cup: false,
+    cupRound: null,
+    department: null,
+  },
   address: { street: "Rue du Stade", number: "2", postalCode: "62400", city: "Béthune" },
   officials: [],
 };

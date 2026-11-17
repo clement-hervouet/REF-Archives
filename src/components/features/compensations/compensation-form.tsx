@@ -8,7 +8,11 @@
  */
 import { useId, useState } from "react";
 import { RevealResult } from "@/components/features/common/reveal-result";
-import { divisionAbbreviation, divisionLabel } from "@/components/features/scales/division-label";
+import {
+  divisionAbbreviation,
+  divisionLabel,
+  groupDivisions,
+} from "@/components/features/scales/division-label";
 import {
   FormMessage,
   SUBMIT_BUTTON_CLASS,
@@ -19,6 +23,7 @@ import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { CompensationFormData } from "@/server/compensation/form-data";
+import { CUP_ROUNDS } from "@/server/db/divisions";
 import type { Division } from "@/server/db/divisions";
 import { AddressFields } from "./address-fields";
 import { addressLabel } from "./address-label";
@@ -28,7 +33,12 @@ import { compensationStatusMessage, fieldError } from "./compensation-messages";
 import { CompensationRecap } from "./compensation-recap";
 import { PayerSelect } from "./payer-select";
 import { SeasonStartCelebration } from "./season-start-celebration";
-import { hasSameDayMatch, previewInputFromForm, readFormData } from "./preview-input";
+import {
+  hasSameDayMatch,
+  matchDepartment,
+  previewInputFromForm,
+  readFormData,
+} from "./preview-input";
 import { SelectField } from "./select-field";
 
 const t = fr.compensations;
@@ -122,17 +132,6 @@ type FieldsProps = {
   liveRead?: (name: string) => string;
 };
 
-/** Niveaux regroupés par catégorie (Départemental, Régional…), dans l'ordre reçu. */
-function groupByCategory(divisions: readonly Division[]): [Division["category"], Division[]][] {
-  const groups = new Map<Division["category"], Division[]>();
-  for (const division of divisions) {
-    const group = groups.get(division.category) ?? [];
-    group.push(division);
-    groups.set(division.category, group);
-  }
-  return [...groups.entries()];
-}
-
 /**
  * Niveaux souvent arbitrés, dans l'ordre de fréquence. Ils restent aussi dans leur catégorie :
  * la liste complète garde le même ordre d'une saisie à l'autre.
@@ -158,6 +157,7 @@ export function MatchFields({
   const [scaleId, setScaleId] = useState(
     valueOf("scaleId") || (data.defaultScaleByDivision[valueOf("divisionId")] ?? ""),
   );
+  const [cupRound, setCupRound] = useState(valueOf("cupRound"));
   const [team1Club, setTeam1Club] = useState(valueOf("team1Club"));
   const [team2Club, setTeam2Club] = useState(valueOf("team2Club"));
   const [venueException, setVenueException] = useState(valueOf("venueException") === "on");
@@ -174,6 +174,27 @@ export function MatchFields({
 
   const club1 = data.clubs.find((club) => club.id === team1Club);
   const frequent = frequentDivisions(data.divisions, data.frequentDivisionIds);
+  // Coupes (§15.4.6) : le tour n'est demandé que pour un niveau de coupe, et le nom de la
+  // coupe suit le département du match (listes contrôlées ici, codes postaux saisis lus en
+  // direct).
+  const isCup = data.divisions.some((division) => division.id === divisionId && division.cup);
+  const department = matchDepartment((name) => {
+    switch (name) {
+      case "team1Club":
+        return team1Club;
+      case "venueException":
+        return venueException ? "on" : "";
+      case "venueAddress":
+        return venueAddress;
+      default:
+        return liveRead(name);
+    }
+  }, data);
+  const divisionOption = (division: Division) => (
+    <option key={division.id} value={division.id} title={divisionLabel(division)}>
+      {divisionAbbreviation(division, department)}
+    </option>
+  );
   const venueHintId = `${id}-venue-default`;
   const travelHintId = `${id}-travel-shared-hint`;
 
@@ -212,24 +233,32 @@ export function MatchFields({
           >
             <option value="">{t.fields.chooseDivision}</option>
             {frequent.length > 0 && (
-              <optgroup label={t.fields.frequentDivisions}>
-                {frequent.map((division) => (
-                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
-                    {divisionAbbreviation(division)}
-                  </option>
-                ))}
-              </optgroup>
+              <optgroup label={t.fields.frequentDivisions}>{frequent.map(divisionOption)}</optgroup>
             )}
-            {groupByCategory(data.divisions).map(([category, divisions]) => (
-              <optgroup key={category} label={fr.scales.divisions.category[category]}>
-                {divisions.map((division) => (
-                  <option key={division.id} value={division.id} title={divisionLabel(division)}>
-                    {divisionAbbreviation(division)}
-                  </option>
-                ))}
+            {/* Championnats par catégorie, puis les coupes en bas de la liste. */}
+            {groupDivisions(data.divisions).map((group) => (
+              <optgroup key={group.key} label={group.label}>
+                {group.divisions.map(divisionOption)}
               </optgroup>
             ))}
           </SelectField>
+          {isCup && (
+            <SelectField
+              id={`${id}-cup-round`}
+              name="cupRound"
+              label={t.fields.cupRound}
+              value={cupRound}
+              onChange={setCupRound}
+              error={fieldError("cupRound", state)}
+            >
+              <option value="">{t.fields.chooseCupRound}</option>
+              {CUP_ROUNDS.map((round) => (
+                <option key={round} value={round}>
+                  {fr.scales.divisions.cup.round[round]}
+                </option>
+              ))}
+            </SelectField>
+          )}
           {withCompensation && (
             <SelectField
               id={`${id}-scale`}

@@ -69,6 +69,7 @@ export function fieldError(field: CompensationField, state: CompensationFormStat
     case "date":
     case "time":
     case "divisionId":
+    case "cupRound":
     case "scaleId":
     case "payer":
     case "venue":

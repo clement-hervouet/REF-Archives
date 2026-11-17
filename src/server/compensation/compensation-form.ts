@@ -5,6 +5,7 @@
  *
  * Champs du formulaire HTML :
  * - date, time, divisionId, scaleId, oneWayDistance ;
+ * - cupRound : tour, pour un niveau de coupe seulement (§15.4.6) ;
  * - payer : organisme qui verse, vide = déduit du niveau et de l'adresse (bloc 10) ;
  * - team1Club / team2Club : identifiant d'un club, ou `new` (teamNName et teamNPostalCode
  *   d'un nouveau club, §15.4.1) ;
@@ -95,6 +96,8 @@ export function readCompensationFormData(formData: FormData): Record<string, unk
     date: readText(formData, "date"),
     time: readText(formData, "time"),
     divisionId: readText(formData, "divisionId"),
+    // Liste absente hors coupe : pas de tour.
+    cupRound: readText(formData, "cupRound") ?? "",
     scaleId: readText(formData, "scaleId"),
     payer: readText(formData, "payer") ?? "",
     team1: readTeam(formData, "team1"),
@@ -208,6 +211,7 @@ export function compensationFormValues(compensation: CompensationForEdit): Recor
     date: toParisIsoDate(compensation.startsAt),
     time: toParisTimeOfDay(compensation.startsAt),
     divisionId: compensation.divisionId,
+    cupRound: compensation.cupRound ?? "",
     scaleId: compensation.scaleId,
     payer: compensation.payer ?? "",
     team1Club: compensation.team1ClubId,

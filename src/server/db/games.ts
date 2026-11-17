@@ -8,9 +8,11 @@
  */
 import { z } from "zod";
 import type { OfficialSlot } from "@/lib/schemas/officials";
+import { cupRoundSchema } from "./divisions";
+import type { CupRound } from "./divisions";
 import {
   MATCH_ADDRESS_COLUMNS,
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
   matchAddressFields,
   matchPartiesFields,
   matchTeamJoins,
@@ -84,7 +86,7 @@ export async function findCompensationForGame(
 
 // ─── Valeurs pour modifier les informations d'un match ──────────────────────
 
-const FIND_GAME_FOR_EDIT_SQL = `SELECT g.id, g.starts_at, g.division_id, g.address_id,
+const FIND_GAME_FOR_EDIT_SQL = `SELECT g.id, g.starts_at, g.division_id, g.cup_round, g.address_id,
   t1.club_id AS team1_club_id, t2.club_id AS team2_club_id,
   club1.address_id AS team1_address_id, c.id AS compensation_id
 FROM game g
@@ -98,6 +100,7 @@ const gameForEditRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   division_id: z.uuid(),
+  cup_round: cupRoundSchema.nullable(),
   address_id: z.uuid(),
   team1_club_id: z.uuid(),
   team2_club_id: z.uuid(),
@@ -110,6 +113,8 @@ export type GameForEdit = {
   id: string;
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1ClubId: string;
   team2ClubId: string;
   addressId: string;
@@ -134,6 +139,7 @@ export async function findGameForEdit(
     id: row.id,
     startsAt: row.starts_at,
     divisionId: row.division_id,
+    cupRound: row.cup_round,
     team1ClubId: row.team1_club_id,
     team2ClubId: row.team2_club_id,
     addressId: row.address_id,
@@ -151,7 +157,7 @@ function personJson(alias: string): string {
     'lastname', ${alias}.lastname, 'has_account', ${alias}.has_account) END`;
 }
 
-const FIND_GAME_SQL = `SELECT g.id, g.starts_at, ${MATCH_PARTIES_COLUMNS},
+const FIND_GAME_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
   ${MATCH_ADDRESS_COLUMNS},
   c.id AS compensation_id,
   ${personJson("r1")} AS referee1,

@@ -59,6 +59,7 @@ describe("readCompensationFormData", () => {
       date: "2026-11-14",
       time: "19:00",
       divisionId: DIVISION_ID,
+      cupRound: "",
       scaleId: SCALE_ID,
       payer: "",
       team1: { kind: "existing", clubId: CLUB_A },
@@ -67,6 +68,10 @@ describe("readCompensationFormData", () => {
       oneWayDistance: "23,5",
       travelShared: false,
     });
+  });
+
+  it("lit le tour de coupe (§15.4.6)", () => {
+    expect(readCompensationFormData(form({ ...BASE, cupRound: "R16" })).cupRound).toBe("R16");
   });
 
   it("lit l'organisme choisi (bloc 10)", () => {
@@ -145,7 +150,7 @@ describe("handleCreateCompensation", () => {
   it("crée l'indemnité et renvoie son montant", async () => {
     const { deps, query } = setup();
     for (const rows of [
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       [
         {
           id: RATE_ID,
@@ -237,7 +242,7 @@ describe("handleUpdateCompensation", () => {
     const { deps, query } = setup();
     for (const rows of [
       [{ id: COMPENSATION_ID }],
-      [{ id: DIVISION_ID }],
+      [{ cup: false }],
       [
         {
           id: RATE_ID,
@@ -301,6 +306,7 @@ describe("compensationFormValues", () => {
     id: COMPENSATION_ID,
     startsAt: new Date("2026-11-14T18:00:00Z"),
     divisionId: DIVISION_ID,
+    cupRound: null,
     team1ClubId: CLUB_A,
     team2ClubId: CLUB_B,
     addressId: ADDRESS_A,
@@ -317,12 +323,19 @@ describe("compensationFormValues", () => {
       date: "2026-11-14",
       time: "19:00",
       divisionId: DIVISION_ID,
+      cupRound: "",
       scaleId: SCALE_ID,
       payer: "",
       team1Club: CLUB_A,
       team2Club: CLUB_B,
       oneWayDistance: "23,5",
     });
+  });
+
+  it("préremplit le tour d'une coupe", () => {
+    expect(compensationFormValues({ ...compensation, cupRound: "R2" as const }).cupRound).toBe(
+      "R2",
+    );
   });
 
   it("préremplit l'organisme choisi", () => {

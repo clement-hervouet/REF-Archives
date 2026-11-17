@@ -6,7 +6,7 @@
  * dans l'agenda au lieu d'en créer un second, et le supprimer le retire du flux.
  */
 import { addressLabel } from "@/components/features/compensations/address-label";
-import { divisionLabel } from "@/components/features/scales/division-label";
+import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { formatWeekdayDateTime } from "@/lib/format";
 import { buildCalendar } from "@/lib/ical";
@@ -46,7 +46,7 @@ export function matchToEvent(match: CalendarMatch): CalendarEvent {
   const start = new Date(match.startsAt.getTime() - ARRIVAL_BEFORE_MS);
   const description = [
     t.event.tipOff.replace("{when}", () => formatWeekdayDateTime(match.startsAt)),
-    t.event.level.replace("{division}", () => divisionLabel(match.division)),
+    t.event.level.replace("{division}", () => matchLevelLabel(match.division)),
     t.event.arrival,
   ].join("\n");
   return {

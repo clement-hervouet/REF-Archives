@@ -9,6 +9,7 @@
  */
 import { z } from "zod";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
+import type { CupRound } from "./divisions";
 import type { Queryable } from "./users";
 
 /** Limite anti-abus (application potentiellement publique). */
@@ -37,6 +38,8 @@ export type NewCompensation = {
   distanceM: number;
   startsAt: Date;
   divisionId: string;
+  /** Tour de coupe (§15.4.6), `null` hors coupe. */
+  cupRound: CupRound | null;
   team1Id: string;
   team2Id: string;
   addressId: string;
@@ -172,10 +175,10 @@ const INSERT_COMPENSATION_SQL = `WITH allowed AS (
 inserted AS (
   INSERT INTO compensation (
     user_id, scale_rate_id, distance_m, starts_at, division_id, team1_id, team2_id, address_id,
-    payer, travel_shared
+    payer, travel_shared, cup_round
   )
   SELECT $1::uuid, $2::uuid, $3::integer, $4::timestamptz, $5::uuid, $6::uuid, $7::uuid, $8::uuid,
-    $10::varchar, $11::boolean
+    $10::varchar, $11::boolean, $12::cup_round
   FROM allowed
   WHERE ok
   RETURNING id
@@ -199,6 +202,7 @@ export async function insertCompensation(
     MAX_COMPENSATIONS_PER_USER,
     input.payer,
     input.travelShared,
+    input.cupRound,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
@@ -211,7 +215,8 @@ FOR UPDATE`;
 
 const UPDATE_COMPENSATION_SQL = `UPDATE compensation
 SET scale_rate_id = $3, distance_m = $4, starts_at = $5, division_id = $6,
-  team1_id = $7, team2_id = $8, address_id = $9, payer = $10, travel_shared = $11
+  team1_id = $7, team2_id = $8, address_id = $9, payer = $10, travel_shared = $11,
+  cup_round = $12
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id`;
 
@@ -250,6 +255,7 @@ export async function updateCompensation(
     input.addressId,
     input.payer,
     input.travelShared,
+    input.cupRound,
   ]);
   return result.rows.length > 0;
 }

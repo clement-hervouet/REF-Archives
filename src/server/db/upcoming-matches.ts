@@ -10,7 +10,7 @@ import { OFFICIAL_SLOTS } from "@/lib/game-form-fields";
 import type { OfficialSlot } from "@/lib/game-form-fields";
 import {
   MATCH_ADDRESS_COLUMNS,
-  MATCH_PARTIES_COLUMNS,
+  matchPartiesColumns,
   matchAddressFields,
   matchPartiesFields,
   matchTeamJoins,
@@ -45,7 +45,7 @@ export type UpcomingMatchRow = {
 // Les quatre places deviennent des lignes (VALUES latéral) pour être agrégées dans l'ordre
 // officiel. Le match lié doit être actif et au même utilisateur.
 const LIST_UPCOMING_SQL = `SELECT c.id, c.starts_at, c.game_id,
-  ${MATCH_PARTIES_COLUMNS},
+  ${matchPartiesColumns("c")},
   ${MATCH_ADDRESS_COLUMNS},
   coalesce((
     SELECT json_agg(json_build_object(
