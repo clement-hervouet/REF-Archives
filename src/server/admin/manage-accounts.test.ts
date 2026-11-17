@@ -66,7 +66,7 @@ describe("handleUpdateAccount", () => {
     expect(query.mock.calls[1]?.[1]).toEqual([
       TARGET,
       "Alex",
-      "Martin",
+      "MARTIN",
       "nouvelle@example.test",
       "user",
     ]);

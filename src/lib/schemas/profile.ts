@@ -1,5 +1,6 @@
 /**
- * Nom et prénom du titulaire du compte (bloc 10, §3.12). Obligatoires tous les deux.
+ * Nom et prénom du titulaire du compte (bloc 10, §3.12). Obligatoires tous les deux. Le nom
+ * de famille est enregistré en majuscules (« HERVOUET »), le prénom tel que saisi.
  * Les messages sont des codes (`firstname.required`…) traduits à l'affichage.
  */
 import { z } from "zod";
@@ -14,7 +15,10 @@ function nameSchema(field: "firstname" | "lastname") {
   // NFC : « é » saisi en un ou deux caractères donne la même chaîne en base.
   return z
     .string({ error: `${field}.required` })
-    .transform((value) => value.normalize("NFC").trim())
+    .transform((value) => {
+      const name = value.normalize("NFC").trim();
+      return field === "lastname" ? name.toLocaleUpperCase("fr-FR") : name;
+    })
     .pipe(
       z
         .string()

@@ -43,6 +43,7 @@ export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Pr
       maxLength={maxLength}
       defaultValue={valueOf(INPUT_NAMES[key])}
       error={newClubFieldError(key, state)}
+      uppercase={key === "name"}
     />
   );
 

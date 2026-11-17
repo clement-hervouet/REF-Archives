@@ -26,7 +26,7 @@ describe("handleUpdateProfile", () => {
       form({ firstname: " Clément ", lastname: "Hervouet " }),
     );
     expect(state).toEqual({ status: "saved" });
-    expect(update).toHaveBeenCalledWith(USER_ID, { firstname: "Clément", lastname: "Hervouet" });
+    expect(update).toHaveBeenCalledWith(USER_ID, { firstname: "Clément", lastname: "HERVOUET" });
   });
 
   it("ignore un identifiant d'utilisateur glissé dans le formulaire", async () => {

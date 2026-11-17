@@ -36,7 +36,7 @@ describe("submitAccessRequest", () => {
     expect(deps.insert).toHaveBeenCalledWith({
       email: EMAIL,
       firstname: "Léa",
-      lastname: "Martin",
+      lastname: "MARTIN",
     });
   });
 

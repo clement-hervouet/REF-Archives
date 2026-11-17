@@ -60,7 +60,7 @@ describe("handleCreateClub", () => {
     ).toEqual({ status: "created" });
     expect(query.mock.calls[0]?.[1]).toEqual([
       USER_ID,
-      "BC Béthune",
+      "BC BÉTHUNE",
       null,
       null,
       "62400",
@@ -75,7 +75,7 @@ describe("handleCreateClub", () => {
     query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
     expect(await handleCreateClub(deps, USER_ID, formData(FULL))).toEqual({ status: "created" });
     expect(query.mock.calls[0]?.[1]?.slice(1, 7)).toEqual([
-      "BC Béthune",
+      "BC BÉTHUNE",
       "Avenue du Sport",
       "2",
       "62400",
@@ -118,7 +118,7 @@ describe("handleUpdateClub", () => {
     expect(query.mock.calls[0]?.[1]).toEqual([
       CLUB_ID,
       USER_ID,
-      "BC Béthune",
+      "BC BÉTHUNE",
       "Avenue du Sport",
       "2",
       "62400",

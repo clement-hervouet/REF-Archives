@@ -80,6 +80,11 @@ type TextFieldProps = {
   required?: boolean;
   /** Valeur de `autocomplete` (ex. `given-name`) ; désactivé par défaut. */
   autoComplete?: string;
+  /**
+   * Affiche la saisie en majuscules (nom de club, nom de famille). Purement visuel : c'est le
+   * schéma Zod qui enregistre la valeur en majuscules côté serveur.
+   */
+  uppercase?: boolean;
 };
 
 export function TextField({
@@ -94,6 +99,7 @@ export function TextField({
   maxLength,
   required = true,
   autoComplete = "off",
+  uppercase = false,
 }: TextFieldProps) {
   return (
     <Field id={id} label={label} error={error} hint={hint}>
@@ -109,7 +115,7 @@ export function TextField({
           autoComplete={autoComplete}
           aria-invalid={error !== null}
           aria-describedby={describedBy}
-          className={FIELD_CLASS}
+          className={uppercase ? `${FIELD_CLASS} uppercase` : FIELD_CLASS}
         />
       )}
     </Field>

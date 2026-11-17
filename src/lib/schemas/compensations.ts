@@ -38,8 +38,15 @@ const POSTAL_CODE_PATTERN = /^[0-9A-Za-z][0-9A-Za-z -]{1,9}$/;
 
 export const postalCodeSchema = z.string().trim().regex(POSTAL_CODE_PATTERN);
 
-export const requiredText = (max: number) =>
-  z.string().trim().min(1).max(max).regex(NO_CONTROL_CHARS);
+const requiredText = (max: number) => z.string().trim().min(1).max(max).regex(NO_CONTROL_CHARS);
+
+/**
+ * Nom de club : toujours enregistré en majuscules (« BC BÉTHUNE »), comme sur les feuilles de
+ * match. Locale française : les lettres accentuées gardent leur accent (é → É, ç → Ç).
+ */
+export const clubNameSchema = requiredText(255).transform((value) =>
+  value.toLocaleUpperCase("fr-FR"),
+);
 
 /** Champ texte facultatif : une saisie vide devient `null` (colonne NULL). */
 export const optionalText = (max: number) =>
@@ -74,7 +81,7 @@ export const newAddressSchema = z.object({
  */
 export const teamChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
-  z.object({ kind: z.literal("new"), name: requiredText(255), postalCode: postalCodeSchema }),
+  z.object({ kind: z.literal("new"), name: clubNameSchema, postalCode: postalCodeSchema }),
 ]);
 
 /**
