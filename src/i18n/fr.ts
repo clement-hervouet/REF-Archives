@@ -66,6 +66,12 @@ export const fr = {
     passwordTooCommon: "Ce mot de passe est trop courant : choisissez-en un autre.",
     passwordInvalid: "Le mot de passe n'est pas valide.",
   },
+  // Calendrier des champs date (date-field.tsx).
+  datePicker: {
+    placeholder: "Choisir une date",
+    today: "Aujourd'hui",
+    close: "Fermer",
+  },
   // Vérification pendant la saisie d'un nouveau mot de passe (new-password-fields.tsx).
   passwordRules: {
     label: "Règles du mot de passe",

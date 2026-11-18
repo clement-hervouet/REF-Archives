@@ -7,6 +7,7 @@
  * barème du niveau ; les champs texte restent non contrôlés (`defaultValue`).
  */
 import { useId, useState } from "react";
+import { DateField } from "@/components/features/common/date-field";
 import { RevealResult } from "@/components/features/common/reveal-result";
 import {
   divisionAbbreviation,
@@ -230,10 +231,9 @@ export function MatchFields({
       >
         <legend className="px-1 font-semibold">{t.sections.match}</legend>
         <div className="grid gap-4 md:grid-cols-2">
-          <TextField
+          <DateField
             id={`${id}-date`}
             name="date"
-            type="date"
             label={t.fields.date}
             defaultValue={valueOf("date")}
             error={fieldError("date", state)}

@@ -15,6 +15,7 @@ import {
   PRIMARY_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
+import { DateField } from "@/components/features/common/date-field";
 import { fr } from "@/i18n/fr";
 import { formatCents } from "@/lib/format";
 import type { MarkPaidState } from "@/server/compensation/payments";
@@ -50,7 +51,6 @@ export function PaymentForm({ groups, today, action }: Props) {
   const items = groups.flatMap((group) => group.items);
   const id = useId();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [paidOn, setPaidOn] = useState(today);
   const [state, formAction, isPending] = useActionState<MarkPaidState, FormData>(
     async (previous, formData) => {
       const next = await action(previous, formData);
@@ -215,27 +215,15 @@ export function PaymentForm({ groups, today, action }: Props) {
         </fieldset>
 
         <div className="flex flex-col gap-4 md:flex-row md:items-end">
-          <div className="flex flex-col gap-1">
-            <label htmlFor={dateId} className="text-sm font-medium">
-              {t.paidOn}
-            </label>
-            <input
-              id={dateId}
-              name="paidOn"
-              type="date"
-              required
-              max={today}
-              value={paidOn}
-              onChange={(event) => {
-                setPaidOn(event.target.value);
-              }}
-              aria-describedby={`${dateId}-hint`}
-              className="min-h-11 rounded-md border border-input bg-background px-3 py-2 md:w-56"
-            />
-            <p id={`${dateId}-hint`} className="text-sm text-muted-foreground">
-              {t.paidOnHint}
-            </p>
-          </div>
+          <DateField
+            id={dateId}
+            name="paidOn"
+            label={t.paidOn}
+            hint={t.paidOnHint}
+            max={today}
+            defaultValue={today}
+            className="md:w-64"
+          />
           <button
             type="submit"
             disabled={isPending || selectedItems.length === 0}

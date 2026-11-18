@@ -444,3 +444,57 @@
     opacity: 1;
   }
 }
+
+/*
+ * Calendrier des champs date (react-day-picker, `date-field.tsx`) aux couleurs du thème.
+ * Hors couche : la feuille de react-day-picker n'est pas dans une couche Tailwind et
+ * l'emporterait sur `@layer`. Le sélecteur `.rdp-root.date-picker` (deux classes) passe devant
+ * ses `.rdp-root`.
+ */
+.rdp-root.date-picker {
+  --rdp-accent-color: var(--color-primary);
+  --rdp-accent-background-color: var(--color-accent);
+  --rdp-today-color: var(--color-foreground);
+  --rdp-day_button-border-radius: 0.375rem;
+  --rdp-selected-border: 2px solid var(--color-primary);
+}
+
+.rdp-root.date-picker .rdp-selected {
+  font-size: inherit;
+}
+
+.rdp-root.date-picker .rdp-selected .rdp-day_button {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Aujourd'hui : gras et souligné (jamais la couleur seule). */
+.rdp-root.date-picker .rdp-today:not(.rdp-outside) .rdp-day_button {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rdp-root.date-picker .rdp-day_button:hover:not(:disabled) {
+  background-color: var(--color-accent);
+}
+
+.rdp-root.date-picker .rdp-selected .rdp-day_button:hover {
+  background-color: var(--color-primary);
+}
+
+.rdp-root.date-picker .rdp-dropdown_root select {
+  /* Sélecteur invisible posé sur le libellé : la marge ne change que la liste ouverte. */
+  padding-inline: 0.75rem;
+  color: inherit;
+  background-color: var(--color-background);
+}
+
+/*
+ * Liste ouverte des mois et des années : de l'air autour des libellés, collés au bord sinon.
+ * Appliqué par les navigateurs d'ordinateur qui stylent les options (Chrome, Edge, Firefox) ;
+ * les listes natives des téléphones ont déjà leurs propres marges.
+ */
+.rdp-root.date-picker .rdp-dropdown_root option {
+  padding: 0.375rem 0.75rem;
+}

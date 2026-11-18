@@ -73,7 +73,7 @@ type TextFieldProps = {
   defaultValue: string;
   error: string | null;
   hint?: string;
-  type?: "text" | "date" | "time" | "email";
+  type?: "text" | "time" | "email";
   inputMode?: "decimal";
   maxLength?: number;
   /** Champ obligatoire (par défaut). */
