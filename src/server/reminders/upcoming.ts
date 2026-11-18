@@ -1,28 +1,33 @@
 /**
- * Périodes affichées par la page « À venir » et l'accueil : le weekend en cours ou le
- * prochain (du vendredi au dimanche, voir `parisWeekendRange`), puis les semaines suivantes.
+ * Périodes affichées par la page « À venir » et l'accueil : la semaine en cours, d'aujourd'hui
+ * au dimanche (matchs de semaine compris), puis les semaines suivantes, du lundi au dimanche.
  */
 import { toParisIsoDate } from "@/lib/dates";
 import { parisLocalToUtc } from "@/lib/paris-time";
-import { addDays, daysBetween, mondayOf, parisWeekendRange, saturdayOf } from "@/lib/weeks";
+import { addDays, daysBetween, mondayOf } from "@/lib/weeks";
 
 /** Nombre de semaines affichées après le weekend. */
 export const UPCOMING_LATER_WEEKS = 8;
 
 export type UpcomingRanges = {
-  /** Samedi du weekend affiché : celui de la semaine en cours (lundi → dimanche). */
-  saturday: string;
-  weekend: { from: Date; to: Date };
+  /** Dimanche de la semaine en cours (lundi → dimanche, Paris). */
+  sunday: string;
+  /** D'aujourd'hui 00:00 au lundi suivant 00:00, à Paris : les matchs déjà passés des
+   *  jours précédents de la semaine n'y sont plus. */
+  week: { from: Date; to: Date };
   later: { from: Date; to: Date };
 };
 
 /** Périodes à afficher le jour `today` (date de Paris). */
 export function upcomingRanges(today: string): UpcomingRanges {
-  const saturday = saturdayOf(today);
-  const weekend = parisWeekendRange(saturday);
-  // Lundi qui suit le weekend + N semaines, à minuit à Paris.
-  const end = parisLocalToUtc(addDays(saturday, 2 + 7 * UPCOMING_LATER_WEEKS), "00:00");
-  return { saturday, weekend, later: { from: weekend.to, to: end } };
+  const nextMonday = addDays(mondayOf(today), 7);
+  const week = {
+    from: parisLocalToUtc(today, "00:00"),
+    to: parisLocalToUtc(nextMonday, "00:00"),
+  };
+  // Lundi suivant + N semaines, à minuit à Paris.
+  const end = parisLocalToUtc(addDays(nextMonday, 7 * UPCOMING_LATER_WEEKS), "00:00");
+  return { sunday: addDays(nextMonday, -1), week, later: { from: week.to, to: end } };
 }
 
 // ─── Présentation de la page « À venir » (bloc 10) ──────────────────────────

@@ -13,6 +13,10 @@ export const DEFAULT_AVAILABILITY_REMINDER_WEEKS = 5;
 export const MIN_AVAILABILITY_REMINDER_WEEKS = 1;
 export const MAX_AVAILABILITY_REMINDER_WEEKS = 12;
 
+/** Le récapitulatif des matchs de semaine (lundi → jeudi) part le lundi… */
+const WEEKDAY_RECAP_FIRST_WEEKDAY = 1;
+/** … ou le mardi si le job a sauté le lundi. */
+const WEEKDAY_RECAP_LAST_WEEKDAY = 2;
 /** Le récapitulatif du weekend part à partir du jeudi… */
 const WEEKEND_RECAP_FIRST_WEEKDAY = 4;
 /** … et au plus tard le samedi : après, il n'a plus d'intérêt. */
@@ -21,6 +25,7 @@ const WEEKEND_RECAP_LAST_WEEKDAY = 6;
 export type ReminderSettings = {
   availabilityReminderEnabled: boolean;
   availabilityReminderWeeks: number;
+  /** Récapitulatifs des matchs : celui de la semaine (lundi) et celui du weekend (jeudi). */
   weekendRecapEnabled: boolean;
 };
 
@@ -31,6 +36,13 @@ export type DueReminder =
       periodStart: string;
       /** Samedi du weekend dont il faut saisir les indisponibilités. */
       weekendSaturday: string;
+    }
+  | {
+      kind: "weekday_recap";
+      /** Lundi de la semaine récapitulée : un seul récapitulatif par semaine. */
+      periodStart: string;
+      /** Premier jour récapitulé : le jour d'envoi (lundi, ou mardi en rattrapage). */
+      firstDay: string;
     }
   | {
       kind: "weekend_recap";
@@ -57,6 +69,11 @@ export function dueReminders(today: string, settings: ReminderSettings): DueRemi
     });
   }
   const weekday = isoWeekday(today);
+  const inWeekdayRecapWindow =
+    weekday >= WEEKDAY_RECAP_FIRST_WEEKDAY && weekday <= WEEKDAY_RECAP_LAST_WEEKDAY;
+  if (settings.weekendRecapEnabled && inWeekdayRecapWindow) {
+    due.push({ kind: "weekday_recap", periodStart: mondayOf(today), firstDay: today });
+  }
   const inRecapWindow =
     weekday >= WEEKEND_RECAP_FIRST_WEEKDAY && weekday <= WEEKEND_RECAP_LAST_WEEKDAY;
   if (settings.weekendRecapEnabled && inRecapWindow) {

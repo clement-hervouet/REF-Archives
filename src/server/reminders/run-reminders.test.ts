@@ -13,7 +13,7 @@ const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 
 // Jeudi 05/11/2026 à 08:00 à Paris : rappel des indisponibilités ET récapitulatif dus.
 const THURSDAY = new Date("2026-11-05T07:00:00Z");
-// Lundi 02/11/2026 à 08:00 à Paris : seulement le rappel des indisponibilités.
+// Lundi 02/11/2026 à 08:00 à Paris : rappel des indisponibilités et récapitulatif de semaine.
 const MONDAY = new Date("2026-11-02T07:00:00Z");
 
 const recipient: ReminderRecipient = {
@@ -88,11 +88,24 @@ describe("runReminders", () => {
     ]);
   });
 
-  it("le lundi : seulement le rappel des indisponibilités", async () => {
+  it("le lundi : rappel des indisponibilités et récapitulatif des matchs du lundi au jeudi", async () => {
     const { deps, sent } = makeDeps();
     await runReminders(deps, MONDAY);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.subject).toBe("Vos matchs de la semaine du 02/11");
+    // Lundi 00:00 → vendredi 00:00 à Paris : le vendredi appartient au weekend.
+    expect(deps.listWeekendMatches).toHaveBeenCalledWith({
+      userId: USER_ID,
+      from: new Date("2026-11-01T23:00:00.000Z"),
+      to: new Date("2026-11-05T23:00:00.000Z"),
+    });
+  });
+
+  it("le lundi sans match en semaine : ni envoi ni réservation du récapitulatif", async () => {
+    const { deps, sent, claimed } = makeDeps({ listWeekendMatches: () => Promise.resolve([]) });
+    expect((await runReminders(deps, MONDAY)).nothingToSend).toBe(1);
     expect(sent).toHaveLength(1);
-    expect(deps.listWeekendMatches).not.toHaveBeenCalled();
+    expect([...claimed].some((key) => key.includes("weekday_recap"))).toBe(false);
   });
 
   it("n'envoie jamais deux fois le même rappel (deuxième passage le même jour)", async () => {
@@ -136,7 +149,8 @@ describe("runReminders", () => {
     const result = await runReminders(deps, MONDAY);
     expect(listRecipients).toHaveBeenCalledTimes(2);
     expect(listRecipients).toHaveBeenLastCalledWith(page.at(-1)?.userId);
-    expect(result.sent).toBe(REMINDER_RECIPIENTS_PAGE_SIZE + 1);
+    // Dernier destinataire : rappel des indisponibilités et récapitulatif de semaine.
+    expect(result.sent).toBe(REMINDER_RECIPIENTS_PAGE_SIZE + 2);
   });
 });
 

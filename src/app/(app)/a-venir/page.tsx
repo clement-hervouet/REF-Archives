@@ -2,7 +2,7 @@ import { UpcomingMatchList } from "@/components/features/reminders/upcoming-matc
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
-import { addDays, formatShortDate } from "@/lib/weeks";
+import { formatShortDate } from "@/lib/weeks";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { getDb } from "@/server/db/pool";
 import { listUpcomingMatches } from "@/server/db/upcoming-matches";
@@ -11,8 +11,8 @@ import { UPCOMING_LATER_WEEKS, groupByWeek, upcomingRanges } from "@/server/remi
 const t = fr.reminders.upcoming;
 
 /**
- * « À venir » (blocs 7 et 10) : le weekend en cours ou le prochain (du vendredi au
- * dimanche), puis les semaines suivantes, regroupées du lundi au dimanche.
+ * « À venir » (blocs 7 et 10) : la semaine en cours, d'aujourd'hui au dimanche (matchs de
+ * semaine compris), puis les semaines suivantes, regroupées du lundi au dimanche.
  */
 export default async function UpcomingPage() {
   // Chaque page vérifie elle-même (§6.2) ; requêtes filtrées par l'utilisateur de la session.
@@ -20,8 +20,8 @@ export default async function UpcomingPage() {
   const db = getDb();
   const today = toParisIsoDate(new Date());
   const ranges = upcomingRanges(today);
-  const [weekendMatches, laterMatches] = await Promise.all([
-    listUpcomingMatches(db, { userId: user.id, ...ranges.weekend }),
+  const [weekMatches, laterMatches] = await Promise.all([
+    listUpcomingMatches(db, { userId: user.id, ...ranges.week }),
     listUpcomingMatches(db, { userId: user.id, ...ranges.later }),
   ]);
   const weeks = groupByWeek(laterMatches);
@@ -33,21 +33,19 @@ export default async function UpcomingPage() {
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
-      <section aria-labelledby="upcoming-weekend" className="flex flex-col gap-3">
+      <section aria-labelledby="upcoming-week" className="flex flex-col gap-3">
         <div className="flex flex-col gap-0.5">
-          <h2 id="upcoming-weekend" className="text-xl font-semibold">
-            {t.weekendTitle}
+          <h2 id="upcoming-week" className="text-xl font-semibold">
+            {t.currentWeekTitle}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {t.weekendRange
-              .replace("{friday}", formatShortDate(addDays(ranges.saturday, -1)))
-              .replace("{sunday}", formatShortDate(addDays(ranges.saturday, 1)))}
+            {t.currentWeekRange.replace("{sunday}", formatShortDate(ranges.sunday))}
           </p>
         </div>
-        {weekendMatches.length === 0 ? (
-          <p className="rounded-md border border-border p-4">{t.weekendEmpty}</p>
+        {weekMatches.length === 0 ? (
+          <p className="rounded-md border border-border p-4">{t.currentWeekEmpty}</p>
         ) : (
-          <UpcomingMatchList matches={weekendMatches} today={today} />
+          <UpcomingMatchList matches={weekMatches} today={today} />
         )}
       </section>
 

@@ -13,7 +13,7 @@ import { assertIsoDate } from "@/lib/dates";
 import type { ReminderSettings } from "@/server/reminders/schedule";
 import type { Queryable } from "./users";
 
-type ReminderKind = "availability" | "weekend_recap";
+type ReminderKind = "availability" | "weekday_recap" | "weekend_recap";
 
 /** Taille d'une page de destinataires lue par le job. */
 export const REMINDER_RECIPIENTS_PAGE_SIZE = 500;

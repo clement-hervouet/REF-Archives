@@ -294,8 +294,8 @@ export const fr = {
     acknowledge: "C'est fait pour cette semaine",
     acknowledged: "Indisponibilités du weekend du {date} : c'est noté pour cette semaine.",
     undo: "Annuler",
-    weekendTitle: "Ce weekend",
-    weekendRange: "Du vendredi {friday} au dimanche {sunday}",
+    weekTitle: "Cette semaine",
+    weekRange: "Jusqu'au dimanche {sunday}",
     unpaid: {
       title: "À rembourser",
       none: "Tous vos matchs joués sont payés.",
@@ -1396,7 +1396,7 @@ export const fr = {
     home: {
       greeting: "Bonjour {firstname}",
       availability: "Pensez à saisir vos indisponibilités du weekend du {date}.",
-      weekendNone: "Aucun match prévu ce weekend.",
+      weekNone: "Aucun match prévu d'ici dimanche.",
       weekendOne: "1 match prévu ce weekend.",
       weekendMany: "{count} matchs prévus ce weekend.",
       seeUpcoming: "Voir les matchs à venir",
@@ -1416,9 +1416,10 @@ export const fr = {
         hint: "Le rappel du lundi vise le weekend situé ce nombre de semaines plus loin.",
       },
       weekendRecap: {
-        legend: "Récapitulatif du weekend",
-        enabled: "Recevoir à partir du jeudi le récapitulatif de mes matchs du weekend",
-        hint: "Envoyé seulement si au moins un match est prévu du vendredi au dimanche.",
+        legend: "Récapitulatifs des matchs",
+        enabled:
+          "Recevoir le récapitulatif de mes matchs : le lundi pour ceux du lundi au jeudi, à partir du jeudi pour ceux du weekend",
+        hint: "Chaque email n'est envoyé que si au moins un match est prévu sur sa période.",
       },
       submit: "Enregistrer",
       submitting: "Enregistrement…",
@@ -1432,9 +1433,9 @@ export const fr = {
       title: "À venir",
       intro:
         "Vos matchs prévus, d'après les indemnités saisies, avec les officiels de chaque match complet.",
-      weekendTitle: "Ce weekend",
-      weekendRange: "Du vendredi {friday} au dimanche {sunday}",
-      weekendEmpty: "Aucun match prévu ce weekend.",
+      currentWeekTitle: "Cette semaine",
+      currentWeekRange: "Jusqu'au dimanche {sunday}",
+      currentWeekEmpty: "Aucun match prévu d'ici dimanche.",
       laterTitle: "Les {weeks} semaines suivantes",
       laterEmpty: "Aucun autre match prévu.",
       weekTitle: "Semaine du {monday} au {sunday}",
@@ -1513,6 +1514,12 @@ export const fr = {
       title: "Pensez à vos indisponibilités",
       body: "Pensez à saisir vos indisponibilités pour le weekend du samedi {saturday} et du dimanche {sunday}.",
       action: "Gérer mes rappels",
+    },
+    weekdayRecap: {
+      subject: "Vos matchs de la semaine du {date}",
+      title: "Vos matchs de la semaine",
+      countOne: "1 match est prévu cette semaine, du lundi au jeudi :",
+      countMany: "{count} matchs sont prévus cette semaine, du lundi au jeudi :",
     },
     weekendRecap: {
       subject: "Vos matchs du weekend du {date}",

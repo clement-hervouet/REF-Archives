@@ -29,9 +29,17 @@ describe("availabilityTargetSaturday", () => {
 });
 
 describe("dueReminders", () => {
-  it("le lundi : seulement le rappel des indisponibilités", () => {
+  it("le lundi : aussi le récapitulatif des matchs de semaine", () => {
     expect(dueReminders("2026-11-02", ALL_ON)).toEqual([
       { kind: "availability", periodStart: "2026-11-02", weekendSaturday: "2026-12-12" },
+      { kind: "weekday_recap", periodStart: "2026-11-02", firstDay: "2026-11-02" },
+    ]);
+  });
+
+  it("le mardi : récapitulatif de semaine en rattrapage, à partir du mardi", () => {
+    expect(dueReminders("2026-11-03", ALL_ON)).toEqual([
+      { kind: "availability", periodStart: "2026-11-02", weekendSaturday: "2026-12-12" },
+      { kind: "weekday_recap", periodStart: "2026-11-02", firstDay: "2026-11-03" },
     ]);
   });
 
@@ -61,7 +69,7 @@ describe("dueReminders", () => {
   });
 
   it("respecte le délai choisi par l'utilisateur", () => {
-    expect(dueReminders("2026-11-02", { ...ALL_ON, availabilityReminderWeeks: 2 })).toEqual([
+    expect(dueReminders("2026-11-04", { ...ALL_ON, availabilityReminderWeeks: 2 })).toEqual([
       { kind: "availability", periodStart: "2026-11-02", weekendSaturday: "2026-11-21" },
     ]);
   });
@@ -73,6 +81,7 @@ describe("dueReminders", () => {
       weekendRecapEnabled: false,
     };
     expect(dueReminders("2026-11-05", noneEnabled)).toEqual([]);
+    expect(dueReminders("2026-11-02", noneEnabled)).toEqual([]);
     expect(dueReminders("2026-11-05", { ...ALL_ON, availabilityReminderEnabled: false })).toEqual([
       { kind: "weekend_recap", periodStart: "2026-11-07" },
     ]);

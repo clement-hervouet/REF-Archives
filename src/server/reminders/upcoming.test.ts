@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { groupByWeek, relativeDay, upcomingRanges } from "./upcoming";
 
 describe("upcomingRanges", () => {
-  it("affiche le weekend de la semaine en cours, puis 8 semaines", () => {
+  it("affiche la semaine en cours à partir d'aujourd'hui, puis 8 semaines", () => {
     expect(upcomingRanges("2026-11-05")).toEqual({
-      saturday: "2026-11-07",
-      weekend: {
-        from: new Date("2026-11-05T23:00:00.000Z"),
+      sunday: "2026-11-08",
+      week: {
+        // Jeudi 05/11 00:00 à Paris : les matchs du jeudi sont dans la semaine en cours.
+        from: new Date("2026-11-04T23:00:00.000Z"),
         to: new Date("2026-11-08T23:00:00.000Z"),
       },
       later: {
@@ -17,12 +18,17 @@ describe("upcomingRanges", () => {
     });
   });
 
-  it("le dimanche, garde le weekend qui se termine", () => {
-    expect(upcomingRanges("2026-11-08").saturday).toBe("2026-11-07");
+  it("le lundi, couvre toute la semaine (matchs du lundi au jeudi compris)", () => {
+    expect(upcomingRanges("2026-11-09").week).toEqual({
+      from: new Date("2026-11-08T23:00:00.000Z"),
+      to: new Date("2026-11-15T23:00:00.000Z"),
+    });
+    expect(upcomingRanges("2026-11-09").sunday).toBe("2026-11-15");
   });
 
-  it("le lundi, passe au weekend suivant", () => {
-    expect(upcomingRanges("2026-11-09").saturday).toBe("2026-11-14");
+  it("le dimanche, garde la semaine qui se termine", () => {
+    expect(upcomingRanges("2026-11-08").sunday).toBe("2026-11-08");
+    expect(upcomingRanges("2026-11-08").later.from).toEqual(new Date("2026-11-08T23:00:00.000Z"));
   });
 });
 

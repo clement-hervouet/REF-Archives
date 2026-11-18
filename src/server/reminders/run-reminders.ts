@@ -8,14 +8,18 @@
  */
 import { toParisIsoDate } from "@/lib/dates";
 import type { EmailMessage } from "@/lib/schemas/email";
-import { parisWeekendRange } from "@/lib/weeks";
+import { parisWeekdaysRange, parisWeekendRange } from "@/lib/weeks";
 import {
   REMINDER_RECIPIENTS_PAGE_SIZE,
   type ReminderDispatchKey,
   type ReminderRecipient,
 } from "@/server/db/reminders";
 import { buildAvailabilityReminderEmail } from "@/server/email/availability-reminder-email";
-import { type WeekendMatch, buildWeekendRecapEmail } from "@/server/email/weekend-recap-email";
+import {
+  type WeekendMatch,
+  buildWeekdayRecapEmail,
+  buildWeekendRecapEmail,
+} from "@/server/email/weekend-recap-email";
 import { type DueReminder, dueReminders } from "./schedule";
 
 export type RunRemindersDeps = {
@@ -23,7 +27,8 @@ export type RunRemindersDeps = {
   listRecipients: (afterUserId: string | null) => Promise<ReminderRecipient[]>;
   claim: (key: ReminderDispatchKey) => Promise<boolean>;
   release: (key: ReminderDispatchKey) => Promise<void>;
-  /** Indemnités actives du compte dont le match commence dans `[from, to)`. */
+  /** Indemnités actives du compte dont le match commence dans `[from, to)` (weekend ou
+   *  jours de semaine, selon le récapitulatif). */
   listWeekendMatches: (input: { userId: string; from: Date; to: Date }) => Promise<WeekendMatch[]>;
   send: (message: EmailMessage) => Promise<void>;
   /** `APP_URL` validée (jamais l'en-tête Host). */
@@ -36,7 +41,7 @@ export type ReminderOutcome = "sent" | "alreadySent" | "nothingToSend" | "failed
 
 export type RunRemindersResult = Record<ReminderOutcome, number>;
 
-/** Construit l'email d'un rappel dû, ou `null` s'il n'y a rien à envoyer (weekend sans match). */
+/** Construit l'email d'un rappel dû, ou `null` s'il n'y a rien à envoyer (période sans match). */
 async function buildReminderMessage(
   deps: RunRemindersDeps,
   recipient: ReminderRecipient,
@@ -46,6 +51,23 @@ async function buildReminderMessage(
     return buildAvailabilityReminderEmail({
       email: recipient.email,
       weekendSaturday: reminder.weekendSaturday,
+      appUrl: deps.appUrl,
+    });
+  }
+  if (reminder.kind === "weekday_recap") {
+    const matches = await deps.listWeekendMatches({
+      userId: recipient.userId,
+      ...parisWeekdaysRange(reminder.firstDay),
+    });
+    if (matches.length === 0) {
+      // Pas de réservation : rien à récapituler cette semaine (un mardi de rattrapage
+      // pourra encore envoyer un match saisi entre-temps).
+      return null;
+    }
+    return buildWeekdayRecapEmail({
+      email: recipient.email,
+      monday: reminder.periodStart,
+      matches,
       appUrl: deps.appUrl,
     });
   }
