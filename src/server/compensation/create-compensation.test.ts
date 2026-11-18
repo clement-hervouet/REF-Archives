@@ -295,7 +295,7 @@ describe("createCompensation", () => {
     expect(query.mock.calls[2]?.[1]).toEqual([[CLUB_B], USER_ID]);
     // Adresse du nouveau club : code postal seul (§15.4.1).
     expect(query.mock.calls[3]?.[1]).toEqual([USER_ID, null, null, "62400", null, null]);
-    expect(query.mock.calls[4]?.[1]).toEqual([USER_ID, ADDRESS_A, "BC Béthune", 1000]);
+    expect(query.mock.calls[4]?.[1]).toEqual([USER_ID, ADDRESS_A, "BC BÉTHUNE", 1000]);
     expect(query.mock.calls[5]?.[1]?.[1]).toBe("Salle Pierre de Coubertin");
     // L'indemnité prend l'adresse d'exception, pas celle du nouveau club.
     expect(query.mock.calls[9]?.[1]?.[7]).toBe(ADDRESS_NEW);

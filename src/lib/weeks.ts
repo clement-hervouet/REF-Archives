@@ -63,6 +63,21 @@ export function parisWeekendRange(saturday: string): { from: Date; to: Date } {
   };
 }
 
+/**
+ * Bornes UTC `[from, to)` des jours de semaine restants à partir de `firstDay` (lundi à
+ * jeudi) : de `firstDay` 00:00 au vendredi 00:00 de la même semaine, à Paris. Complète
+ * `parisWeekendRange` : le vendredi appartient au weekend.
+ */
+export function parisWeekdaysRange(firstDay: string): { from: Date; to: Date } {
+  if (isoWeekday(firstDay) > 4) {
+    throw new ValidationError("not_a_weekday");
+  }
+  return {
+    from: parisLocalToUtc(firstDay, "00:00"),
+    to: parisLocalToUtc(addDays(mondayOf(firstDay), 4), "00:00"),
+  };
+}
+
 const shortDateFormat = new Intl.DateTimeFormat("fr-FR", {
   day: "2-digit",
   month: "2-digit",

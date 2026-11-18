@@ -1,6 +1,6 @@
 import { AvailabilityReminderCard } from "@/components/features/home/availability-reminder-card";
 import { UnpaidSummaryCard } from "@/components/features/home/unpaid-summary-card";
-import { WeekendSummary } from "@/components/features/home/weekend-summary";
+import { WeekSummary } from "@/components/features/home/week-summary";
 import { fr } from "@/i18n/fr";
 import { toParisIsoDate } from "@/lib/dates";
 import { requireUserOrRedirect } from "@/server/auth/session";
@@ -14,7 +14,7 @@ import { upcomingRanges } from "@/server/reminders/upcoming";
 import { acknowledgeAvailabilityAction, undoAvailabilityAcknowledgementAction } from "./actions";
 
 /**
- * Accueil (bloc 10) : rappel des indisponibilités de la semaine, matchs du weekend et
+ * Accueil (bloc 10) : rappel des indisponibilités de la semaine, matchs de la semaine et
  * indemnités jouées en attente de paiement.
  */
 export default async function HomePage() {
@@ -24,10 +24,10 @@ export default async function HomePage() {
   const now = new Date();
   const today = toParisIsoDate(now);
   const ranges = upcomingRanges(today);
-  const [settings, ackWeek, weekendMatches, unpaid] = await Promise.all([
+  const [settings, ackWeek, weekMatches, unpaid] = await Promise.all([
     getReminderSettings(db, user.id),
     getAvailabilityAckWeek(db, user.id),
-    listUpcomingMatches(db, { userId: user.id, ...ranges.weekend }),
+    listUpcomingMatches(db, { userId: user.id, ...ranges.week }),
     listUnpaidPlayedCompensations(db, { userId: user.id, before: now }),
   ]);
 
@@ -46,7 +46,7 @@ export default async function HomePage() {
       )}
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <WeekendSummary saturday={ranges.saturday} today={today} matches={weekendMatches} />
+        <WeekSummary sunday={ranges.sunday} today={today} matches={weekMatches} />
         <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} byPayer={groupByPayer(unpaid)} />
       </div>
     </div>

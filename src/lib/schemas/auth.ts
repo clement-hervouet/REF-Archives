@@ -7,7 +7,7 @@ import { z } from "zod";
 import { isTrivialPassword } from "./common-passwords.ts";
 
 export const EMAIL_MAX_LENGTH = 255;
-const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MIN_LENGTH = 12;
 export const PASSWORD_MAX_LENGTH = 128;
 
 /** Email normalisé (espaces retirés, minuscules) : l'unicité en base est insensible à la casse. */

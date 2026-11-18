@@ -66,6 +66,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
       required={REQUIRED.includes(name)}
       defaultValue={valueOf(name)}
       error={clubFieldError(name, state)}
+      uppercase={name === "name"}
     />
   );
 

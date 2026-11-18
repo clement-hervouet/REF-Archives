@@ -61,6 +61,7 @@ export function ClubFields({
             name={`${prefix}Name`}
             label={t.fields.clubName}
             maxLength={255}
+            uppercase
             defaultValue={valueOf(`${prefix}Name`)}
             error={fieldError(`${prefix}.name`, state)}
           />

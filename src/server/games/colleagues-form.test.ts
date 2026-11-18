@@ -159,7 +159,7 @@ describe("nouveau club depuis un collègue", () => {
     expect(query.mock.calls[0]?.[0]).toContain("INSERT INTO address");
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, null, null, "35000", null, null]);
     expect(query.mock.calls[1]?.[0]).toContain("INSERT INTO club");
-    expect(query.mock.calls[1]?.[1]?.slice(0, 3)).toEqual([USER_ID, ADDRESS_ID, "BC Rennes"]);
+    expect(query.mock.calls[1]?.[1]?.slice(0, 3)).toEqual([USER_ID, ADDRESS_ID, "BC RENNES"]);
     expect(query.mock.calls[2]?.[1]?.[5]).toBe(CLUB_ID);
   });
 

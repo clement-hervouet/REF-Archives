@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { type WeekendMatch, buildWeekendRecapEmail, weekendMatchLine } from "./weekend-recap-email";
+import {
+  type WeekendMatch,
+  buildWeekdayRecapEmail,
+  buildWeekendRecapEmail,
+  weekendMatchLine,
+} from "./weekend-recap-email";
 
 const match: WeekendMatch = {
   startsAt: new Date("2026-11-07T19:30:00Z"),
@@ -86,5 +91,19 @@ describe("buildWeekendRecapEmail", () => {
     const message = buildWeekendRecapEmail({ ...input, matches: [hostile] });
     expect(message.html).not.toContain("<img");
     expect(message.html).toContain("&lt;img");
+  });
+});
+
+describe("buildWeekdayRecapEmail", () => {
+  it("annonce les matchs du lundi au jeudi, date du lundi dans le sujet", () => {
+    const message = buildWeekdayRecapEmail({
+      email: "clem@example.com",
+      monday: "2026-11-02",
+      matches: [{ ...match, startsAt: new Date("2026-11-04T19:00:00Z") }],
+      appUrl: "https://ref.example.com",
+    });
+    expect(message.subject).toBe("Vos matchs de la semaine du 02/11");
+    expect(message.text).toContain("1 match est prévu cette semaine, du lundi au jeudi :");
+    expect(message.text).toContain("mercredi 04/11 à 20:00");
   });
 });

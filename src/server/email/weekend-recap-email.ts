@@ -1,6 +1,7 @@
 /**
- * Récapitulatif des matchs du weekend (§5.2), construit à partir des indemnités à venir,
- * avec les officiels du match complet lié (bloc 9).
+ * Récapitulatifs des matchs (§5.2) : celui du weekend (envoyé à partir du jeudi) et celui
+ * des matchs de semaine, du lundi au jeudi (envoyé le lundi). Construits à partir des
+ * indemnités à venir, avec les officiels du match complet lié (bloc 9).
  * Les noms d'équipes, de collègues et les adresses sont saisis par l'utilisateur : le
  * gabarit les échappe dans le HTML, et ils n'apparaissent jamais dans le sujet. Email non essentiel,
  * donc désactivable (§9).
@@ -18,6 +19,7 @@ import type { UpcomingMatchRow } from "@/server/db/upcoming-matches";
 import { renderEmail } from "./layout";
 
 const t = fr.email.weekendRecap;
+const tWeekday = fr.email.weekdayRecap;
 
 /** Ce que le récapitulatif affiche d'un match : ni montant, ni barème. */
 export type WeekendMatch = Pick<
@@ -51,12 +53,16 @@ export function weekendMatchLine(match: WeekendMatch): string {
       `${line} — ${t.officialsLine.replace("{officials}", officials)}`;
 }
 
-/** Construit le récapitulatif. Le job n'appelle cette fonction que s'il y a des matchs. */
-export function buildWeekendRecapEmail(input: WeekendRecapEmailInput): EmailMessage {
+type RecapTexts = { subject: string; title: string; countOne: string; countMany: string };
+
+function buildRecapEmail(
+  texts: RecapTexts,
+  input: { email: string; date: string; matches: readonly WeekendMatch[]; appUrl: string },
+): EmailMessage {
   const count = input.matches.length;
-  const intro = count === 1 ? t.countOne : t.countMany.replace("{count}", String(count));
+  const intro = count === 1 ? texts.countOne : texts.countMany.replace("{count}", String(count));
   const { text, html } = renderEmail({
-    title: t.title,
+    title: texts.title,
     paragraphs: [intro, ...input.matches.map(weekendMatchLine)],
     action: {
       label: t.action,
@@ -65,6 +71,21 @@ export function buildWeekendRecapEmail(input: WeekendRecapEmailInput): EmailMess
     },
     footer: fr.email.reminderFooter,
   });
-  const subject = t.subject.replace("{date}", formatShortDate(input.saturday));
+  const subject = texts.subject.replace("{date}", formatShortDate(input.date));
   return { to: input.email, subject, text, html };
+}
+
+/** Récapitulatif du weekend. Le job n'appelle cette fonction que s'il y a des matchs. */
+export function buildWeekendRecapEmail(input: WeekendRecapEmailInput): EmailMessage {
+  return buildRecapEmail(t, { ...input, date: input.saturday });
+}
+
+export type WeekdayRecapEmailInput = Omit<WeekendRecapEmailInput, "saturday"> & {
+  /** Lundi de la semaine récapitulée, `AAAA-MM-JJ`. */
+  monday: string;
+};
+
+/** Récapitulatif des matchs du lundi au jeudi. Appelé seulement s'il y a des matchs. */
+export function buildWeekdayRecapEmail(input: WeekdayRecapEmailInput): EmailMessage {
+  return buildRecapEmail(tWeekday, { ...input, date: input.monday });
 }

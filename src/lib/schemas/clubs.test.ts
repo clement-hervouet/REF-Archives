@@ -13,7 +13,7 @@ describe("clubFormSchema", () => {
         country: "",
       }),
     ).toEqual({
-      name: "BC Béthune",
+      name: "BC BÉTHUNE",
       street: null,
       number: null,
       postalCode: "62400",

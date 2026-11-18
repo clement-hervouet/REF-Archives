@@ -14,7 +14,7 @@ describe("parseAccountEdit", () => {
       }),
     ).toEqual({
       success: true,
-      edit: { firstname: "Alex", lastname: "Martin", email: "alex@example.test", role: "admin" },
+      edit: { firstname: "Alex", lastname: "MARTIN", email: "alex@example.test", role: "admin" },
     });
   });
 

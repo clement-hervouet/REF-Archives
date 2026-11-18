@@ -2,6 +2,7 @@
  * Trio « date d'application, montant du match, taux km » d'une ligne de barème, partagé par
  * la création d'un barème et l'ajout d'une ligne.
  */
+import { DateField } from "@/components/features/common/date-field";
 import { fr } from "@/i18n/fr";
 import type { ScaleFormField } from "@/lib/schemas/scales";
 import { TextField } from "./form-parts";
@@ -18,10 +19,9 @@ type Props = {
 export function RateFields({ idBase, valueOf, invalid }: Props) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <TextField
+      <DateField
         id={`${idBase}-from`}
         name="effectiveFrom"
-        type="date"
         label={t.fields.effectiveFrom}
         defaultValue={valueOf("effectiveFrom")}
         error={fieldError("effectiveFrom", invalid)}

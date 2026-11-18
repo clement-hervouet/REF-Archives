@@ -35,6 +35,7 @@ export function ProfileFields({ idPrefix, defaults, issues }: Props) {
         error={profileFieldError(issues, "lastname")}
         maxLength={PERSON_NAME_MAX}
         autoComplete="family-name"
+        uppercase
       />
     </div>
   );

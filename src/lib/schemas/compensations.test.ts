@@ -116,7 +116,7 @@ describe("compensationFormSchema", () => {
         venue: { kind: "new", address: { ...ADDRESS, street: "Rue du Gymnase" } },
       }),
     );
-    expect(parsed.team1).toEqual({ kind: "new", name: "BC Béthune", postalCode: "62400" });
+    expect(parsed.team1).toEqual({ kind: "new", name: "BC BÉTHUNE", postalCode: "62400" });
     expect(parsed.venue.kind).toBe("new");
   });
 

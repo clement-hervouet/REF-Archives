@@ -6,6 +6,7 @@ import {
   formatShortDate,
   isoWeekday,
   mondayOf,
+  parisWeekdaysRange,
   parisWeekendRange,
   saturdayOf,
 } from "./weeks";
@@ -80,6 +81,24 @@ describe("parisWeekendRange", () => {
 
   it("refuse une date qui n'est pas un samedi", () => {
     expect(() => parisWeekendRange("2026-11-08")).toThrow(ValidationError);
+  });
+});
+
+describe("parisWeekdaysRange", () => {
+  it("va du lundi 00:00 au vendredi 00:00 à Paris", () => {
+    expect(parisWeekdaysRange("2026-11-16")).toEqual({
+      from: new Date("2026-11-15T23:00:00.000Z"),
+      to: new Date("2026-11-19T23:00:00.000Z"),
+    });
+  });
+
+  it("commence au jour donné (envoi rattrapé le mardi)", () => {
+    expect(parisWeekdaysRange("2026-11-17").from).toEqual(new Date("2026-11-16T23:00:00.000Z"));
+    expect(parisWeekdaysRange("2026-11-17").to).toEqual(new Date("2026-11-19T23:00:00.000Z"));
+  });
+
+  it("refuse un jour du weekend", () => {
+    expect(() => parisWeekdaysRange("2026-11-20")).toThrow(ValidationError);
   });
 });
 

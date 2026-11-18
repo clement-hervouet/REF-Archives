@@ -104,7 +104,7 @@ describe("acceptInvitation", () => {
       email: EMAIL,
     });
     expect(query.mock.calls[0]?.[1]).toEqual([hashToken(TOKEN)]);
-    expect(query.mock.calls[2]?.[1]).toEqual([EMAIL, "hashed", "user", "Clément", "Hervouet"]);
+    expect(query.mock.calls[2]?.[1]).toEqual([EMAIL, "hashed", "user", "Clément", "HERVOUET"]);
     expect(deps.hashPassword).toHaveBeenCalledWith(PASSWORD);
   });
 

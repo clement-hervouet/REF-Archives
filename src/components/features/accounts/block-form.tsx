@@ -7,11 +7,11 @@
  */
 import { useActionState, useId, useState } from "react";
 import {
-  FIELD_CLASS,
   FormMessage,
   SECONDARY_BUTTON_CLASS,
   SUBMIT_BUTTON_CLASS,
 } from "@/components/features/scales/form-parts";
+import { DateField } from "@/components/features/common/date-field";
 import { fr } from "@/i18n/fr";
 import { BLOCK_MODES } from "@/lib/schemas/accounts";
 import type { BlockMode } from "@/lib/schemas/accounts";
@@ -87,23 +87,15 @@ export function BlockForm({ blockAction, unblockAction, accountId, current, minD
           </div>
         </fieldset>
         {mode === "date" && (
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-date`} className="text-sm font-medium">
-              {t.date}
-            </label>
-            <input
-              id={`${id}-date`}
-              name="date"
-              type="date"
-              required
-              min={minDate}
-              aria-describedby={`${id}-date-hint`}
-              className={`${FIELD_CLASS} sm:max-w-xs`}
-            />
-            <p id={`${id}-date-hint`} className="text-sm text-muted-foreground">
-              {t.dateHint}
-            </p>
-          </div>
+          <DateField
+            id={`${id}-date`}
+            name="date"
+            label={t.date}
+            hint={t.dateHint}
+            min={minDate}
+            defaultValue=""
+            className="sm:max-w-xs"
+          />
         )}
         <button type="submit" disabled={blocking} className={SUBMIT_BUTTON_CLASS}>
           {blocking ? t.submitting : current === null ? t.submit : t.change}
