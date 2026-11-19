@@ -2,10 +2,10 @@
 
 /**
  * Barre d'onglets en bas de l'écran (téléphone, sous `md`) : pages principales et « Plus »,
- * qui ouvre un panneau avec les pages secondaires, l'administration, le compte et la
- * déconnexion. Seuls les onglets portent une icône (§3.12).
+ * qui ouvre un panneau avec « Notes de match » (§15.4.10), les pages secondaires,
+ * l'administration, le compte et la déconnexion. Seuls les onglets portent une icône (§3.12).
  */
-import { CalendarClock, House, Menu, NotebookPen, Receipt, X } from "lucide-react";
+import { CalendarClock, ClipboardList, House, Menu, NotebookPen, Receipt, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,8 +16,8 @@ import { NavBadge } from "./nav-badge";
 import {
   ACCOUNT_NAV,
   ADMIN_NAV,
-  PRIMARY_NAV,
-  SECONDARY_NAV,
+  MOBILE_PANEL_NAV,
+  MOBILE_TAB_NAV,
   isAnyNavItemActive,
   isNavItemActive,
   navItemBadgeCount,
@@ -30,6 +30,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   home: House,
   upcoming: CalendarClock,
   compensations: Receipt,
+  preparations: ClipboardList,
   notes: NotebookPen,
 };
 
@@ -101,7 +102,7 @@ export function MobileNav({ user, logoutAction }: Props) {
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
 
-  const secondary = [...SECONDARY_NAV, ...(user.isAdmin ? ADMIN_NAV : []), ACCOUNT_NAV];
+  const secondary = [...MOBILE_PANEL_NAV, ...(user.isAdmin ? ADMIN_NAV : []), ACCOUNT_NAV];
   const moreActive = isAnyNavItemActive(secondary, pathname);
 
   useEffect(() => {
@@ -162,7 +163,7 @@ export function MobileNav({ user, logoutAction }: Props) {
               </button>
             </div>
             <ul className="flex flex-col">
-              {SECONDARY_NAV.map((item) => (
+              {MOBILE_PANEL_NAV.map((item) => (
                 <PanelLink key={item.href} item={item} pathname={pathname} />
               ))}
             </ul>
@@ -203,7 +204,7 @@ export function MobileNav({ user, logoutAction }: Props) {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="flex">
-          {PRIMARY_NAV.map((item) => (
+          {MOBILE_TAB_NAV.map((item) => (
             <Tab key={item.href} item={item} pathname={pathname} />
           ))}
           <li className="flex flex-1">

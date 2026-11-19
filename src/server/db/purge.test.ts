@@ -5,6 +5,7 @@ import {
   purgeDeletedCompensations,
   purgeDeletedGames,
   purgeDeletedNotes,
+  purgeDeletedPreparations,
   purgeEndedInvitations,
   purgeEndedSessions,
   purgeExpiredPasswordResets,
@@ -17,6 +18,7 @@ import {
 const WITH_DAYS = [
   { name: "indemnités", table: "compensation", run: purgeDeletedCompensations },
   { name: "notes", table: "note", run: purgeDeletedNotes },
+  { name: "préparations", table: "game_preparation", run: purgeDeletedPreparations },
   { name: "matchs", table: "game", run: purgeDeletedGames },
   { name: "barèmes", table: "scale", run: purgeArchivedScales },
   { name: "journal de sécurité", table: "security_event", run: purgeOldSecurityEvents },

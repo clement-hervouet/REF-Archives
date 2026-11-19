@@ -20,6 +20,7 @@ describe("runPurgeData", () => {
     expect(await runPurgeData({ transaction })).toEqual({
       compensations: 1,
       notes: 1,
+      preparations: 1,
       games: 1,
       scales: 1,
       securityEvents: 1,
@@ -31,7 +32,7 @@ describe("runPurgeData", () => {
       rateLimits: 1,
     });
     expect(transactions).toBe(1);
-    expect(query).toHaveBeenCalledTimes(11);
+    expect(query).toHaveBeenCalledTimes(12);
   });
 
   it("efface les indemnités avant les barèmes (une indemnité supprimée protège son barème)", async () => {

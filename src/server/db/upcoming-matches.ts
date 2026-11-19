@@ -1,6 +1,7 @@
 /**
  * Matchs à venir pour la page « À venir » et l'email du récapitulatif (blocs 7 et 9) :
- * les indemnités de la période, avec les officiels du match complet lié s'il existe.
+ * les indemnités de la période, avec les officiels du match complet lié s'il existe et
+ * l'indication d'une préparation de match (§15.4.10).
  *
  * Ni montant, ni barème, ni distance (fiche pratique). Filtrée par propriétaire, jointures
  * comprises (§6.2) : on ne lit jamais l'équipe, le club, l'adresse ou la personne d'un autre.
@@ -41,6 +42,8 @@ export type UpcomingMatchRow = {
   gameId: string | null;
   /** Officiels dans l'ordre officiel ; vide sans match complet. */
   officials: UpcomingOfficial[];
+  /** Le match complet lié a une préparation active (§15.4.10). */
+  hasPreparation: boolean;
 };
 
 // Les quatre places deviennent des lignes (VALUES latéral) pour être agrégées dans l'ordre
@@ -61,7 +64,12 @@ const LIST_UPCOMING_SQL = `SELECT c.id, c.starts_at, c.game_id,
     ) AS o(ord, slot, person_id)
     JOIN person p ON p.id = o.person_id AND p.user_id = g.user_id
     WHERE g.id = c.game_id AND g.user_id = c.user_id AND g.deleted_at IS NULL
-  ), '[]'::json) AS officials
+  ), '[]'::json) AS officials,
+  EXISTS (
+    SELECT 1 FROM game_preparation gp
+    JOIN game pg ON pg.id = gp.game_id AND pg.user_id = gp.user_id AND pg.deleted_at IS NULL
+    WHERE gp.game_id = c.game_id AND gp.user_id = c.user_id AND gp.deleted_at IS NULL
+  ) AS has_preparation
 FROM compensation c
 JOIN division d ON d.id = c.division_id
 ${matchTeamJoins("c")}
@@ -83,6 +91,7 @@ const rowSchema = z.object({
   ...matchPartiesFields,
   ...matchAddressFields,
   officials: z.array(officialRowSchema),
+  has_preparation: z.boolean(),
 });
 
 /** Matchs dont le coup d'envoi est dans `[from, to)`, dans l'ordre chronologique. */
@@ -105,6 +114,7 @@ export async function listUpcomingMatches(
         firstname: official.firstname,
         lastname: official.lastname,
       })),
+      hasPreparation: row.has_preparation,
     };
   });
 }

@@ -7,7 +7,7 @@ import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
+import { completeGamePath, gamePath, matchExportPath, preparationPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatRoundTripKm } from "@/lib/distance";
 import { gamesAmountText } from "./compensation-messages";
@@ -18,6 +18,8 @@ import type { CompensationAmount } from "@/server/compensation/amount";
 import type { DeleteCompensationState } from "@/server/compensation/compensation-form";
 import type { PaymentStatus } from "@/server/compensation/monthly-totals";
 import type { ClearPaymentState } from "@/server/compensation/payments";
+import type { PrepareMatchState } from "@/server/games/preparation-form";
+import { PrepareMatchItem } from "@/components/features/games/prepare-match-item";
 import type { CompensationListItem } from "@/server/db/compensations";
 import { ActionsMenu } from "./actions-menu";
 import { addressLabel } from "./address-label";
@@ -43,6 +45,8 @@ type Props = {
     previous: ClearPaymentState,
     formData: FormData,
   ) => Promise<ClearPaymentState>;
+  /** « Préparer le match » (§15.4.10) : crée le match complet si besoin. */
+  prepareAction: (previous: PrepareMatchState, formData: FormData) => Promise<PrepareMatchState>;
 };
 
 /** État du paiement en toutes lettres ; rien pour un match à venir (pas encore dû). */
@@ -63,6 +67,7 @@ function CompensationCard({
   item,
   deleteAction,
   clearPaymentAction,
+  prepareAction,
 }: { item: CompensationWithAmount } & Omit<Props, "items">) {
   const date = formatIsoDate(toParisIsoDate(item.startsAt));
   return (
@@ -134,6 +139,24 @@ function CompensationCard({
                 {fr.games.viewMatch}
               </Link>
             )}
+            {/* Pas de préparation pour un plateau (§15.4.10). */}
+            {item.team2Name !== null &&
+              (item.gameId === null ? (
+                <PrepareMatchItem
+                  compensationId={item.id}
+                  dateLabel={date}
+                  action={prepareAction}
+                />
+              ) : (
+                <Link
+                  href={preparationPath(item.gameId)}
+                  data-close-menu
+                  aria-label={fr.preparations.openMenuLabel.replace("{date}", date)}
+                  className={MENU_ITEM_CLASS}
+                >
+                  {fr.preparations.open}
+                </Link>
+              ))}
             {item.paidOn !== null && (
               <ClearPaymentItem
                 compensationId={item.id}
@@ -156,7 +179,12 @@ function CompensationCard({
   );
 }
 
-export function CompensationList({ items, deleteAction, clearPaymentAction }: Props) {
+export function CompensationList({
+  items,
+  deleteAction,
+  clearPaymentAction,
+  prepareAction,
+}: Props) {
   return (
     <ul className="flex flex-col gap-3">
       {items.map((item) => (
@@ -165,6 +193,7 @@ export function CompensationList({ items, deleteAction, clearPaymentAction }: Pr
             item={item}
             deleteAction={deleteAction}
             clearPaymentAction={clearPaymentAction}
+            prepareAction={prepareAction}
           />
         </li>
       ))}

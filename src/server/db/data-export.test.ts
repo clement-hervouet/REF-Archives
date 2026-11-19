@@ -15,6 +15,7 @@ function emptyData(account: Record<string, unknown> | null) {
     levelDefaultScales: [],
     games: [],
     notes: [],
+    preparations: [],
     compensations: [],
     calendarFeed: null,
     sessions: [],

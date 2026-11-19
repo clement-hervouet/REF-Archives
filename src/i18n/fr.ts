@@ -18,6 +18,7 @@ export const fr = {
     short: {
       compensations: "Indemnités",
       gameNotes: "Notes",
+      preparations: "Prépa",
     },
     compensations: "Mes indemnités",
     invitations: "Invitations",
@@ -29,6 +30,7 @@ export const fr = {
     colleagues: "Collègues",
     clubs: "Clubs",
     gameNotes: "Notes de match",
+    preparations: "Préparation de match",
     // Pastille à côté de « Invitations » (§15.4.4), lue par les lecteurs d'écran.
     pendingRequestsOne: "1 demande d'accès en attente",
     pendingRequestsMany: "{count} demandes d'accès en attente",
@@ -157,7 +159,7 @@ export const fr = {
       "Vos données vous appartiennent : vous pouvez en télécharger une copie complète à tout moment.",
     export: {
       label: "Télécharger mes données",
-      hint: "Un fichier JSON avec votre compte, vos indemnités, matchs, notes, barèmes, collègues et clubs, y compris ce que vous avez supprimé depuis moins de 30 jours. Gardez-le en lieu sûr : il contient des informations personnelles.",
+      hint: "Un fichier JSON avec votre compte, vos indemnités, matchs, notes, préparations de match, barèmes, collègues et clubs, y compris ce que vous avez supprimé depuis moins de 30 jours. Gardez-le en lieu sûr : il contient des informations personnelles.",
     },
     deletion: {
       title: "Supprimer mon compte",
@@ -226,6 +228,7 @@ export const fr = {
         title: "Les informations sur vos collègues",
         paragraphs: [
           "Quand vous enregistrez un collègue, vous saisissez des informations sur une autre personne. N'indiquez que ce qui vous sert : le nom suffit. Ces fiches ne sont visibles que par vous et ne servent jamais à contacter ces personnes.",
+          "Il en va de même pour les notes sur les joueurs et les coachs d'une préparation de match : tenez-vous-en à ce qui sert à arbitrer, sans information personnelle.",
         ],
         items: [],
       },
@@ -234,7 +237,7 @@ export const fr = {
         title: "Qui y a accès",
         paragraphs: [],
         items: [
-          "Vous seul voyez vos indemnités, matchs, notes, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
+          "Vous seul voyez vos indemnités, matchs, notes, préparations de match, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
           "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité, ainsi que les demandes d'accès. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
           "Les emails (invitation, mot de passe oublié, alertes de sécurité, rappels, récapitulatif du weekend) partent par l'intermédiaire de Gmail (Google). Google traite donc leur contenu, qui peut inclure vos matchs à venir, éventuellement hors de l'Union européenne.",
           "Le bouton « Itinéraire » ouvre Google Maps avec l'adresse du match : l'adresse n'est envoyée à Google que si vous cliquez.",
@@ -255,7 +258,7 @@ export const fr = {
         paragraphs: [],
         items: [
           "Compte et données saisies : tant que votre compte existe.",
-          "Données que vous supprimez (indemnités, matchs, notes, barèmes) : effacées définitivement 30 jours après leur suppression.",
+          "Données que vous supprimez (indemnités, matchs, notes, préparations de match, barèmes) : effacées définitivement 30 jours après leur suppression.",
           "Compte supprimé : désactivé tout de suite, puis effacé avec toutes ses données au bout de 30 jours.",
           "Sessions de connexion : 30 jours au plus, puis effacées 30 jours après leur fin.",
           "Invitations : effacées 30 jours après avoir été acceptées, révoquées ou expirées.",
@@ -965,7 +968,7 @@ export const fr = {
       back: "Retour aux notes de match",
       deleteZone: "Supprimer le match",
       deleteHint:
-        "Retire le match, ses officiels et sa note. L'indemnité liée reste dans vos indemnités.",
+        "Retire le match, ses officiels, sa note et sa préparation. L'indemnité liée reste dans vos indemnités.",
     },
     note: {
       legend: "Ma note",
@@ -994,7 +997,7 @@ export const fr = {
     delete: {
       submit: "Supprimer le match",
       warning:
-        "Le match, ses officiels et sa note seront supprimés. L'indemnité liée est conservée.",
+        "Le match, ses officiels, sa note et sa préparation seront supprimés. L'indemnité liée est conservée.",
       confirm: "Confirmer la suppression",
       cancel: "Annuler",
     },
@@ -1078,6 +1081,90 @@ export const fr = {
     next: "Plus anciens",
     pageLabel: "Page {page}",
     pagination: "Pagination des notes",
+  },
+  preparations: {
+    title: "Préparation de match",
+    intro: "Les matchs préparés, du plus récent au plus ancien.",
+    empty:
+      "Aucune préparation pour l'instant : préparez un match depuis « À venir », vos indemnités ou la fiche d'un match, ou créez un match sans indemnité.",
+    emptyFiltered: "Aucune préparation ne correspond à ces filtres.",
+    pagination: "Pagination des préparations",
+    teams: "{team1} – {team2}",
+    openLabel: "Préparation du match du {date}",
+    standing: "{team} : {standing}",
+    // Classement en abrégé dans la liste : « 3e sur 12 », « 7 V – 2 D ».
+    rankOf: "{ordinal} sur {count}",
+    ordinal: "{rank}e",
+    ordinalFirst: "1er",
+    record: "{wins} V – {losses} D",
+    standingSeparator: ", ",
+    alreadyRefereedShort: "déjà arbitrée",
+    observed: "Observé",
+    // Menu des indemnités et de « À venir », fiche du match.
+    prepare: "Préparer le match",
+    prepareLabel: "Préparer le match du {date}",
+    view: "Voir la préparation",
+    viewLabel: "Voir la préparation du match du {date}",
+    open: "Préparation du match",
+    openMenuLabel: "Préparation du match du {date}",
+    // Match sans indemnité créé pour être préparé (même formulaire que depuis les notes).
+    newGame: {
+      create: "Nouveau match sans indemnité",
+      back: "Retour à la préparation de match",
+      submit: "Créer le match et le préparer",
+    },
+    done: "Préparation faite",
+    prepareErrors: {
+      not_found: "Cette indemnité n'existe plus. Rechargez la page.",
+      limit_reached: "Vous avez atteint le nombre maximal de matchs.",
+    },
+    detail: {
+      legend: "Préparation",
+      none: "Pas encore de préparation pour ce match.",
+    },
+    form: {
+      back: "Retour à la fiche du match",
+      title: "Préparation du match",
+      intro:
+        "Tout est facultatif, mais renseignez au moins un champ. Les cases sont pré-cochées d'après vos matchs et les officiels : vérifiez-les.",
+      rank: "Position",
+      teamCount: "Nombre d'équipes de la poule",
+      wins: "Victoires",
+      losses: "Défaites",
+      players: "Notes sur les joueurs",
+      coaches: "Notes sur les coachs",
+      alreadyRefereed: "Déjà arbitrée cette saison",
+      alreadyRefereedHint:
+        "Pré-cochée si vous avez déjà eu ce club à ce niveau depuis le début de la saison.",
+      crewLegend: "Trio arbitral",
+      crew: {
+        placement: "Placement",
+        communication: "Communication",
+        management: "Gestion",
+        table: "Table",
+        contact: "Critère contact et niveau de tolérance",
+      },
+      observed: "Match observé",
+      observedHint: "Pré-cochée si un observateur est saisi sur le match.",
+      textHint: "4 096 caractères maximum.",
+      submit: "Enregistrer la préparation",
+      submitting: "Enregistrement…",
+      saved: "Préparation enregistrée.",
+      delete: "Supprimer la préparation",
+      deleted: "Préparation supprimée.",
+    },
+    errors: {
+      invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",
+      empty: "Renseignez au moins un champ (les cases seules ne suffisent pas).",
+      number: "Nombre invalide.",
+      rank: "Position de 1 à 50.",
+      teamCount: "Nombre d'équipes de 2 à 50.",
+      record: "Nombre de 0 à 99.",
+      rankAboveCount: "La position dépasse le nombre d'équipes.",
+      text: "Texte trop long (4 096 caractères maximum) ou caractère interdit.",
+      gameNotFound: "Ce match n'existe plus. Revenez à la liste.",
+      plateau: "Un plateau n'a pas de préparation.",
+    },
   },
   colleagues: {
     title: "Mes collègues",
