@@ -9,11 +9,12 @@ import {
   COLLEAGUES_PATH,
   GAME_NOTES_PATH,
   INVITATIONS_PATH,
+  PREPARATIONS_PATH,
   SETTINGS_PATH,
   UPCOMING_PATH,
 } from "@/lib/app-paths";
 
-export type NavIcon = "home" | "upcoming" | "compensations" | "notes";
+export type NavIcon = "home" | "upcoming" | "compensations" | "preparations" | "notes";
 
 export type NavItem = {
   href: string;
@@ -26,8 +27,24 @@ export type NavItem = {
   alsoActiveOn?: readonly string[];
 };
 
-/** Pages principales : onglets du téléphone et haut de la barre latérale. */
-export const PRIMARY_NAV: readonly NavItem[] = [
+const PREPARATIONS_NAV: NavItem = {
+  href: PREPARATIONS_PATH,
+  label: fr.nav.preparations,
+  shortLabel: fr.nav.short.preparations,
+  icon: "preparations",
+};
+
+const GAME_NOTES_NAV: NavItem = {
+  href: GAME_NOTES_PATH,
+  label: fr.nav.gameNotes,
+  shortLabel: fr.nav.short.gameNotes,
+  icon: "notes",
+  // Les fiches de match s'ouvrent depuis les notes (et depuis les indemnités).
+  alsoActiveOn: ["/matchs"],
+};
+
+/** Onglets du téléphone : « Préparation de match » y remplace « Notes de match » (§15.4.10). */
+export const MOBILE_TAB_NAV: readonly NavItem[] = [
   { href: "/", label: fr.nav.home, icon: "home" },
   { href: UPCOMING_PATH, label: fr.nav.upcoming, icon: "upcoming" },
   {
@@ -36,15 +53,11 @@ export const PRIMARY_NAV: readonly NavItem[] = [
     shortLabel: fr.nav.short.compensations,
     icon: "compensations",
   },
-  {
-    href: GAME_NOTES_PATH,
-    label: fr.nav.gameNotes,
-    shortLabel: fr.nav.short.gameNotes,
-    icon: "notes",
-    // Les fiches de match s'ouvrent depuis les notes (et depuis les indemnités).
-    alsoActiveOn: ["/matchs"],
-  },
+  PREPARATIONS_NAV,
 ];
+
+/** Pages principales de la barre latérale : les onglets du téléphone, puis « Notes de match ». */
+export const PRIMARY_NAV: readonly NavItem[] = [...MOBILE_TAB_NAV, GAME_NOTES_NAV];
 
 /** Pages secondaires : bas de la barre latérale, menu « Plus » du téléphone. */
 export const SECONDARY_NAV: readonly NavItem[] = [
@@ -52,6 +65,9 @@ export const SECONDARY_NAV: readonly NavItem[] = [
   { href: COLLEAGUES_PATH, label: fr.nav.colleagues },
   { href: CLUBS_PATH, label: fr.nav.clubs },
 ];
+
+/** Haut du menu « Plus » du téléphone : « Notes de match », puis les pages secondaires. */
+export const MOBILE_PANEL_NAV: readonly NavItem[] = [GAME_NOTES_NAV, ...SECONDARY_NAV];
 
 /** Pages d'administration : affichées aux admins seulement (l'accès reste contrôlé par chaque page). */
 export const ADMIN_NAV: readonly NavItem[] = [

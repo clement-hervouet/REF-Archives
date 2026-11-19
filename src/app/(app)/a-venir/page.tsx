@@ -7,6 +7,7 @@ import { requireUserOrRedirect } from "@/server/auth/session";
 import { getDb } from "@/server/db/pool";
 import { listUpcomingMatches } from "@/server/db/upcoming-matches";
 import { UPCOMING_LATER_WEEKS, groupByWeek, upcomingRanges } from "@/server/reminders/upcoming";
+import { prepareMatchAction } from "../preparations/actions";
 
 const t = fr.reminders.upcoming;
 
@@ -45,7 +46,11 @@ export default async function UpcomingPage() {
         {weekMatches.length === 0 ? (
           <p className="rounded-md border border-border p-4">{t.currentWeekEmpty}</p>
         ) : (
-          <UpcomingMatchList matches={weekMatches} today={today} />
+          <UpcomingMatchList
+            matches={weekMatches}
+            today={today}
+            prepareAction={prepareMatchAction}
+          />
         )}
       </section>
 
@@ -71,7 +76,11 @@ export default async function UpcomingPage() {
                   .replace("{monday}", formatShortDate(week.monday))
                   .replace("{sunday}", formatShortDate(week.sunday))}
               </h3>
-              <UpcomingMatchList matches={week.matches} today={today} />
+              <UpcomingMatchList
+                matches={week.matches}
+                today={today}
+                prepareAction={prepareMatchAction}
+              />
             </section>
           ))
         )}

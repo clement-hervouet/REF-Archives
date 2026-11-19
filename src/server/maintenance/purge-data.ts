@@ -14,6 +14,7 @@ import {
   purgeDeletedCompensations,
   purgeDeletedGames,
   purgeDeletedNotes,
+  purgeDeletedPreparations,
   purgeEndedInvitations,
   purgeEndedSessions,
   purgeExpiredPasswordResets,
@@ -39,6 +40,7 @@ export type PurgeDataDeps = { transaction: Transaction };
 export type PurgeDataResult = {
   compensations: number;
   notes: number;
+  preparations: number;
   games: number;
   scales: number;
   securityEvents: number;
@@ -54,9 +56,10 @@ export type PurgeDataResult = {
 async function purgeSoftDeleted(db: Queryable) {
   const compensations = await purgeDeletedCompensations(db, SOFT_DELETE_RETENTION_DAYS);
   const notes = await purgeDeletedNotes(db, SOFT_DELETE_RETENTION_DAYS);
+  const preparations = await purgeDeletedPreparations(db, SOFT_DELETE_RETENTION_DAYS);
   const games = await purgeDeletedGames(db, SOFT_DELETE_RETENTION_DAYS);
   const scales = await purgeArchivedScales(db, SOFT_DELETE_RETENTION_DAYS);
-  return { compensations, notes, games, scales };
+  return { compensations, notes, preparations, games, scales };
 }
 
 /** Lignes techniques : journal, rappels, sessions, invitations, demandes, jetons, compteurs. */

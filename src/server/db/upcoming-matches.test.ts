@@ -23,6 +23,7 @@ const BASE_ROW = {
   number: "2",
   postal_code: "62400",
   city: "Béthune",
+  has_preparation: false,
 };
 
 describe("listUpcomingMatches", () => {
@@ -33,6 +34,7 @@ describe("listUpcomingMatches", () => {
       {
         ...BASE_ROW,
         game_id: GAME_ID,
+        has_preparation: true,
         officials: [
           { slot: "referee1", is_self: false, firstname: "Alex", lastname: "Martin" },
           { slot: "referee2", is_self: true, firstname: null, lastname: null },
@@ -60,6 +62,7 @@ describe("listUpcomingMatches", () => {
           { slot: "referee1", isSelf: false, firstname: "Alex", lastname: "Martin" },
           { slot: "referee2", isSelf: true, firstname: null, lastname: null },
         ],
+        hasPreparation: true,
       },
     ]);
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, from, to]);
@@ -75,6 +78,7 @@ describe("listUpcomingMatches", () => {
     });
     expect(match?.gameId).toBeNull();
     expect(match?.officials).toEqual([]);
+    expect(match?.hasPreparation).toBe(false);
   });
 
   it("ne lit aucun montant ni barème", async () => {

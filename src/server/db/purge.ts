@@ -35,8 +35,12 @@ const PURGE_DELETED_COMPENSATIONS_SQL = counted(`  DELETE FROM compensation
 const PURGE_DELETED_NOTES_SQL = counted(`  DELETE FROM note
   WHERE deleted_at < ${OLDER_THAN_DAYS}`);
 
+const PURGE_DELETED_PREPARATIONS_SQL = counted(`  DELETE FROM game_preparation
+  WHERE deleted_at < ${OLDER_THAN_DAYS}`);
+
 // La suppression d'un match a déjà détaché l'indemnité liée (`softDeleteGame`) ; la note
-// d'un match supprimé, restée active, part avec lui par ON DELETE CASCADE.
+// et la préparation d'un match supprimé, restées actives, partent avec lui par ON DELETE
+// CASCADE.
 const PURGE_DELETED_GAMES_SQL = counted(`  DELETE FROM game
   WHERE deleted_at < ${OLDER_THAN_DAYS}`);
 
@@ -105,7 +109,12 @@ export function purgeDeletedNotes(db: Queryable, days: number): Promise<number> 
   return runCount(db, PURGE_DELETED_NOTES_SQL, [days]);
 }
 
-/** Matchs supprimés depuis plus de `days` jours (et leur note). */
+/** Préparations de match supprimées depuis plus de `days` jours (§15.4.10). */
+export function purgeDeletedPreparations(db: Queryable, days: number): Promise<number> {
+  return runCount(db, PURGE_DELETED_PREPARATIONS_SQL, [days]);
+}
+
+/** Matchs supprimés depuis plus de `days` jours (et leur note, leur préparation). */
 export function purgeDeletedGames(db: Queryable, days: number): Promise<number> {
   return runCount(db, PURGE_DELETED_GAMES_SQL, [days]);
 }

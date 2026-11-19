@@ -97,6 +97,22 @@ const NOTES_SQL = list(`SELECT json_agg(json_build_object(
     ORDER BY n.created_at, n.id)
   FROM note n WHERE n.user_id = $1`);
 
+const PREPARATIONS_SQL = list(`SELECT json_agg(json_build_object(
+    'id', p.id, 'gameId', p.game_id, 'teamCount', p.team_count,
+    'team1', json_build_object('rank', p.team1_rank,
+      'wins', p.team1_wins, 'losses', p.team1_losses, 'players', p.team1_players,
+      'coaches', p.team1_coaches, 'alreadyRefereed', p.team1_already_refereed),
+    'team2', json_build_object('rank', p.team2_rank,
+      'wins', p.team2_wins, 'losses', p.team2_losses, 'players', p.team2_players,
+      'coaches', p.team2_coaches, 'alreadyRefereed', p.team2_already_refereed),
+    'crew', json_build_object('placement', p.crew_placement,
+      'communication', p.crew_communication, 'management', p.crew_management,
+      'table', p.crew_table, 'contact', p.crew_contact),
+    'observed', p.observed,
+    'createdAt', p.created_at, 'updatedAt', p.updated_at, 'deletedAt', p.deleted_at)
+    ORDER BY p.created_at, p.id)
+  FROM game_preparation p WHERE p.user_id = $1`);
+
 // La ligne de barème est jointe sans filtre de propriétaire : elle peut appartenir au barème
 // commun. L'indemnité, elle, est filtrée par propriétaire.
 const COMPENSATIONS_SQL = list(`SELECT json_agg(json_build_object(
@@ -149,6 +165,7 @@ const DATA_EXPORT_SQL = `SELECT json_build_object(
   'levelDefaultScales', ${LEVEL_DEFAULT_SCALES_SQL},
   'games', ${GAMES_SQL},
   'notes', ${NOTES_SQL},
+  'preparations', ${PREPARATIONS_SQL},
   'compensations', ${COMPENSATIONS_SQL},
   'calendarFeed', ${CALENDAR_FEED_SQL},
   'sessions', ${SESSIONS_SQL},
@@ -171,6 +188,7 @@ const dataExportSchema = z.object({
   levelDefaultScales: jsonList,
   games: jsonList,
   notes: jsonList,
+  preparations: jsonList,
   compensations: jsonList,
   calendarFeed: jsonObject.nullable(),
   sessions: jsonList,

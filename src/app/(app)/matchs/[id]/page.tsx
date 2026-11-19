@@ -9,12 +9,13 @@ import { addressLabel } from "@/components/features/compensations/address-label"
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { GAME_NOTES_PATH } from "@/lib/app-paths";
+import { GAME_NOTES_PATH, preparationPath } from "@/lib/app-paths";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { findGame } from "@/server/db/games";
 import { findNote } from "@/server/db/notes";
 import { listColleagues } from "@/server/db/persons";
 import { getDb } from "@/server/db/pool";
+import { findPreparation } from "@/server/db/preparations";
 import { noteFormValues } from "@/server/games/note-form";
 import { officialsFormValues } from "@/server/games/officials-form";
 import {
@@ -45,9 +46,12 @@ export default async function GamePage(props: GamePageProps) {
   if (game === null) {
     notFound();
   }
-  const [colleagues, note] = await Promise.all([
+  // Un plateau n'a pas de préparation (§15.4.10).
+  const plateau = game.team2Name === null;
+  const [colleagues, note, preparation] = await Promise.all([
     listColleagues(db, user.id),
     findNote(db, { gameId: game.id, userId: user.id }),
+    plateau ? null : findPreparation(db, { gameId: game.id, userId: user.id }),
   ]);
 
   return (
@@ -86,6 +90,25 @@ export default async function GamePage(props: GamePageProps) {
           )}
         </div>
       </section>
+
+      {!plateau && (
+        <section
+          aria-labelledby="game-preparation"
+          className="flex flex-col gap-3 rounded-md border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 id="game-preparation" className="text-lg font-semibold">
+              {fr.preparations.detail.legend}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {preparation === null ? fr.preparations.detail.none : fr.preparations.done}
+            </p>
+          </div>
+          <Link href={preparationPath(game.id)} className={`${LINK_CLASS} self-start`}>
+            {preparation === null ? fr.preparations.prepare : fr.preparations.view}
+          </Link>
+        </section>
+      )}
 
       <section
         aria-labelledby="game-note"

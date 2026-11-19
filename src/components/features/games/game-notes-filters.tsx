@@ -1,5 +1,6 @@
 /**
- * Filtres de la page « Notes de match » : un simple formulaire GET, sans JavaScript.
+ * Filtres des pages « Notes de match » et « Préparation de match » (§15.4.10) : un simple
+ * formulaire GET, sans JavaScript.
  * Les valeurs repartent dans l'URL et sont revalidées côté serveur
  * (`parseGameNotesFilters`). Repliés dans un `<details>` (bloc 10), ouverts d'office quand
  * un filtre est actif ; le résumé affiche leur nombre.
@@ -24,7 +25,14 @@ import type { ClubSummary } from "@/server/db/clubs";
 const t = fr.gameNotes.filters;
 const divisions = fr.scales.divisions;
 
-type Props = { filters: Filters; clubs: readonly Pick<ClubSummary, "id" | "name">[] };
+type Props = {
+  filters: Filters;
+  clubs: readonly Pick<ClubSummary, "id" | "name">[];
+  /** Page qui reçoit les filtres (« Notes de match » par défaut). */
+  action?: string;
+  /** Case « Afficher aussi les matchs sans note » : propre aux notes. */
+  withNoteToggle?: boolean;
+};
 
 /** Nombre de filtres actifs (la page n'en est pas un). */
 export function activeFilterCount(filters: Filters): number {
@@ -43,11 +51,16 @@ function summaryLabel(count: number): string {
   return template.replace("{count}", String(count));
 }
 
-export function GameNotesFilters({ filters, clubs }: Props) {
+export function GameNotesFilters({
+  filters,
+  clubs,
+  action = GAME_NOTES_PATH,
+  withNoteToggle = true,
+}: Props) {
   const active = activeFilterCount(filters);
   return (
     <Disclosure summary={summaryLabel(active)} open={active > 0}>
-      <form method="get" action={GAME_NOTES_PATH} className="flex flex-col gap-4">
+      <form method="get" action={action} className="flex flex-col gap-4">
         <fieldset className="flex min-w-0 flex-col gap-4">
           <legend className="sr-only">{t.legend}</legend>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -124,24 +137,23 @@ export function GameNotesFilters({ filters, clubs }: Props) {
               </select>
             </div>
           </div>
-          <label className="flex min-h-11 items-center gap-3">
-            <input
-              type="checkbox"
-              name="tous"
-              value="1"
-              defaultChecked={filters.includeWithoutNote}
-              className="h-5 w-5 shrink-0"
-            />
-            <span>{t.includeWithoutNote}</span>
-          </label>
+          {withNoteToggle && (
+            <label className="flex min-h-11 items-center gap-3">
+              <input
+                type="checkbox"
+                name="tous"
+                value="1"
+                defaultChecked={filters.includeWithoutNote}
+                className="h-5 w-5 shrink-0"
+              />
+              <span>{t.includeWithoutNote}</span>
+            </label>
+          )}
           <div className="flex flex-wrap gap-2">
             <button type="submit" className={PRIMARY_BUTTON_CLASS}>
               {t.submit}
             </button>
-            <Link
-              href={GAME_NOTES_PATH}
-              className={`${SECONDARY_BUTTON_CLASS} inline-flex items-center`}
-            >
+            <Link href={action} className={`${SECONDARY_BUTTON_CLASS} inline-flex items-center`}>
               {t.reset}
             </Link>
           </div>

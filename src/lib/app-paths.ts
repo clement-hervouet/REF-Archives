@@ -47,6 +47,20 @@ export function completeGamePath(compensationId: string): string {
   return `/indemnites/${compensationId}/match`;
 }
 
+/** Page « Préparation de match » : préparations, filtrables (§15.4.10). */
+export const PREPARATIONS_PATH = "/preparations";
+
+/** Préparation d'un match complet (§15.4.10). */
+export function preparationPath(gameId: string): string {
+  return `${PREPARATIONS_PATH}/${gameId}`;
+}
+
+/** Valeur de `?suite=` : après création d'un match sans indemnité, ouvrir sa préparation. */
+export const NEW_GAME_NEXT_PREPARATION = "preparation";
+
+/** « Nouveau match sans indemnité » depuis « Préparation de match » (§15.4.10). */
+export const NEW_GAME_TO_PREPARE_PATH = `/matchs/nouveau?suite=${NEW_GAME_NEXT_PREPARATION}`;
+
 /** Page « Notes de match » : matchs notés, filtrables (bloc 9). */
 export const GAME_NOTES_PATH = "/notes";
 

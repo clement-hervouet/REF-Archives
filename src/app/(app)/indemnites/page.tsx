@@ -23,6 +23,7 @@ import {
 import { buildSeasonView } from "@/server/compensation/season-view";
 import { listCompensationAmounts, listCompensationsInRange } from "@/server/db/compensations";
 import { getDb } from "@/server/db/pool";
+import { prepareMatchAction } from "../preparations/actions";
 import { clearPaymentAction, deleteCompensationAction } from "./actions";
 
 const t = fr.compensations;
@@ -115,6 +116,7 @@ export default async function CompensationsPage(props: CompensationsPageProps) {
                 items={items}
                 deleteAction={deleteCompensationAction}
                 clearPaymentAction={clearPaymentAction}
+                prepareAction={prepareMatchAction}
               />
             )}
           </div>

@@ -15,11 +15,13 @@ import { MENU_ITEM_CLASS } from "@/components/features/compensations/menu-styles
 import { officialsSummary } from "@/components/features/games/officials-summary";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { completeGamePath, gamePath, matchExportPath } from "@/lib/app-paths";
+import { PrepareMatchItem } from "@/components/features/games/prepare-match-item";
+import { completeGamePath, gamePath, matchExportPath, preparationPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
 import { itineraryUrl } from "@/lib/itinerary";
 import type { UpcomingMatchRow } from "@/server/db/upcoming-matches";
+import type { PrepareMatchState } from "@/server/games/preparation-form";
 import { relativeDay } from "@/server/reminders/upcoming";
 
 const t = fr.reminders.upcoming;
@@ -46,14 +48,53 @@ function relativeLabel(today: string, startsAt: Date): string | null {
   }
 }
 
+type PrepareAction = (
+  previous: PrepareMatchState,
+  formData: FormData,
+) => Promise<PrepareMatchState>;
+
 type CardProps = {
   match: UpcomingMatch;
   today: string;
   /** Faux sur l'accueil (bloc 13) : « Itinéraire » seul (si l'adresse est complète), les autres actions restent sur « À venir ». */
   withActions: boolean;
+  /** « Préparer le match » dans le menu (§15.4.10) ; absent : pas d'entrée de préparation. */
+  prepareAction: PrepareAction | undefined;
 };
 
-function UpcomingMatchCard({ match, today, withActions }: CardProps) {
+/** Entrée « préparation » du menu : rien pour un plateau (§15.4.10). */
+function PreparationMenuItem({
+  match,
+  date,
+  prepareAction,
+}: {
+  match: UpcomingMatch;
+  date: string;
+  prepareAction: PrepareAction;
+}) {
+  if (match.team2Name === null) {
+    return null;
+  }
+  if (match.gameId === null) {
+    return <PrepareMatchItem compensationId={match.id} dateLabel={date} action={prepareAction} />;
+  }
+  const preparation = fr.preparations;
+  return (
+    <Link
+      href={preparationPath(match.gameId)}
+      data-close-menu
+      aria-label={(match.hasPreparation ? preparation.viewLabel : preparation.prepareLabel).replace(
+        "{date}",
+        date,
+      )}
+      className={MENU_ITEM_CLASS}
+    >
+      {match.hasPreparation ? preparation.view : preparation.prepare}
+    </Link>
+  );
+}
+
+function UpcomingMatchCard({ match, today, withActions, prepareAction }: CardProps) {
   const address = addressLabel(match.address);
   const date = formatIsoDate(toParisIsoDate(match.startsAt));
   const officials = officialsSummary(match.officials);
@@ -70,6 +111,9 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
         <p className="text-sm break-words">{address}</p>
         {officials !== null && (
           <p className="text-sm break-words">{t.officials.replace("{officials}", officials)}</p>
+        )}
+        {withActions && match.hasPreparation && (
+          <p className="text-sm font-medium">{fr.preparations.done}</p>
         )}
       </div>
 
@@ -117,6 +161,9 @@ function UpcomingMatchCard({ match, today, withActions }: CardProps) {
                   {fr.games.viewMatch}
                 </Link>
               )}
+              {prepareAction !== undefined && (
+                <PreparationMenuItem match={match} date={date} prepareAction={prepareAction} />
+              )}
               <Link
                 href={`/indemnites/${match.id}/modifier`}
                 data-close-menu
@@ -139,14 +186,21 @@ type Props = {
   today: string;
   /** Menu « ⋯ » (agenda, match, modification) : vrai par défaut, faux sur l'accueil. */
   withActions?: boolean;
+  /** « Préparer le match » (§15.4.10), page « À venir » seulement. */
+  prepareAction?: PrepareAction;
 };
 
-export function UpcomingMatchList({ matches, today, withActions = true }: Props) {
+export function UpcomingMatchList({ matches, today, withActions = true, prepareAction }: Props) {
   return (
     <ul className="flex flex-col gap-3">
       {matches.map((match) => (
         <li key={match.id}>
-          <UpcomingMatchCard match={match} today={today} withActions={withActions} />
+          <UpcomingMatchCard
+            match={match}
+            today={today}
+            withActions={withActions}
+            prepareAction={prepareAction}
+          />
         </li>
       ))}
     </ul>

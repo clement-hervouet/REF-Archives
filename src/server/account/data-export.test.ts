@@ -24,6 +24,7 @@ const DATA: UserDataExport = {
   levelDefaultScales: [],
   games: [],
   notes: [],
+  preparations: [],
   compensations: [],
   calendarFeed: null,
   sessions: [],

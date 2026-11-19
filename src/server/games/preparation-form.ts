@@ -1,0 +1,229 @@
+/**
+ * Formulaire de préparation d'un match (§15.4.10) : lecture du FormData, validation Zod,
+ * puis service ; suppression ; « Préparer le match » depuis une indemnité ; valeurs de
+ * départ du formulaire. Ni Next.js ni authentification ici (§6.2).
+ *
+ * Champs HTML : `gameId` (caché), `teamCount` (nombre d'équipes de la poule, commun aux
+ * deux équipes), par équipe `team1Rank`, `team1Wins`, `team1Losses`, `team1Players`,
+ * `team1Coaches`, `team1AlreadyRefereed` (case), idem pour `team2…`, puis `placement`,
+ * `communication`, `management`, `table`, `contact` et `observed` (case).
+ */
+import { z } from "zod";
+import { readText } from "@/lib/form-data";
+import {
+  CHECKBOX_ON,
+  CREW_FIELDS,
+  OBSERVED_FIELD,
+  PREPARATION_TEAMS,
+  TEAM_COUNT_FIELD,
+  TEAM_NUMBER_PARTS,
+  TEAM_REFEREED_PART,
+  TEAM_TEXT_PARTS,
+  teamFieldName,
+} from "@/lib/preparation-form-fields";
+import type { CrewField, PreparationTeam } from "@/lib/preparation-form-fields";
+import { preparationFormSchema } from "@/lib/schemas/preparations";
+import type { TeamPreparation } from "@/lib/schemas/preparations";
+import { softDeletePreparation } from "../db/preparations";
+import { prepareFromCompensation, saveGamePreparation } from "./manage-preparation";
+import type { GameDeps } from "./rejection";
+
+/** Champ en erreur : nom du champ HTML (`team1Rank`, `placement`…). */
+type PreparationIssue = "invalid" | "rank_above_count";
+
+export type PreparationFormState =
+  | { status: "idle" }
+  | {
+      status: "invalid";
+      /** Champ HTML → code d'erreur. */
+      fields: Readonly<Record<string, PreparationIssue>>;
+      empty: boolean;
+    }
+  | { status: "saved" }
+  | { status: "not_found" }
+  | { status: "plateau" };
+
+export type DeletePreparationState =
+  { status: "idle" } | { status: "deleted" } | { status: "not_found" };
+
+export type PrepareMatchState = { status: "idle" } | { status: "not_found" | "limit_reached" };
+
+/** Clés du schéma pour une partie d'équipe : `Rank` → `rank`, `TeamCount` → `teamCount`. */
+function schemaKey(part: string): string {
+  return part.charAt(0).toLowerCase() + part.slice(1);
+}
+
+function readTeam(formData: FormData, team: PreparationTeam): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const part of [...TEAM_NUMBER_PARTS, ...TEAM_TEXT_PARTS]) {
+    values[schemaKey(part)] = readText(formData, teamFieldName(team, part)) ?? "";
+  }
+  values.alreadyRefereed =
+    readText(formData, teamFieldName(team, TEAM_REFEREED_PART)) === CHECKBOX_ON;
+  return values;
+}
+
+/** Reconstruit l'objet attendu par `preparationFormSchema` ; rien n'est validé ici. */
+export function readPreparationFormData(formData: FormData): Record<string, unknown> {
+  return {
+    teamCount: readText(formData, TEAM_COUNT_FIELD) ?? "",
+    team1: readTeam(formData, "team1"),
+    team2: readTeam(formData, "team2"),
+    crew: Object.fromEntries(CREW_FIELDS.map((field) => [field, readText(formData, field) ?? ""])),
+    observed: readText(formData, OBSERVED_FIELD) === CHECKBOX_ON,
+  };
+}
+
+function isTeam(value: unknown): value is PreparationTeam {
+  return PREPARATION_TEAMS.some((team) => team === value);
+}
+
+function isCrewField(value: unknown): value is CrewField {
+  return CREW_FIELDS.some((field) => field === value);
+}
+
+/** Nom du champ HTML désigné par le chemin d'une erreur Zod, ou `null`. */
+function fieldOfPath(path: readonly PropertyKey[]): string | null {
+  const [top, key] = path;
+  if (top === TEAM_COUNT_FIELD) {
+    return TEAM_COUNT_FIELD;
+  }
+  if (isTeam(top) && typeof key === "string") {
+    return `${top}${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+  }
+  if (top === "crew" && isCrewField(key)) {
+    return key;
+  }
+  return null;
+}
+
+function invalidState(error: z.ZodError): PreparationFormState {
+  const fields: Record<string, PreparationIssue> = {};
+  let empty = false;
+  for (const issue of error.issues) {
+    if (issue.message === "empty_preparation") {
+      empty = true;
+      continue;
+    }
+    const field = fieldOfPath(issue.path);
+    if (field !== null) {
+      fields[field] = issue.message === "rank_above_count" ? "rank_above_count" : "invalid";
+    }
+  }
+  return { status: "invalid", fields, empty };
+}
+
+const idSchema = z.uuid();
+
+/** Valide puis enregistre la préparation du match désigné par le champ caché `gameId`. */
+export async function handleSavePreparation(
+  deps: GameDeps,
+  userId: string,
+  formData: FormData,
+): Promise<PreparationFormState> {
+  const gameId = idSchema.safeParse(readText(formData, "gameId"));
+  if (!gameId.success) {
+    return { status: "not_found" };
+  }
+  const parsed = preparationFormSchema.safeParse(readPreparationFormData(formData));
+  if (!parsed.success) {
+    return invalidState(parsed.error);
+  }
+  return saveGamePreparation(deps, userId, gameId.data, parsed.data);
+}
+
+/** Supprime (soft delete) la préparation du match désigné par le champ caché `gameId`. */
+export async function handleDeletePreparation(
+  deps: GameDeps,
+  userId: string,
+  formData: FormData,
+): Promise<DeletePreparationState> {
+  const gameId = idSchema.safeParse(readText(formData, "gameId"));
+  if (!gameId.success) {
+    return { status: "not_found" };
+  }
+  const deleted = await deps.transaction((db) =>
+    softDeletePreparation(db, { userId, gameId: gameId.data }),
+  );
+  return deleted ? { status: "deleted" } : { status: "not_found" };
+}
+
+/**
+ * « Préparer le match » depuis une indemnité (champ caché `compensationId`) : identifiant
+ * du match à préparer (créé si besoin), ou l'état d'erreur à afficher.
+ */
+export async function handlePrepareMatch(
+  deps: GameDeps,
+  userId: string,
+  formData: FormData,
+): Promise<{ status: "ready"; gameId: string } | PrepareMatchState> {
+  const compensationId = idSchema.safeParse(readText(formData, "compensationId"));
+  if (!compensationId.success) {
+    return { status: "not_found" };
+  }
+  const result = await prepareFromCompensation(deps, userId, compensationId.data);
+  // Un plateau n'affiche pas le bouton : une requête bricolée reçoit « introuvable ».
+  return result.status === "plateau" ? { status: "not_found" } : result;
+}
+
+/** Ce qui pré-coche les cases d'une préparation pas encore enregistrée. */
+export type PreparationDefaults = {
+  /** Calcul « déjà arbitrée cette saison » (§15.4.10). */
+  alreadyRefereed: { team1: boolean; team2: boolean };
+  /** Un observateur est saisi sur le match. */
+  hasObserver: boolean;
+};
+
+function numberValue(value: number | null): string {
+  return value === null ? "" : String(value);
+}
+
+function teamValues(team: PreparationTeam, values: TeamPreparation): Record<string, string> {
+  return {
+    [teamFieldName(team, "Rank")]: numberValue(values.rank),
+    [teamFieldName(team, "Wins")]: numberValue(values.wins),
+    [teamFieldName(team, "Losses")]: numberValue(values.losses),
+    [teamFieldName(team, "Players")]: values.players ?? "",
+    [teamFieldName(team, "Coaches")]: values.coaches ?? "",
+    [teamFieldName(team, TEAM_REFEREED_PART)]: values.alreadyRefereed ? CHECKBOX_ON : "",
+  };
+}
+
+const EMPTY_TEAM: TeamPreparation = {
+  rank: null,
+  wins: null,
+  losses: null,
+  players: null,
+  coaches: null,
+  alreadyRefereed: false,
+};
+
+/**
+ * Valeurs de départ du formulaire : la préparation enregistrée (ses cases priment), sinon
+ * des champs vides avec les cases pré-cochées par le calcul et l'observateur du match.
+ */
+export function preparationFormValues(
+  preparation: {
+    teamCount: number | null;
+    team1: TeamPreparation;
+    team2: TeamPreparation;
+    crew: Record<CrewField, string | null>;
+    observed: boolean;
+  } | null,
+  defaults: PreparationDefaults,
+): Record<string, string> {
+  const source = preparation ?? {
+    teamCount: null,
+    team1: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team1 },
+    team2: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team2 },
+    crew: { placement: null, communication: null, management: null, table: null, contact: null },
+    observed: defaults.hasObserver,
+  };
+  return {
+    [TEAM_COUNT_FIELD]: numberValue(source.teamCount),
+    ...teamValues("team1", source.team1),
+    ...teamValues("team2", source.team2),
+    ...Object.fromEntries(CREW_FIELDS.map((field) => [field, source.crew[field] ?? ""])),
+    [OBSERVED_FIELD]: source.observed ? CHECKBOX_ON : "",
+  };
+}
