@@ -8,7 +8,8 @@
  * - cupRound : tour, pour un niveau de coupe seulement (§15.4.6) ;
  * - payer : organisme qui verse, vide = déduit du niveau et de l'adresse (bloc 10) ;
  * - team1Club / team2Club : identifiant d'un club, ou `new` (teamNName et teamNPostalCode
- *   d'un nouveau club, §15.4.1) ;
+ *   d'un nouveau club, §15.4.1 ; teamNStreet, teamNNumber, teamNCity s'il vient de
+ *   l'annuaire FFBB) ;
  * - venueException : case « autre adresse que celle de l'équipe 1 » ;
  *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*) ;
  * - travelShared : case « doublé », déplacement déjà compté sur un autre match (§15.4.5) ;
@@ -82,11 +83,15 @@ function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string,
     return null;
   }
   if (club === NEW_CHOICE) {
-    // Nouveau club : nom et code postal seulement (§15.4.1).
+    // Nouveau club : nom et code postal (§15.4.1) ; rue, numéro et ville en plus s'il a
+    // été choisi dans l'annuaire FFBB (champs absents sinon).
     return {
       kind: "new",
       name: readText(formData, `${prefix}Name`),
       postalCode: readText(formData, `${prefix}PostalCode`),
+      street: readText(formData, `${prefix}Street`),
+      number: readText(formData, `${prefix}Number`),
+      city: readText(formData, `${prefix}City`),
     };
   }
   return { kind: "existing", clubId: club };
@@ -129,6 +134,15 @@ function isField(value: string): value is CompensationField {
   return COMPENSATION_FIELDS.some((field) => field === value);
 }
 
+/** Champs d'un nouveau club (`team1.name`, `team1.city`…), hors liste de choix. */
+const NEW_CLUB_PARTS: ReadonlySet<string> = new Set([
+  "name",
+  "postalCode",
+  "street",
+  "number",
+  "city",
+]);
+
 /**
  * Champ du formulaire concerné par une erreur Zod. Un champ d'adresse (`team1.address.city`)
  * devient `team1.city` ; un identifiant ou un choix invalide désigne la liste entière.
@@ -141,7 +155,7 @@ export function fieldOfIssuePath(path: readonly PropertyKey[]): CompensationFiel
   if (top === "team1" || top === "team2" || top === "venue") {
     const last = rest[rest.length - 1];
     const candidate =
-      rest[0] === "address" || rest[0] === "name" || rest[0] === "postalCode"
+      rest[0] === "address" || (rest[0] !== undefined && NEW_CLUB_PARTS.has(rest[0]))
         ? `${top}.${last ?? ""}`
         : top;
     return isField(candidate) ? candidate : top;

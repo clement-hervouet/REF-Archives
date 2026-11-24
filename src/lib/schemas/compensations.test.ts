@@ -120,6 +120,29 @@ describe("compensationFormSchema", () => {
     expect(parsed.venue.kind).toBe("new");
   });
 
+  it("accepte l'adresse d'un nouveau club venu de l'annuaire FFBB, vide = null", () => {
+    const parsed = compensationFormSchema.parse(
+      input({
+        team1: {
+          kind: "new",
+          name: "Rennes Stade Basketball",
+          postalCode: "35200",
+          street: " Boulevard Albert 1er ",
+          number: "12",
+          city: "",
+        },
+      }),
+    );
+    expect(parsed.team1).toEqual({
+      kind: "new",
+      name: "RENNES STADE BASKETBALL",
+      postalCode: "35200",
+      street: "Boulevard Albert 1er",
+      number: "12",
+      city: null,
+    });
+  });
+
   it("exige le code postal d'un nouveau club", () => {
     expect(errorPaths({ team1: { kind: "new", name: "BC Béthune", postalCode: "" } })).toEqual([
       "team1",

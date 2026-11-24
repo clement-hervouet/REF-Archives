@@ -1,17 +1,19 @@
 "use client";
 
 /**
- * Club d'un collègue (bloc 10) : aucun, un club existant, ou « Nouveau club… » qui fait
- * apparaître son nom et son code postal (mêmes règles que dans une indemnité, §15.4.1 ;
- * le reste de l'adresse se complète dans « Clubs »). Rendu dans le `<form>` remonté après
- * chaque envoi : le choix repart des valeurs conservées.
+ * Club d'un collègue (bloc 10) : aucun, un club existant, ou « Nouveau club… » (mêmes
+ * règles que dans une indemnité, §15.4.1) : recherche dans l'annuaire FFBB par ville, ou à
+ * défaut nom et code postal saisis, le reste de l'adresse se complétant dans « Clubs ».
+ * Rendu dans le `<form>` remonté après chaque envoi : le choix repart des valeurs
+ * conservées.
  */
 import { useState } from "react";
-import { FIELD_CLASS, TextField } from "@/components/features/scales/form-parts";
+import { NewClubFields } from "@/components/features/clubs/new-club-fields";
+import { FIELD_CLASS } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import { cn } from "@/lib/utils";
-import type { ColleagueFormState, NewClubField } from "@/server/games/colleagues-form";
+import type { ColleagueFormState } from "@/server/games/colleagues-form";
 import { newClubFieldError } from "./game-messages";
 
 const c = fr.colleagues.club;
@@ -28,24 +30,17 @@ type Props = {
   inline: boolean;
 };
 
-const INPUT_NAMES: Record<NewClubField, string> = {
+const INPUT_NAMES = {
   name: "clubName",
   postalCode: "clubPostalCode",
+  street: "clubStreet",
+  number: "clubNumber",
+  city: "clubCity",
+  venue: "clubVenue",
 };
 
 export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Props) {
   const [choice, setChoice] = useState(valueOf("clubId"));
-  const field = (key: NewClubField, label: string, maxLength: number) => (
-    <TextField
-      id={`${idBase}-club-${key}`}
-      name={INPUT_NAMES[key]}
-      label={label}
-      maxLength={maxLength}
-      defaultValue={valueOf(INPUT_NAMES[key])}
-      error={newClubFieldError(key, state)}
-      uppercase={key === "name"}
-    />
-  );
 
   return (
     <>
@@ -79,13 +74,18 @@ export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Pr
         )}
       </div>
       {choice === NEW_CHOICE && (
-        // Conteneur : la grille s'adapte à la largeur de la carte, pas à celle de l'écran.
-        <fieldset className="@container flex min-w-0 flex-col gap-3 rounded-md border border-border p-3 md:basis-full">
+        <fieldset className="flex min-w-0 flex-col gap-3 rounded-md border border-border p-3 md:basis-full">
           <legend className="px-1 text-sm font-semibold">{c.newLegend}</legend>
-          <div className="grid gap-3 @md:grid-cols-[minmax(0,1fr)_8rem]">
-            {field("name", f.clubName, 255)}
-            {field("postalCode", f.postalCode, 10)}
-          </div>
+          <NewClubFields
+            idBase={`${idBase}-club`}
+            names={INPUT_NAMES}
+            labels={{ name: f.clubName, postalCode: f.postalCode }}
+            valueOf={valueOf}
+            errors={{
+              name: newClubFieldError("name", state),
+              postalCode: newClubFieldError("postalCode", state),
+            }}
+          />
         </fieldset>
       )}
     </>

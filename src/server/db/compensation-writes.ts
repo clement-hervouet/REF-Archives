@@ -25,9 +25,23 @@ export type NewAddress = {
   country: string | null;
 };
 
-/** Adresse d'un club créé à la volée (indemnité, match, collègue) : code postal seul. */
-export function postalCodeOnlyAddress(postalCode: string): NewAddress {
-  return { street: null, number: null, postalCode, city: null, country: null };
+/**
+ * Adresse d'un club créé à la volée (indemnité, match, collègue) : code postal seul, ou
+ * adresse de sa salle quand il a été choisi dans l'annuaire FFBB.
+ */
+export function newClubAddress(club: {
+  postalCode: string;
+  street?: string | null | undefined;
+  number?: string | null | undefined;
+  city?: string | null | undefined;
+}): NewAddress {
+  return {
+    street: club.street ?? null,
+    number: club.number ?? null,
+    postalCode: club.postalCode,
+    city: club.city ?? null,
+    country: null,
+  };
 }
 
 /** Club verrouillé pour la transaction, avec son adresse (adresse par défaut du match). */

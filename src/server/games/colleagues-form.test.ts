@@ -141,9 +141,6 @@ describe("nouveau club depuis un collègue", () => {
     clubId: "new",
     clubName: " BC Rennes ",
     clubPostalCode: "35000",
-    // Ignorés : un nouveau club ne prend que son nom et son code postal (§15.4.1).
-    clubStreet: "Rue du Sport",
-    clubCity: "Rennes",
   };
   const ADDRESS_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
 
@@ -161,6 +158,31 @@ describe("nouveau club depuis un collègue", () => {
     expect(query.mock.calls[1]?.[0]).toContain("INSERT INTO club");
     expect(query.mock.calls[1]?.[1]?.slice(0, 3)).toEqual([USER_ID, ADDRESS_ID, "BC RENNES"]);
     expect(query.mock.calls[2]?.[1]?.[5]).toBe(CLUB_ID);
+  });
+
+  it("club choisi dans l'annuaire FFBB : adresse de sa salle", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ id: ADDRESS_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: PERSON_A }] });
+    const form = formData({
+      ...NEW_CLUB,
+      clubStreet: "Boulevard Albert 1er",
+      clubNumber: "12",
+      clubCity: "Rennes",
+      // Nom de la salle : affiché seulement, ignoré par le serveur.
+      clubVenue: "SALLE COLETTE BESSON",
+    });
+    expect(await handleCreateColleague(deps, USER_ID, form)).toEqual({ status: "created" });
+    expect(query.mock.calls[0]?.[1]).toEqual([
+      USER_ID,
+      "Boulevard Albert 1er",
+      "12",
+      "35000",
+      "Rennes",
+      null,
+    ]);
   });
 
   it("signale les champs invalides du club sans requête", async () => {

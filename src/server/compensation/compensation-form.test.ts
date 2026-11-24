@@ -89,7 +89,7 @@ describe("readCompensationFormData", () => {
         team1Club: "new",
         team1Name: "BC Béthune",
         team1PostalCode: "62400",
-        // Ignorés : un nouveau club ne prend que son nom et son code postal (§15.4.1).
+        // Club choisi dans l'annuaire FFBB : adresse de sa salle en plus (§15.4.1).
         team1Street: "Avenue du Sport",
         team1City: "Béthune",
         venueException: "on",
@@ -101,7 +101,13 @@ describe("readCompensationFormData", () => {
         venueCountry: "FR",
       }),
     );
-    expect(data.team1).toEqual({ kind: "new", name: "BC Béthune", postalCode: "62400" });
+    expect(data.team1).toEqual({
+      kind: "new",
+      name: "BC Béthune",
+      postalCode: "62400",
+      street: "Avenue du Sport",
+      city: "Béthune",
+    });
     expect(data.venue).toEqual({
       kind: "new",
       address: {

@@ -1,7 +1,7 @@
 /**
  * Résolution des informations d'un match dans une transaction, commune à l'indemnité
  * (bloc 6) et au match complet (bloc 9) : clubs existants verrouillés ou créés à la volée
- * (nom et code postal, §15.4.1),
+ * (nom et code postal, adresse de la salle s'il vient de l'annuaire FFBB, §15.4.1),
  * adresse du match (celle du club de l'équipe 1 sauf exception), équipes retrouvées ou
  * créées au niveau du match.
  *
@@ -16,7 +16,7 @@ import {
   insertAddress,
   insertClub,
   lockOwnedClubs,
-  postalCodeOnlyAddress,
+  newClubAddress,
 } from "../db/compensation-writes";
 import type { LockedClub } from "../db/compensation-writes";
 import type { CupRound } from "../db/divisions";
@@ -54,11 +54,9 @@ async function resolveClub(
   if (choice.kind === "existing") {
     return lockedClubs.get(choice.clubId) ?? reject({ status: "not_found", field: side });
   }
-  // Nouveau club : code postal seul, le reste de l'adresse se complète dans « Clubs ».
-  const addressId = await insertAddress(db, {
-    userId,
-    address: postalCodeOnlyAddress(choice.postalCode),
-  });
+  // Nouveau club : code postal seul (le reste se complète dans « Clubs »), ou adresse de
+  // sa salle s'il vient de l'annuaire FFBB.
+  const addressId = await insertAddress(db, { userId, address: newClubAddress(choice) });
   const clubId = await insertClub(db, { userId, name: choice.name, addressId });
   return clubId === null
     ? reject({ status: "limit_reached", resource: "club" })

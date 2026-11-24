@@ -86,6 +86,17 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
     read: valueOf,
   });
   const read = snapshot.key === formKey ? snapshot.read : valueOf;
+  // Formulaire affiché (référence par état : il change à chaque remontage).
+  const [formElement, setFormElement] = useState<HTMLFormElement | null>(null);
+  // Relu au tour suivant : un changement de niveau repositionne le barème par l'état de
+  // React, appliqué au DOM après le gestionnaire.
+  const refreshSnapshot = (form: HTMLFormElement | null) => {
+    window.setTimeout(() => {
+      if (form?.isConnected === true) {
+        setSnapshot({ key: formKey, read: readFormData(new FormData(form)) });
+      }
+    }, 0);
+  };
   const recapInput = previewInputFromForm(read, data);
   const recapPreview = previewCompensation(recapInput);
 
@@ -98,21 +109,24 @@ export function CompensationForm({ action, initialValues, ...data }: Props) {
         {/* Remonté après chaque envoi : les listes repartent de la saisie conservée. */}
         <form
           key={formKey}
+          ref={setFormElement}
           action={formAction}
           onChange={(event) => {
-            const form = event.currentTarget;
-            // Lu au tour suivant : un changement de niveau repositionne le barème par
-            // l'état de React, appliqué au DOM après ce gestionnaire.
-            window.setTimeout(() => {
-              if (form.isConnected) {
-                setSnapshot({ key: formKey, read: readFormData(new FormData(form)) });
-              }
-            }, 0);
+            refreshSnapshot(event.currentTarget);
           }}
           className="flex min-w-0 flex-col gap-6"
         >
           {editing && <input type="hidden" name="compensationId" value={compensationId} />}
-          <MatchFields data={data} state={state} valueOf={valueOf} liveRead={read} />
+          <MatchFields
+            data={data}
+            state={state}
+            valueOf={valueOf}
+            liveRead={read}
+            // Club choisi dans l'annuaire FFBB : champs cachés, sans événement `change`.
+            onNewClubChange={() => {
+              refreshSnapshot(formElement);
+            }}
+          />
           {/* Téléphone : le récapitulatif juste avant le bouton. Ordinateur : à côté. */}
           <CompensationRecap input={recapInput} preview={recapPreview} className="lg:hidden" />
           <button type="submit" disabled={isPending} className={SUBMIT_BUTTON_CLASS}>
@@ -137,6 +151,8 @@ type FieldsProps = {
   withCompensation?: boolean;
   /** Valeurs en cours de saisie (récapitulatif) : repèrent un doublé (§15.4.5). */
   liveRead?: (name: string) => string;
+  /** Nouveau club choisi ou saisi (annuaire FFBB) : le récapitulatif relit le formulaire. */
+  onNewClubChange?: (() => void) | undefined;
 };
 
 /**
@@ -158,6 +174,7 @@ export function MatchFields({
   valueOf,
   withCompensation = true,
   liveRead = valueOf,
+  onNewClubChange,
 }: FieldsProps) {
   const id = useId();
   const [divisionId, setDivisionId] = useState(valueOf("divisionId"));
@@ -360,6 +377,7 @@ export function MatchFields({
           onChange={setTeam1Club}
           valueOf={valueOf}
           state={state}
+          onNewClubChange={onNewClubChange}
         />
         {/* Plateau (§15.4.7) : club organisateur seul, pas d'équipe 2. */}
         {!isPlateau && (
@@ -372,6 +390,7 @@ export function MatchFields({
             onChange={setTeam2Club}
             valueOf={valueOf}
             state={state}
+            onNewClubChange={onNewClubChange}
           />
         )}
       </div>

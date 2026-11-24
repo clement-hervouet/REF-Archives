@@ -77,11 +77,19 @@ export const newAddressSchema = z.object({
 /**
  * Équipe : désignée par son club. L'équipe elle-même (club + niveau du match) est
  * retrouvée ou créée côté serveur. Un nouveau club ne demande que son nom et son code
- * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse.
+ * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse. Choisi dans
+ * l'annuaire FFBB, il arrive avec la rue, le numéro et la ville de sa salle (facultatifs).
  */
 export const teamChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
-  z.object({ kind: z.literal("new"), name: clubNameSchema, postalCode: postalCodeSchema }),
+  z.object({
+    kind: z.literal("new"),
+    name: clubNameSchema,
+    postalCode: postalCodeSchema,
+    street: optionalText(255).optional(),
+    number: optionalText(20).optional(),
+    city: optionalText(255).optional(),
+  }),
 ]);
 
 /**

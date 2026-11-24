@@ -859,7 +859,7 @@ export const fr = {
       newAddress: "Nouvelle adresse…",
       defaultVenue: "Adresse du club de l'équipe 1 : {address}",
       defaultVenueNewClub:
-        "L'adresse du nouveau club de l'équipe 1 sera utilisée (code postal seul en attendant de la compléter dans Clubs).",
+        "L'adresse du nouveau club de l'équipe 1 sera utilisée (à compléter dans Clubs si seul son code postal est connu).",
       distance: "Distance aller (km)",
       distanceOptional: "Distance aller (km, facultative)",
       distanceHint:
@@ -1269,6 +1269,31 @@ export const fr = {
       notFound: "Ce club n'existe plus. Rechargez la page.",
       street: "Rue invalide : une seule ligne, 255 caractères maximum.",
       city: "Ville invalide : une seule ligne, 255 caractères maximum.",
+    },
+    /** Saisie d'un club depuis l'annuaire de la FFBB (page Clubs, nouveau club d'un formulaire). */
+    ffbb: {
+      cityLabel: "Ville du club",
+      cityHint:
+        "La liste des clubs domiciliés dans cette ville s'affiche (annuaire FFBB) : choisissez le vôtre, son adresse est remplie automatiquement.",
+      search: "Rechercher",
+      searching: "Recherche…",
+      countOne: "1 club à « {city} » :",
+      countMany: "{count} clubs à « {city} » :",
+      loading: "Récupération de l'adresse…",
+      kinds: { union: "Union", entente: "Entente", other: "Autre" },
+      manual: "Club absent de la liste ? Saisir son nom et son code postal",
+      backToSearch: "Rechercher dans l'annuaire FFBB",
+      empty:
+        "Aucun club trouvé à « {city} » dans l'annuaire FFBB : saisissez le nom et le code postal du club.",
+      unavailable: "L'annuaire FFBB ne répond pas : saisissez le nom et le code postal du club.",
+      clubUnavailable:
+        "La fiche de ce club n'a pas pu être lue : saisissez son nom et son code postal.",
+      missingPostalCode: "La FFBB ne donne pas le code postal de ce club : complétez-le.",
+      prefilled: "Fiche remplie depuis l'annuaire FFBB : vérifiez-la avant d'ajouter le club.",
+      picked: "Club choisi dans l'annuaire FFBB",
+      venue: "Salle : {venue}",
+      change: "Changer de club",
+      required: "Choisissez un club dans la liste, ou saisissez-le manuellement.",
     },
   },
   admin: {
