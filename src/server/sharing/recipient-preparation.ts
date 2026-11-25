@@ -38,6 +38,13 @@ export function recipientFormValues(
   return preparationValues(withChecks(preparation, checks));
 }
 
+/** Vrai si les deux préparations ont les mêmes valeurs, champ par champ. */
+function sameValues(left: PreparationForm, right: PreparationForm): boolean {
+  const a = preparationValues(left);
+  const b = preparationValues(right);
+  return Object.keys(a).every((name) => a[name] === b[name]);
+}
+
 /** Cases « déjà arbitrée » saisies dans le formulaire. */
 function checksOf(preparation: PreparationForm): RefereedChecks {
   return { team1: preparation.team1.alreadyRefereed, team2: preparation.team2.alreadyRefereed };
@@ -59,7 +66,9 @@ export async function saveSharedPreparation(
       return { status: "not_found" };
     }
     const current = await findRecipientPreparation(db, { gameId, viewerId });
-    let toWrite = input.preparation;
+    // `null` : aucun champ commun ne change, la préparation n'est pas réécrite (son auteur
+    // et sa date de modification restent ceux du dernier vrai changement).
+    let toWrite: PreparationForm | null = input.preparation;
     // Préparation créée par le destinataire : les cases du propriétaire prennent son calcul
     // « déjà arbitrée », comme s'il l'avait créée (partage vérifié et verrouillé ci-dessus).
     let ownerChecks = { team1: false, team2: false };
@@ -88,9 +97,10 @@ export async function saveSharedPreparation(
           conflicts: merged.conflicts,
         };
       }
-      toWrite = merged.preparation;
+      toWrite = sameValues(merged.preparation, current) ? null : merged.preparation;
     }
     if (
+      toWrite !== null &&
       !(await writeRecipientPreparation(db, {
         gameId,
         viewerId,

@@ -121,4 +121,21 @@ describe("saveSharedPreparation", () => {
     });
     expect(query).toHaveBeenCalledTimes(2);
   });
+
+  it("ne réécrit pas la préparation quand seules ses cases changent", async () => {
+    const { deps, query } = setup();
+    const current = { ...MINE, team1: { ...MINE.team1, alreadyRefereed: false } };
+    query
+      .mockResolvedValueOnce({ rows: [SHARE_ROW] })
+      .mockResolvedValueOnce({ rows: [preparationRow(current)] });
+    // Même contenu commun que l'enregistré ; seule la case équipe 1 du destinataire change.
+    const base = { ...MINE, team1: { ...MINE.team1, alreadyRefereed: false } };
+    expect(await saveSharedPreparation(deps, VIEWER, GAME_ID, { preparation: MINE, base })).toEqual(
+      { status: "saved" },
+    );
+    const statements = query.mock.calls.map(([sql]) => sql).join("\n");
+    expect(statements).not.toContain("INSERT INTO game_preparation");
+    expect(query.mock.calls[2]?.[1]).toEqual([GAME_ID, VIEWER, true, false]);
+    expect(query).toHaveBeenCalledTimes(3);
+  });
 });
