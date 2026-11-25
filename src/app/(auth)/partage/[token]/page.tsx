@@ -55,7 +55,8 @@ async function ShareContent({ params }: SharePageProps) {
     );
   }
   if (!hasCompleteProfile(user)) {
-    redirect(COMPLETE_PROFILE_PATH);
+    // Le jeton suit : une fois le profil complété, retour ici.
+    redirect(`${COMPLETE_PROFILE_PATH}?partage=${parsed.data}`);
   }
   const db = getDb();
   const preview = await findShareLinkPreview(db, hashToken(parsed.data));
