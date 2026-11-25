@@ -26,18 +26,24 @@ export async function acceptShareAction(
   const user = await requireUser();
   const result = await handleAcceptShare(createAcceptShareDeps(), user.id, formData);
   switch (result.status) {
-    case "accepted":
-      if (result.newlyLinked) {
-        await recordSecurityEvent({
-          type: "colleague_linked",
-          userId: user.id,
-          targetUserId: result.ownerUserId,
-          ip: getClientIp(await headers()),
-        });
+    case "accepted": {
+      // Un événement par lien créé : la fiche du propriétaire vers ce compte, et la fiche
+      // de ce compte vers le propriétaire (ajout à ses collègues).
+      const ip = getClientIp(await headers());
+      for (const created of [result.newlyLinked, result.linkedBack]) {
+        if (created) {
+          await recordSecurityEvent({
+            type: "colleague_linked",
+            userId: user.id,
+            targetUserId: result.ownerUserId,
+            ip,
+          });
+        }
       }
       revalidatePath(PREPARATIONS_PATH, "layout");
       revalidatePath(COLLEAGUES_PATH);
       return redirect(sharedPreparationPath(result.gameId));
+    }
     case "rate_limited":
       return {
         status: "rate_limited",

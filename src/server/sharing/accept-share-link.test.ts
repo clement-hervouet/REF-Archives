@@ -104,6 +104,7 @@ describe("acceptShareLink", () => {
       gameId: GAME_ID,
       ownerUserId: OWNER,
       newlyLinked: true,
+      linkedBack: false,
     });
     const statements = query.mock.calls.map(([sql]) => sql);
     // Verrous dans l'ordre : le match, puis le lien.
@@ -161,7 +162,9 @@ describe("acceptShareLink", () => {
       .mockResolvedValueOnce({ rows: [{ id: NEW_PERSON }] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null, person_id: null }] })
       .mockResolvedValueOnce({ rows: [{ person_id: NEW_PERSON }] });
-    await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } });
+    expect(
+      await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } }),
+    ).toMatchObject({ status: "accepted", newlyLinked: false, linkedBack: true });
     // Pas encore lié au propriétaire : fiche créée chez le destinataire, puis liée.
     expect(query.mock.calls[6]?.[1]).toEqual([VIEWER, OWNER]);
     expect(query.mock.calls[8]?.[1]?.slice(0, 4)).toEqual([VIEWER, "Clément", "Hervouet", true]);
@@ -181,7 +184,7 @@ describe("acceptShareLink", () => {
       .mockResolvedValueOnce({ rows: [{ person_id: "0d1e2f3a-4b5c-4d6e-8f7a-8b9c0d1e2f01" }] });
     expect(
       await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } }),
-    ).toMatchObject({ status: "accepted" });
+    ).toMatchObject({ status: "accepted", linkedBack: false });
     expect(query.mock.calls.map(([sql]) => sql).join("\n")).not.toContain("INSERT INTO person");
     expect(query).toHaveBeenCalledTimes(7);
   });
@@ -202,7 +205,9 @@ describe("acceptShareLink", () => {
       // Entre-temps, le propriétaire est lié à une autre fiche du destinataire.
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null, person_id: PERSON_ID }] })
       .mockResolvedValueOnce({ rows: [{ id: NEW_PERSON }] });
-    await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } });
+    expect(
+      await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } }),
+    ).toMatchObject({ linkedBack: false });
     const last = query.mock.calls.at(-1);
     expect(last?.[0]).toContain("DELETE FROM person");
     expect(last?.[1]).toEqual([NEW_PERSON, VIEWER]);

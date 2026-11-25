@@ -44,6 +44,8 @@ export type AcceptShareResult =
       ownerUserId: string;
       /** Vrai si cette acceptation a créé le lien entre les comptes (journal de sécurité). */
       newlyLinked: boolean;
+      /** Vrai si elle a aussi lié le propriétaire à une fiche du destinataire. */
+      linkedBack: boolean;
     }
   | { status: "invalid" }
   /** Le propriétaire ouvre son propre lien. */
@@ -54,20 +56,21 @@ export type AcceptShareResult =
 
 /**
  * Associe le propriétaire à une fiche collègue du destinataire, au mieux : un refus
- * (fiche déjà liée, limite de collègues) n'empêche pas d'accepter le partage.
+ * (fiche déjà liée, limite de collègues) n'empêche pas d'accepter le partage. Vrai si un
+ * lien a été créé (journal de sécurité).
  */
 async function linkBack(
   db: Queryable,
   input: { viewerId: string; ownerUserId: string; reverse: ReverseLink },
-): Promise<void> {
+): Promise<boolean> {
   const { viewerId, ownerUserId, reverse } = input;
   if (reverse.kind === "none") {
-    return;
+    return false;
   }
   // Déjà lié au propriétaire par une autre fiche (page restée ouverte, autre lien accepté) :
   // rien à faire, et surtout pas de fiche en double.
   if ((await findLinkedPerson(db, { ownerUserId: viewerId, linkedUserId: ownerUserId })) !== null) {
-    return;
+    return false;
   }
   let personId: string | null;
   if (reverse.kind === "existing") {
@@ -75,7 +78,7 @@ async function linkBack(
   } else {
     const name = await findAccountName(db, ownerUserId);
     if (name?.lastname == null) {
-      return;
+      return false;
     }
     personId = await insertColleague(db, {
       userId: viewerId,
@@ -83,7 +86,7 @@ async function linkBack(
     });
   }
   if (personId === null) {
-    return;
+    return false;
   }
   const link = { ownerUserId: viewerId, personId, linkedUserId: ownerUserId };
   // `insertLink` est faux si la fiche n'est pas un collègue du destinataire, ou si une
@@ -93,6 +96,7 @@ async function linkBack(
     // Fiche créée ici pour rien : elle est retirée (aucun match ne la cite encore).
     await deleteColleague(db, { userId: viewerId, personId });
   }
+  return linked;
 }
 
 /** Accepte un lien de partage pour le compte connecté `viewerId`. */
@@ -156,7 +160,7 @@ export async function acceptShareLink(
       recipientUserId: input.viewerId,
     });
     await markShareLinkAccepted(db, { linkId: link.id, userId: input.viewerId });
-    await linkBack(db, {
+    const linkedBack = await linkBack(db, {
       viewerId: input.viewerId,
       ownerUserId: link.ownerUserId,
       reverse: input.reverse,
@@ -166,6 +170,7 @@ export async function acceptShareLink(
       gameId: link.gameId,
       ownerUserId: link.ownerUserId,
       newlyLinked,
+      linkedBack,
     };
   });
 }
