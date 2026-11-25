@@ -31,6 +31,7 @@ export const fr = {
     clubs: "Clubs",
     gameNotes: "Notes de match",
     preparations: "Préparation de match",
+    improvementAxes: "Axes d'amélioration",
     // Pastille à côté de « Invitations » (§15.4.4), lue par les lecteurs d'écran.
     pendingRequestsOne: "1 demande d'accès en attente",
     pendingRequestsMany: "{count} demandes d'accès en attente",
@@ -207,7 +208,7 @@ export const fr = {
           "Votre compte : adresse email, prénom, nom, rôle (utilisateur ou administrateur) et mot de passe. Le mot de passe n'est conservé que sous forme d'empreinte irréversible : personne, pas même l'administrateur, ne peut le lire.",
           "Votre demande d'accès, si vous en envoyez une depuis la page de connexion : prénom, nom et adresse email.",
           "Vos réglages : rappels par email, récapitulatif du weekend, lien d'abonnement calendrier.",
-          "Ce que vous saisissez : indemnités (équipes, date, heure, adresse, niveau, barème, distance, paiement), matchs complets, notes de match (confiance, stress, texte, liens vers des clips), barèmes, clubs, adresses et collègues.",
+          "Ce que vous saisissez : indemnités (équipes, date, heure, adresse, niveau, barème, distance, paiement), matchs complets, notes de match (confiance, stress, texte, liens vers des clips), préparations de match, axes d'amélioration, barèmes, clubs, adresses et collègues.",
           "Des données techniques de sécurité : sessions de connexion (date de création et de dernière activité), journal des événements de sécurité (connexions, changements de mot de passe, exports…) et compteurs anti-abus. Votre adresse IP n'y figure jamais en clair : elle est remplacée par une empreinte calculée avec une clé secrète du serveur.",
         ],
       },
@@ -237,7 +238,7 @@ export const fr = {
         title: "Qui y a accès",
         paragraphs: [],
         items: [
-          "Vous seul voyez vos indemnités, matchs, notes, préparations de match, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
+          "Vous seul voyez vos indemnités, matchs, notes, préparations de match, axes d'amélioration, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
           "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité, ainsi que les demandes d'accès. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
           "Les emails (invitation, mot de passe oublié, alertes de sécurité, rappels, récapitulatif du weekend) partent par l'intermédiaire de Gmail (Google). Google traite donc leur contenu, qui peut inclure vos matchs à venir, éventuellement hors de l'Union européenne.",
           "Le bouton « Itinéraire » ouvre Google Maps avec l'adresse du match : l'adresse n'est envoyée à Google que si vous cliquez.",
@@ -1171,6 +1172,29 @@ export const fr = {
       text: "Texte trop long (4 096 caractères maximum) ou caractère interdit.",
       gameNotFound: "Ce match n'existe plus. Revenez à la liste.",
       plateau: "Un plateau n'a pas de préparation.",
+    },
+  },
+  improvementAxes: {
+    title: "Axes d'amélioration",
+    intro:
+      "Ce que vous voulez travailler, indépendamment de vos matchs, notes et préparations. Tout est facultatif : videz un champ pour l'effacer.",
+    axes: {
+      mechanicsAk: "Méca AK",
+      mechanicsAt: "Méca AT",
+      mechanicsTransitions: "Méca transitions",
+      decisionMaking: "Prise de décision",
+      signals: "Gestuelle",
+      foulJudgment: "Jugement fautes",
+      violationJudgment: "Jugement violations",
+    },
+    textHint: "4 096 caractères maximum.",
+    updated: "Dernière mise à jour : {date}",
+    submit: "Enregistrer les axes",
+    submitting: "Enregistrement…",
+    saved: "Axes d'amélioration enregistrés.",
+    errors: {
+      invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",
+      text: "Texte trop long (4 096 caractères maximum) ou caractère interdit.",
     },
   },
   colleagues: {

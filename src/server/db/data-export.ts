@@ -115,6 +115,15 @@ const PREPARATIONS_SQL = list(`SELECT json_agg(json_build_object(
     ORDER BY p.created_at, p.id)
   FROM game_preparation p WHERE p.user_id = $1`);
 
+// Une fiche par compte au plus : objet, ou NULL s'il n'en a jamais enregistré.
+const IMPROVEMENT_AXES_SQL = `(SELECT json_build_object(
+    'mechanicsAk', i.mechanics_ak, 'mechanicsAt', i.mechanics_at,
+    'mechanicsTransitions', i.mechanics_transitions, 'decisionMaking', i.decision_making,
+    'signals', i.signals, 'foulJudgment', i.foul_judgment,
+    'violationJudgment', i.violation_judgment,
+    'createdAt', i.created_at, 'updatedAt', i.updated_at)
+  FROM improvement_axes i WHERE i.user_id = $1)`;
+
 // La ligne de barème est jointe sans filtre de propriétaire : elle peut appartenir au barème
 // commun. L'indemnité, elle, est filtrée par propriétaire.
 const COMPENSATIONS_SQL = list(`SELECT json_agg(json_build_object(
@@ -168,6 +177,7 @@ const DATA_EXPORT_SQL = `SELECT json_build_object(
   'games', ${GAMES_SQL},
   'notes', ${NOTES_SQL},
   'preparations', ${PREPARATIONS_SQL},
+  'improvementAxes', ${IMPROVEMENT_AXES_SQL},
   'compensations', ${COMPENSATIONS_SQL},
   'calendarFeed', ${CALENDAR_FEED_SQL},
   'sessions', ${SESSIONS_SQL},
@@ -191,6 +201,7 @@ const dataExportSchema = z.object({
   games: jsonList,
   notes: jsonList,
   preparations: jsonList,
+  improvementAxes: jsonObject.nullable(),
   compensations: jsonList,
   calendarFeed: jsonObject.nullable(),
   sessions: jsonList,

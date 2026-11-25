@@ -64,21 +64,23 @@ describe("structure", () => {
     expect(MOBILE_TAB_NAV.length).toBeLessThanOrEqual(4);
   });
 
-  it("place « Préparation de match » entre les indemnités et les notes (barre latérale)", () => {
+  it("place « Préparation de match » entre les indemnités et les notes, puis les axes (barre latérale)", () => {
     expect(PRIMARY_NAV.map((entry) => entry.href)).toEqual([
       "/",
       "/a-venir",
       "/indemnites",
       "/preparations",
       "/notes",
+      "/axes-amelioration",
     ]);
   });
 
-  it("met « Préparation de match » en onglet et « Notes de match » en tête du menu « Plus »", () => {
+  it("met « Préparation de match » en onglet, « Notes de match » et les axes en tête du menu « Plus »", () => {
     expect(MOBILE_TAB_NAV.at(-1)?.href).toBe("/preparations");
     expect(MOBILE_TAB_NAV.some((entry) => entry.href === "/notes")).toBe(false);
     expect(MOBILE_PANEL_NAV[0]?.href).toBe("/notes");
-    expect(MOBILE_PANEL_NAV.slice(1)).toEqual(SECONDARY_NAV);
+    expect(MOBILE_PANEL_NAV[1]?.href).toBe("/axes-amelioration");
+    expect(MOBILE_PANEL_NAV.slice(2)).toEqual(SECONDARY_NAV);
   });
 
   it("donne une icône à chaque onglet du téléphone, et à eux seuls", () => {
