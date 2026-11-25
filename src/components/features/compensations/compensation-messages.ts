@@ -68,6 +68,8 @@ export function fieldError(field: CompensationField, state: CompensationFormStat
     case "team1.name":
     case "team2.name":
       return t.errors.name;
+    case "venue.name":
+      return t.errors.venueName;
     case "date":
     case "time":
     case "divisionId":

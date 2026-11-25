@@ -20,6 +20,15 @@ export function addressLabel(address: AddressParts): string {
 }
 
 /**
+ * Libellé d'une salle : son nom puis son adresse, ex. « Gymnase de la Courrouze — 72 Rue
+ * Claude Bernard, 35000 Rennes » ; l'adresse seule si son nom n'est pas connu.
+ */
+export function venueLabel(address: AddressParts & Pick<AddressSummary, "name">): string {
+  const label = addressLabel(address);
+  return address.name === null ? label : `${address.name} — ${label}`;
+}
+
+/**
  * Vrai si l'adresse suffit pour un itinéraire : rue, code postal et ville connus (le
  * numéro et le pays restent facultatifs).
  */

@@ -89,11 +89,14 @@ describe("readCompensationFormData", () => {
         team1Club: "new",
         team1Name: "BC Béthune",
         team1PostalCode: "62400",
-        // Ignorés : un nouveau club ne prend que son nom et son code postal (§15.4.1).
+        // Club choisi dans l'annuaire FFBB : adresse de sa salle en plus (§15.4.1).
         team1Street: "Avenue du Sport",
         team1City: "Béthune",
+        team1Venue: "Salle Bertinchamps",
+        team1Venues: JSON.stringify([{ name: "Gymnase Jean Moulin", postalCode: "62400" }]),
         venueException: "on",
         venueAddress: "new",
+        venueName: "Salle Pierre de Coubertin",
         venueStreet: "Rue du Gymnase",
         venueNumber: "3",
         venuePostalCode: "62400",
@@ -101,10 +104,19 @@ describe("readCompensationFormData", () => {
         venueCountry: "FR",
       }),
     );
-    expect(data.team1).toEqual({ kind: "new", name: "BC Béthune", postalCode: "62400" });
+    expect(data.team1).toEqual({
+      kind: "new",
+      name: "BC Béthune",
+      postalCode: "62400",
+      street: "Avenue du Sport",
+      city: "Béthune",
+      venueName: "Salle Bertinchamps",
+      venues: [{ name: "Gymnase Jean Moulin", postalCode: "62400" }],
+    });
     expect(data.venue).toEqual({
       kind: "new",
       address: {
+        name: "Salle Pierre de Coubertin",
         street: "Rue du Gymnase",
         number: "3",
         postalCode: "62400",
@@ -117,6 +129,21 @@ describe("readCompensationFormData", () => {
   it("ignore l'adresse d'exception si la case n'est pas cochée", () => {
     expect(readCompensationFormData(form({ ...BASE, venueAddress: ADDRESS_B })).venue).toEqual({
       kind: "team1",
+    });
+  });
+
+  it("lit la liste « Salle » d'un club à plusieurs salles, sans la case d'exception", () => {
+    const read = (fields: Record<string, string>) =>
+      readCompensationFormData(form({ ...BASE, ...fields })).venue;
+    expect(read({ venueClub: "main" })).toEqual({ kind: "team1" });
+    // Case restée cochée d'un club précédent : ignorée, la liste décide.
+    expect(read({ venueClub: "main", venueException: "on", venueAddress: ADDRESS_B })).toEqual({
+      kind: "team1",
+    });
+    expect(read({ venueClub: ADDRESS_B })).toEqual({ kind: "existing", addressId: ADDRESS_B });
+    expect(read({ venueClub: "other", venueAddress: ADDRESS_B })).toEqual({
+      kind: "existing",
+      addressId: ADDRESS_B,
     });
   });
 

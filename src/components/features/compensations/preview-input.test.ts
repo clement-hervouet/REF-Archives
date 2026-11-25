@@ -31,29 +31,34 @@ const DATA: CompensationFormData = {
       name: "BC Béthune",
       address: {
         id: ADDRESS_A,
+        name: null,
         street: "Rue A",
         number: null,
         postalCode: "62400",
         city: "Béthune",
         country: null,
       },
+      venues: [],
     },
     {
       id: CLUB_B,
       name: "ES Arras",
       address: {
         id: ADDRESS_X,
+        name: null,
         street: "Rue B",
         number: null,
         postalCode: "62000",
         city: "Arras",
         country: null,
       },
+      venues: [],
     },
   ],
   addresses: [
     {
       id: ADDRESS_X,
+      name: null,
       street: "Rue B",
       number: null,
       postalCode: "59000",
@@ -173,6 +178,7 @@ describe("hasSameDayMatch", () => {
             ...DATA.addresses,
             {
               id: ADDRESS_A,
+              name: null,
               street: "Rue A",
               number: null,
               postalCode: "62400",
@@ -190,6 +196,57 @@ describe("hasSameDayMatch", () => {
       ),
     ).toBe(false);
     expect(hasSameDayMatch(read({ date: "2026-11-14", team1Club: "new" }), DATA)).toBe(false);
+  });
+
+  it("suit la salle choisie dans la liste d'un club à plusieurs salles", () => {
+    const data = {
+      ...DATA,
+      addresses: [
+        ...DATA.addresses,
+        {
+          id: ADDRESS_A,
+          name: "Salle A",
+          street: "Rue A",
+          number: null,
+          postalCode: "62400",
+          city: "Béthune",
+          country: null,
+        },
+      ],
+    };
+    // Autre salle du club : l'adresse A, où une indemnité existe déjà ce jour-là.
+    const otherVenue = read({ date: "2026-11-14", team1Club: CLUB_B, venueClub: ADDRESS_A });
+    expect(hasSameDayMatch(otherVenue, data)).toBe(true);
+    expect(previewInputFromForm(otherVenue, data).venue).toEqual({
+      postalCode: "62400",
+      country: null,
+    });
+    // Salle principale : celle du club, sans indemnité ce jour-là ; la case d'exception
+    // restée cochée d'un autre club ne compte pas.
+    expect(
+      hasSameDayMatch(
+        read({
+          date: "2026-11-14",
+          team1Club: CLUB_B,
+          venueClub: "main",
+          venueException: "on",
+          venueAddress: ADDRESS_A,
+        }),
+        data,
+      ),
+    ).toBe(false);
+    // « Autre adresse… » : la liste des adresses décide.
+    expect(
+      hasSameDayMatch(
+        read({
+          date: "2026-11-14",
+          team1Club: CLUB_B,
+          venueClub: "other",
+          venueAddress: ADDRESS_A,
+        }),
+        data,
+      ),
+    ).toBe(true);
   });
 
   it("ne compte pas l'indemnité en cours de modification", () => {

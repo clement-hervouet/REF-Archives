@@ -67,6 +67,8 @@ export const oneWayDistanceSchema = z
   .transform((meters) => meters * 2);
 
 export const newAddressSchema = z.object({
+  /** Nom de la salle (« Gymnase de la Courrouze »), facultatif. */
+  name: optionalText(255),
   street: requiredText(255),
   number: optionalText(20),
   postalCode: postalCodeSchema,
@@ -74,19 +76,54 @@ export const newAddressSchema = z.object({
   country: optionalText(100),
 });
 
+/** Nombre de salles d'un club, principale comprise : borne de sécurité (§15.4.1). */
+export const MAX_CLUB_VENUES = 20;
+
+/**
+ * Autre salle d'un club, importée de l'annuaire FFBB : nom et adresse, le code postal
+ * seul obligatoire (comme l'adresse d'un club). Un champ inconnu arrive vide (saisie) ou
+ * `null` (liste JSON de l'annuaire) : il devient `null`.
+ */
+export const clubVenueSchema = z.object({
+  name: optionalText(255).nullable(),
+  street: optionalText(255).nullable(),
+  number: optionalText(20).nullable(),
+  postalCode: postalCodeSchema,
+  city: optionalText(255).nullable(),
+});
+
+export type ClubVenue = z.output<typeof clubVenueSchema>;
+
+/** Autres salles d'un nouveau club (champ caché, liste JSON). */
+export const clubVenuesSchema = z.array(clubVenueSchema).max(MAX_CLUB_VENUES - 1);
+
 /**
  * Équipe : désignée par son club. L'équipe elle-même (club + niveau du match) est
  * retrouvée ou créée côté serveur. Un nouveau club ne demande que son nom et son code
- * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse.
+ * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse. Choisi dans
+ * l'annuaire FFBB, il arrive avec le nom, la rue, le numéro et la ville de sa salle
+ * principale, et ses autres salles (facultatifs).
  */
 export const teamChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
-  z.object({ kind: z.literal("new"), name: clubNameSchema, postalCode: postalCodeSchema }),
+  z.object({
+    kind: z.literal("new"),
+    name: clubNameSchema,
+    postalCode: postalCodeSchema,
+    street: optionalText(255).optional(),
+    number: optionalText(20).optional(),
+    city: optionalText(255).optional(),
+    venueName: optionalText(255).optional(),
+    venues: clubVenuesSchema.optional(),
+  }),
 ]);
 
+/** Nouveau club validé (indemnité, match, collègue). */
+export type NewClubChoice = Extract<z.output<typeof teamChoiceSchema>, { kind: "new" }>;
+
 /**
- * Adresse du match : celle du club de l'équipe 1 (cas normal), ou une exception
- * (adresse déjà connue ou nouvelle).
+ * Adresse du match : celle du club de l'équipe 1 (cas normal), ou une autre (autre salle
+ * du club, adresse déjà connue ou nouvelle), rattachée alors aux salles du club.
  */
 const venueChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("team1") }),

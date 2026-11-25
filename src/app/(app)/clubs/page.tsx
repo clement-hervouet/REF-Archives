@@ -8,7 +8,14 @@ import { searchText } from "@/lib/search";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { listClubs } from "@/server/db/clubs";
 import { getDb } from "@/server/db/pool";
-import { createClubAction, deleteClubAction, updateClubAction } from "./actions";
+import {
+  addClubVenuesAction,
+  createClubAction,
+  deleteClubAction,
+  removeClubVenueAction,
+  setMainClubVenueAction,
+  updateClubAction,
+} from "./actions";
 
 const t = fr.clubs;
 
@@ -43,15 +50,23 @@ export default async function ClubsPage() {
             id: club.id,
             searchText: searchText([
               club.name,
-              club.address.city,
-              club.address.postalCode,
-              club.address.street,
+              ...[club.address, ...club.venues].flatMap((venue) => [
+                venue.name,
+                venue.city,
+                venue.postalCode,
+                venue.street,
+              ]),
             ]),
             card: (
               <ClubCard
                 club={club}
                 updateAction={updateClubAction}
                 deleteAction={deleteClubAction}
+                venueActions={{
+                  add: addClubVenuesAction,
+                  remove: removeClubVenueAction,
+                  setMain: setMainClubVenueAction,
+                }}
               />
             ),
           }))}

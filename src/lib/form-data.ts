@@ -9,3 +9,20 @@ export function readText(formData: FormData, name: string): string | undefined {
   const value = formData.get(name);
   return typeof value === "string" ? value : undefined;
 }
+
+/**
+ * Liste JSON d'un champ caché (autres salles d'un club) : `[]` si le champ est absent ou
+ * vide. Un JSON illisible est rendu tel quel : le schéma Zod le refuse ensuite.
+ */
+export function readJsonList(formData: FormData, name: string): unknown {
+  const text = readText(formData, name);
+  if (text === undefined || text.trim() === "") {
+    return [];
+  }
+  try {
+    const value: unknown = JSON.parse(text);
+    return value;
+  } catch {
+    return text;
+  }
+}

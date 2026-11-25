@@ -11,7 +11,7 @@ import {
 import {
   MAX_CLUBS_PER_USER,
   ensureTeam,
-  insertAddress,
+  findOrInsertAddress,
   insertClub,
   insertCompensation,
   lockCompensation,
@@ -32,6 +32,7 @@ const TEAM_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
 const COMPENSATION_ID = "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01";
 
 const ADDRESS = {
+  name: null,
   street: "Avenue du Sport",
   number: null,
   postalCode: "62400",
@@ -109,18 +110,13 @@ describe("listApplicableRates", () => {
   });
 });
 
-describe("insertAddress", () => {
-  it("insère l'adresse avec ses champs facultatifs à NULL", async () => {
+describe("findOrInsertAddress", () => {
+  it("retrouve ou insère l'adresse, champs facultatifs à NULL", async () => {
     const { db, query } = makeFakeDb([{ id: ADDRESS_ID }]);
-    expect(await insertAddress(db, { userId: USER_ID, address: ADDRESS })).toBe(ADDRESS_ID);
-    expect(query.mock.calls[0]?.[1]).toEqual([
-      USER_ID,
-      "Avenue du Sport",
-      null,
-      "62400",
-      "Béthune",
-      null,
-    ]);
+    expect(await findOrInsertAddress(db, { userId: USER_ID, address: ADDRESS })).toBe(ADDRESS_ID);
+    const [sql, params] = query.mock.calls[0] ?? [];
+    expect(sql).toContain("WHERE user_id = $1::uuid");
+    expect(params).toEqual([USER_ID, "Avenue du Sport", null, "62400", "Béthune", null, null]);
   });
 });
 

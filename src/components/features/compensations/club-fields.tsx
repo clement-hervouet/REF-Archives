@@ -1,9 +1,10 @@
 /**
- * Choix du club d'une équipe : un club existant, ou « Nouveau club… » qui fait apparaître
- * son nom et son code postal (création à la volée, bloc 6). Le reste de l'adresse se
- * complète dans l'onglet « Clubs » (§15.4.1) ; le code postal suffit à déduire l'organisme.
+ * Choix du club d'une équipe : un club existant, ou « Nouveau club… » (création à la volée,
+ * bloc 6) : recherche dans l'annuaire FFBB par ville, qui remplit nom et adresse de la
+ * salle, ou à défaut nom et code postal saisis (le reste de l'adresse se complète dans
+ * l'onglet « Clubs », §15.4.1 ; le code postal suffit à déduire l'organisme).
  */
-import { TextField } from "@/components/features/scales/form-parts";
+import { NewClubFields } from "@/components/features/clubs/new-club-fields";
 import { fr } from "@/i18n/fr";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
@@ -23,6 +24,8 @@ type Props = {
   onChange: (value: string) => void;
   valueOf: (name: string) => string;
   state: CompensationFormState;
+  /** Nouveau club choisi ou saisi : le formulaire relit ses champs (récapitulatif). */
+  onNewClubChange?: (() => void) | undefined;
 };
 
 export function ClubFields({
@@ -34,6 +37,7 @@ export function ClubFields({
   onChange,
   valueOf,
   state,
+  onNewClubChange,
 }: Props) {
   return (
     <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
@@ -55,28 +59,29 @@ export function ClubFields({
         <option value={NEW_CHOICE}>{t.fields.newClub}</option>
       </SelectField>
       {value === NEW_CHOICE && (
-        <>
-          <TextField
-            id={`${idBase}-name`}
-            name={`${prefix}Name`}
-            label={t.fields.clubName}
-            maxLength={255}
-            uppercase
-            defaultValue={valueOf(`${prefix}Name`)}
-            error={fieldError(`${prefix}.name`, state)}
-          />
-          <div className="md:max-w-xs">
-            <TextField
-              id={`${idBase}-postal-code`}
-              name={`${prefix}PostalCode`}
-              label={t.fields.postalCode}
-              hint={t.fields.newClubPostalCodeHint}
-              maxLength={10}
-              defaultValue={valueOf(`${prefix}PostalCode`)}
-              error={fieldError(`${prefix}.postalCode`, state)}
-            />
-          </div>
-        </>
+        <NewClubFields
+          idBase={idBase}
+          names={{
+            name: `${prefix}Name`,
+            postalCode: `${prefix}PostalCode`,
+            street: `${prefix}Street`,
+            number: `${prefix}Number`,
+            city: `${prefix}City`,
+            venue: `${prefix}Venue`,
+            venues: `${prefix}Venues`,
+          }}
+          labels={{
+            name: t.fields.clubName,
+            postalCode: t.fields.postalCode,
+            postalCodeHint: t.fields.newClubPostalCodeHint,
+          }}
+          valueOf={valueOf}
+          errors={{
+            name: fieldError(`${prefix}.name`, state),
+            postalCode: fieldError(`${prefix}.postalCode`, state),
+          }}
+          onResolved={onNewClubChange}
+        />
       )}
     </fieldset>
   );

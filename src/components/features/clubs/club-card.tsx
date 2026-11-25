@@ -1,19 +1,21 @@
 "use client";
 
 /**
- * Carte d'un club (§15.4.1), sur le modèle des collègues : nom, adresse connue (ou
- * mention « à compléter »), deux icônes discrètes (modifier, supprimer). La modification
- * s'ouvre dans la carte et se referme après l'enregistrement ; la confirmation de
- * suppression passe en dessous.
+ * Carte d'un club (§15.4.1), sur le modèle des collègues : nom, salle principale (ou
+ * mention « à compléter »), autres salles, deux icônes discrètes (modifier, supprimer). La
+ * modification s'ouvre dans la carte et se referme après l'enregistrement ; la
+ * confirmation de suppression passe en dessous.
  */
 import { Pencil } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ConfirmActionButton } from "@/components/features/games/confirm-action-button";
-import { addressLabel, isCompleteAddress } from "@/components/features/compensations/address-label";
+import { isCompleteAddress, venueLabel } from "@/components/features/compensations/address-label";
 import { fr } from "@/i18n/fr";
 import type { ClubFormState, DeleteClubState } from "@/server/clubs/manage-clubs";
 import type { ClubSummary } from "@/server/db/clubs";
 import { ClubForm } from "./club-form";
+import { ClubVenues } from "./club-venues";
+import type { ClubVenueActions } from "./club-venues";
 
 const t = fr.clubs;
 
@@ -21,12 +23,13 @@ type Props = {
   club: ClubSummary;
   updateAction: (previous: ClubFormState, formData: FormData) => Promise<ClubFormState>;
   deleteAction: (previous: DeleteClubState, formData: FormData) => Promise<DeleteClubState>;
+  venueActions: ClubVenueActions;
 };
 
 const ICON_BUTTON_CLASS =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground";
 
-export function ClubCard({ club, updateAction, deleteAction }: Props) {
+export function ClubCard({ club, updateAction, deleteAction, venueActions }: Props) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const formId = `club-edit-${club.id}`;
@@ -44,7 +47,10 @@ export function ClubCard({ club, updateAction, deleteAction }: Props) {
       <div className="flex flex-wrap items-start gap-x-1 gap-y-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
           <h2 className="font-semibold break-words">{club.name}</h2>
-          <p className="text-sm break-words">{addressLabel(address)}</p>
+          {club.venues.length > 0 && (
+            <p className="text-sm text-muted-foreground">{fr.clubs.venues.main}</p>
+          )}
+          <p className="text-sm break-words">{venueLabel(address)}</p>
           {!isCompleteAddress(address) && (
             <p className="text-sm text-muted-foreground">{t.incomplete}</p>
           )}
@@ -82,6 +88,7 @@ export function ClubCard({ club, updateAction, deleteAction }: Props) {
           {t.edit.updated}
         </p>
       )}
+      <ClubVenues club={club} actions={venueActions} />
       {editing && (
         <div id={formId} className="border-t border-border pt-3">
           <ClubForm
@@ -89,6 +96,7 @@ export function ClubCard({ club, updateAction, deleteAction }: Props) {
             initialValues={{
               clubId: club.id,
               name: club.name,
+              venueName: address.name ?? "",
               street: address.street ?? "",
               number: address.number ?? "",
               postalCode: address.postalCode,
