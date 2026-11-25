@@ -12,6 +12,7 @@ import { NOTE_LEVEL_FIELDS } from "@/lib/game-form-fields";
 import { gamePath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
+import { richTextToPlain } from "@/lib/rich-text/plain-text";
 import type { GameNoteListItem } from "@/server/db/game-notes";
 import { LevelMeter } from "./level-meter";
 
@@ -53,7 +54,10 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
         {!item.hasNote && <p className="text-sm text-muted-foreground">{t.noNote}</p>}
         {item.excerpt !== null && (
           <p className="text-sm break-words whitespace-pre-line">
-            {item.excerptTruncated ? `${item.excerpt}…` : item.excerpt}
+            {/* Texte riche stocké en Markdown : l'extrait s'affiche sans les balises. */}
+            {item.excerptTruncated
+              ? `${richTextToPlain(item.excerpt).trimEnd()}…`
+              : richTextToPlain(item.excerpt)}
           </p>
         )}
         {clips !== null && <p className="text-sm text-muted-foreground">{clips}</p>}

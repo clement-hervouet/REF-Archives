@@ -6,6 +6,7 @@
  * ligne. Tout est facultatif, mais une note vide est refusée côté serveur.
  */
 import { useId } from "react";
+import { RichTextField } from "@/components/features/common/rich-text-field";
 import {
   FIELD_CLASS,
   FormMessage,
@@ -67,29 +68,17 @@ export function NoteForm({ action, gameId, initialValues }: Props) {
             />
           ))}
         </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <label htmlFor={`${id}-body`} className="text-sm font-medium">
-            {t.body}
-          </label>
-          <textarea
-            id={`${id}-body`}
-            name="body"
-            rows={6}
-            maxLength={NOTE_BODY_MAX}
-            defaultValue={current("body")}
-            aria-invalid={bodyError !== null}
-            aria-describedby={`${id}-body-hint${bodyError !== null ? ` ${id}-body-error` : ""}`}
-            className={FIELD_CLASS}
-          />
-          <p id={`${id}-body-hint`} className="text-sm text-muted-foreground">
-            {t.bodyHint}
-          </p>
-          {bodyError !== null && (
-            <p id={`${id}-body-error`} className="text-sm font-medium text-destructive">
-              {bodyError}
-            </p>
-          )}
-        </div>
+        <RichTextField
+          id={`${id}-body`}
+          name="body"
+          label={t.body}
+          defaultValue={current("body")}
+          maxLength={NOTE_BODY_MAX}
+          error={bodyError}
+          hint={t.bodyHint}
+          hintVisible
+          height="lg"
+        />
         <div className="flex min-w-0 flex-col gap-1">
           <label htmlFor={`${id}-clips`} className="text-sm font-medium">
             {t.clips}

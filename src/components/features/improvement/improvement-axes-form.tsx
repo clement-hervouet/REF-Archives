@@ -6,11 +6,8 @@
  * champ vidé est effacé à l'enregistrement.
  */
 import { useId } from "react";
-import {
-  FIELD_CLASS,
-  FormMessage,
-  SUBMIT_BUTTON_CLASS,
-} from "@/components/features/scales/form-parts";
+import { RichTextField } from "@/components/features/common/rich-text-field";
+import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import type { ScaleMessage } from "@/components/features/scales/scale-messages";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
@@ -59,29 +56,17 @@ export function ImprovementAxesForm({ action, initialValues }: Props) {
           const fieldId = `${id}-${axis}`;
           const error = state.status === "invalid" && state.fields.includes(axis);
           return (
-            <div key={axis} className="flex min-w-0 flex-col gap-1">
-              <label htmlFor={fieldId} className="font-medium">
-                {t.axes[axis]}
-              </label>
-              <textarea
-                id={fieldId}
-                name={axis}
-                rows={5}
-                maxLength={IMPROVEMENT_TEXT_MAX}
-                defaultValue={current(axis)}
-                aria-invalid={error}
-                aria-describedby={`${fieldId}-hint${error ? ` ${fieldId}-error` : ""}`}
-                className={FIELD_CLASS}
-              />
-              <p id={`${fieldId}-hint`} className="sr-only">
-                {t.textHint}
-              </p>
-              {error && (
-                <p id={`${fieldId}-error`} className="text-sm font-medium text-destructive">
-                  {t.errors.text}
-                </p>
-              )}
-            </div>
+            <RichTextField
+              key={axis}
+              id={fieldId}
+              name={axis}
+              label={t.axes[axis]}
+              labelClassName="font-medium"
+              defaultValue={current(axis)}
+              maxLength={IMPROVEMENT_TEXT_MAX}
+              error={error ? t.errors.text : null}
+              height="lg"
+            />
           );
         })}
       </div>
