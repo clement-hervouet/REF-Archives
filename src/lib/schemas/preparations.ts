@@ -60,34 +60,50 @@ function teamHasContent(team: TeamPreparation): boolean {
   );
 }
 
-/**
- * Formulaire complet de préparation : au moins un nombre ou un texte renseigné, et aucune
- * position au-delà du nombre d'équipes de la poule.
- */
-export const preparationFormSchema = z
-  .object({
-    teamCount: optionalInteger(TEAM_COUNT_MIN, TEAM_COUNT_MAX),
-    team1: teamSchema,
-    team2: teamSchema,
-    crew: crewSchema,
-    observed: z.boolean(),
-  })
-  .superRefine((value, ctx) => {
-    for (const team of PREPARATION_TEAMS) {
-      const rank = value[team].rank;
-      if (rank !== null && value.teamCount !== null && rank > value.teamCount) {
-        ctx.addIssue({ code: "custom", path: [team, "rank"], message: "rank_above_count" });
-      }
-    }
-    const crewHasContent = CREW_FIELDS.some((field) => value.crew[field] !== null);
-    if (
-      value.teamCount === null &&
-      !crewHasContent &&
-      !teamHasContent(value.team1) &&
-      !teamHasContent(value.team2)
-    ) {
-      ctx.addIssue({ code: "custom", path: [], message: "empty_preparation" });
-    }
-  });
+/** Champs de la préparation, sans les règles d'ensemble (valeurs de départ du formulaire). */
+export const preparationFieldsSchema = z.object({
+  teamCount: optionalInteger(TEAM_COUNT_MIN, TEAM_COUNT_MAX),
+  team1: teamSchema,
+  team2: teamSchema,
+  crew: crewSchema,
+  observed: z.boolean(),
+});
 
-export type PreparationForm = z.output<typeof preparationFormSchema>;
+export type PreparationForm = z.output<typeof preparationFieldsSchema>;
+
+/** Règle d'ensemble non respectée : chemin du champ (vide = toute la préparation) et code. */
+type PreparationRuleIssue = {
+  path: (string | number)[];
+  message: "rank_above_count" | "empty_preparation";
+};
+
+/**
+ * Règles d'ensemble : au moins un nombre ou un texte renseigné, et aucune position au-delà
+ * du nombre d'équipes de la poule. Servent aussi à revalider une préparation fusionnée.
+ */
+function preparationRuleIssues(value: PreparationForm): PreparationRuleIssue[] {
+  const issues: PreparationRuleIssue[] = [];
+  for (const team of PREPARATION_TEAMS) {
+    const rank = value[team].rank;
+    if (rank !== null && value.teamCount !== null && rank > value.teamCount) {
+      issues.push({ path: [team, "rank"], message: "rank_above_count" });
+    }
+  }
+  const crewHasContent = CREW_FIELDS.some((field) => value.crew[field] !== null);
+  if (
+    value.teamCount === null &&
+    !crewHasContent &&
+    !teamHasContent(value.team1) &&
+    !teamHasContent(value.team2)
+  ) {
+    issues.push({ path: [], message: "empty_preparation" });
+  }
+  return issues;
+}
+
+/** Formulaire complet de préparation : les champs et les règles d'ensemble. */
+export const preparationFormSchema = preparationFieldsSchema.superRefine((value, ctx) => {
+  for (const issue of preparationRuleIssues(value)) {
+    ctx.addIssue({ code: "custom", ...issue });
+  }
+});

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { preparationFormSchema } from "@/lib/schemas/preparations";
+import { preparationFieldsSchema, preparationFormSchema } from "@/lib/schemas/preparations";
+import type { PreparationForm } from "@/lib/schemas/preparations";
 import { makeFakeDb } from "../db/fake-db";
 import type { Queryable } from "../db/users";
 import { prepareFromCompensation, saveGamePreparation } from "./manage-preparation";
@@ -27,6 +28,40 @@ const PREPARATION = preparationFormSchema.parse({
   observed: true,
 });
 
+/** Formulaire ouvert sans préparation enregistrée : valeurs de départ vides. */
+const EMPTY_BASE = preparationFieldsSchema.parse({
+  teamCount: "",
+  team1: TEAM,
+  team2: TEAM,
+  crew: { placement: "", communication: "", management: "", table: "", contact: "" },
+  observed: false,
+});
+
+/** Ligne `game_preparation` telle que relue par `findPreparation`. */
+function preparationRow(preparation: PreparationForm): Record<string, unknown> {
+  const team = (key: "team1" | "team2") => ({
+    [`${key}_rank`]: preparation[key].rank,
+    [`${key}_wins`]: preparation[key].wins,
+    [`${key}_losses`]: preparation[key].losses,
+    [`${key}_players`]: preparation[key].players,
+    [`${key}_coaches`]: preparation[key].coaches,
+    [`${key}_already_refereed`]: preparation[key].alreadyRefereed,
+  });
+  return {
+    id: "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e01",
+    updated_at: new Date("2026-11-20T10:00:00Z"),
+    team_count: preparation.teamCount,
+    ...team("team1"),
+    ...team("team2"),
+    crew_placement: preparation.crew.placement,
+    crew_communication: preparation.crew.communication,
+    crew_management: preparation.crew.management,
+    crew_table: preparation.crew.table,
+    crew_contact: preparation.crew.contact,
+    observed: preparation.observed,
+  };
+}
+
 function setup() {
   const { db, query } = makeFakeDb();
   const deps = {
@@ -36,15 +71,19 @@ function setup() {
 }
 
 describe("saveGamePreparation", () => {
-  it("verrouille le match puis écrit la préparation", async () => {
+  it("verrouille le match puis écrit la préparation, sans préparation enregistrée", async () => {
     const { deps, query } = setup();
     query.mockResolvedValueOnce({ rows: [{ plateau: false }] });
-    expect(await saveGamePreparation(deps, USER_ID, GAME_ID, PREPARATION)).toEqual({
-      status: "saved",
-    });
-    expect(query).toHaveBeenCalledTimes(2);
+    expect(
+      await saveGamePreparation(deps, USER_ID, GAME_ID, {
+        preparation: PREPARATION,
+        base: EMPTY_BASE,
+      }),
+    ).toEqual({ status: "saved" });
+    expect(query).toHaveBeenCalledTimes(3);
     expect(query.mock.calls[0]?.[1]).toEqual([GAME_ID, USER_ID]);
-    expect(query.mock.calls[1]?.[1]).toEqual([
+    expect(query.mock.calls[1]?.[1]).toEqual([GAME_ID, USER_ID]);
+    expect(query.mock.calls[2]?.[1]).toEqual([
       USER_ID,
       GAME_ID,
       10,
@@ -66,23 +105,62 @@ describe("saveGamePreparation", () => {
       null,
       null,
       true,
+      USER_ID,
     ]);
+  });
+
+  it("n'écrit que les champs modifiés et garde ceux changés ailleurs", async () => {
+    const { deps, query } = setup();
+    const elsewhere = { ...PREPARATION, crew: { ...PREPARATION.crew, table: "Table lente" } };
+    query
+      .mockResolvedValueOnce({ rows: [{ plateau: false }] })
+      .mockResolvedValueOnce({ rows: [preparationRow(elsewhere)] });
+    const mine = { ...PREPARATION, team1: { ...PREPARATION.team1, wins: 7 } };
+    expect(
+      await saveGamePreparation(deps, USER_ID, GAME_ID, { preparation: mine, base: PREPARATION }),
+    ).toEqual({ status: "saved" });
+    const values = query.mock.calls[2]?.[1];
+    // Victoires de l'équipe 1 (saisie) et table (modifiée ailleurs).
+    expect(values?.[4]).toBe(7);
+    expect(values?.[18]).toBe("Table lente");
+  });
+
+  it("signale un champ modifié des deux côtés sans rien écrire", async () => {
+    const { deps, query } = setup();
+    const elsewhere = { ...PREPARATION, crew: { ...PREPARATION.crew, placement: "Serré" } };
+    query
+      .mockResolvedValueOnce({ rows: [{ plateau: false }] })
+      .mockResolvedValueOnce({ rows: [preparationRow(elsewhere)] });
+    const mine = { ...PREPARATION, crew: { ...PREPARATION.crew, placement: "Très large" } };
+    const result = await saveGamePreparation(deps, USER_ID, GAME_ID, {
+      preparation: mine,
+      base: PREPARATION,
+    });
+    expect(result).toMatchObject({ status: "conflict", conflicts: ["placement"] });
+    expect(result.status === "conflict" && result.saved.placement).toBe("Serré");
+    expect(query).toHaveBeenCalledTimes(2);
   });
 
   it("refuse un match introuvable, supprimé ou d'un autre utilisateur", async () => {
     const { deps, query } = setup();
-    expect(await saveGamePreparation(deps, USER_ID, GAME_ID, PREPARATION)).toEqual({
-      status: "not_found",
-    });
+    expect(
+      await saveGamePreparation(deps, USER_ID, GAME_ID, {
+        preparation: PREPARATION,
+        base: EMPTY_BASE,
+      }),
+    ).toEqual({ status: "not_found" });
     expect(query).toHaveBeenCalledTimes(1);
   });
 
   it("refuse un plateau sans rien écrire", async () => {
     const { deps, query } = setup();
     query.mockResolvedValueOnce({ rows: [{ plateau: true }] });
-    expect(await saveGamePreparation(deps, USER_ID, GAME_ID, PREPARATION)).toEqual({
-      status: "plateau",
-    });
+    expect(
+      await saveGamePreparation(deps, USER_ID, GAME_ID, {
+        preparation: PREPARATION,
+        base: EMPTY_BASE,
+      }),
+    ).toEqual({ status: "plateau" });
     expect(query).toHaveBeenCalledTimes(1);
   });
 });

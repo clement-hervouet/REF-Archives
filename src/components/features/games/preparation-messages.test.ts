@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  preparationConflictText,
   preparationFieldError,
   preparationStatusMessage,
   standingText,
@@ -22,6 +23,27 @@ describe("preparationStatusMessage", () => {
       text: "Préparation enregistrée.",
     });
     expect(preparationStatusMessage({ status: "idle" })).toBeNull();
+  });
+});
+
+describe("preparationConflictText", () => {
+  const state = {
+    status: "conflict" as const,
+    saved: { teamCount: "12", placement: "**Large** sur les AK", observed: "1", team2Coaches: "" },
+    conflicts: ["teamCount", "placement", "observed", "team2Coaches"],
+  };
+
+  it("affiche la version enregistrée des champs signalés, en texte lisible", () => {
+    expect(preparationConflictText("teamCount", state)).toBe("12");
+    expect(preparationConflictText("placement", state)).toBe("Large sur les AK");
+    expect(preparationConflictText("observed", state)).toBe("cochée");
+    expect(preparationConflictText("team2Coaches", state)).toBe("(vide)");
+  });
+
+  it("ne signale ni un champ hors conflit ni un autre état", () => {
+    expect(preparationConflictText("table", state)).toBeNull();
+    expect(preparationConflictText("teamCount", { status: "saved" })).toBeNull();
+    expect(preparationStatusMessage(state)?.tone).toBe("error");
   });
 });
 

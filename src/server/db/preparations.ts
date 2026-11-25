@@ -33,9 +33,10 @@ const lockRowSchema = z.object({ plateau: z.boolean() });
 const UPSERT_PREPARATION_SQL = `INSERT INTO game_preparation (user_id, game_id, team_count,
   team1_rank, team1_wins, team1_losses, team1_players, team1_coaches, team1_already_refereed,
   team2_rank, team2_wins, team2_losses, team2_players, team2_coaches, team2_already_refereed,
-  crew_placement, crew_communication, crew_management, crew_table, crew_contact, observed)
+  crew_placement, crew_communication, crew_management, crew_table, crew_contact, observed,
+  updated_by)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-  $19, $20, $21)
+  $19, $20, $21, $22)
 ON CONFLICT (game_id) WHERE deleted_at IS NULL
 DO UPDATE SET
   team_count = EXCLUDED.team_count,
@@ -47,7 +48,8 @@ DO UPDATE SET
   team2_already_refereed = EXCLUDED.team2_already_refereed,
   crew_placement = EXCLUDED.crew_placement, crew_communication = EXCLUDED.crew_communication,
   crew_management = EXCLUDED.crew_management, crew_table = EXCLUDED.crew_table,
-  crew_contact = EXCLUDED.crew_contact, observed = EXCLUDED.observed`;
+  crew_contact = EXCLUDED.crew_contact, observed = EXCLUDED.observed,
+  updated_by = EXCLUDED.updated_by`;
 
 const SOFT_DELETE_PREPARATION_SQL = `UPDATE game_preparation SET deleted_at = now()
 WHERE game_id = $1 AND user_id = $2 AND deleted_at IS NULL
@@ -71,12 +73,13 @@ function teamValues(team: TeamPreparation): unknown[] {
 }
 
 /**
- * Écrit la préparation d'un match de l'utilisateur. Le match doit être actif, à
- * l'utilisateur, hors plateau et verrouillé dans la même transaction.
+ * Écrit la préparation d'un match de l'utilisateur (`updatedBy` : auteur de la
+ * modification). Le match doit être actif, à l'utilisateur, hors plateau et verrouillé
+ * dans la même transaction.
  */
 export async function savePreparation(
   db: Queryable,
-  input: { userId: string; gameId: string; preparation: PreparationForm },
+  input: { userId: string; gameId: string; updatedBy: string; preparation: PreparationForm },
 ): Promise<void> {
   const { crew, teamCount, team1, team2, observed } = input.preparation;
   await db.query(UPSERT_PREPARATION_SQL, [
@@ -91,6 +94,7 @@ export async function savePreparation(
     crew.table,
     crew.contact,
     observed,
+    input.updatedBy,
   ]);
 }
 
