@@ -64,6 +64,9 @@ export const NEW_GAME_TO_PREPARE_PATH = `/matchs/nouveau?suite=${NEW_GAME_NEXT_P
 /** Page « Notes de match » : matchs notés, filtrables (bloc 9). */
 export const GAME_NOTES_PATH = "/notes";
 
+/** Page « Axes d'amélioration » : ce que l'arbitre veut travailler, hors de tout match. */
+export const IMPROVEMENT_AXES_PATH = "/axes-amelioration";
+
 /** Page « Compléter mon profil » : nom et prénom obligatoires avant tout le reste (bloc 10). */
 export const COMPLETE_PROFILE_PATH = "/completer-profil";
 

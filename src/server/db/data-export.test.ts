@@ -16,6 +16,7 @@ function emptyData(account: Record<string, unknown> | null) {
     games: [],
     notes: [],
     preparations: [],
+    improvementAxes: null,
     compensations: [],
     calendarFeed: null,
     sessions: [],

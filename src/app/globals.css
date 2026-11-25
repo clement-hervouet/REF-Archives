@@ -498,3 +498,166 @@
 .rdp-root.date-picker .rdp-dropdown_root option {
   padding: 0.375rem 0.75rem;
 }
+
+/*
+ * Texte riche (notes de match, préparations, axes d'amélioration) : contenu de l'éditeur
+ * TipTap et rendu en lecture. La feuille de base de ProseMirror est reprise ici plutôt
+ * qu'injectée par TipTap (`injectCSS: false`) : la CSP de production refuse les `<style>`
+ * sans nonce. Le préflight de Tailwind remet titres et listes à zéro : on les redessine.
+ */
+@layer components {
+  .ProseMirror {
+    position: relative;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    white-space: break-spaces;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0;
+  }
+
+  .ProseMirror [contenteditable="false"] {
+    white-space: normal;
+  }
+
+  .ProseMirror [contenteditable="false"] [contenteditable="true"] {
+    white-space: pre-wrap;
+  }
+
+  img.ProseMirror-separator {
+    display: inline !important;
+    border: none !important;
+    margin: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .ProseMirror-gapcursor {
+    display: none;
+    pointer-events: none;
+    position: absolute;
+    margin: 0;
+  }
+
+  .ProseMirror-gapcursor::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -2px;
+    width: 20px;
+    border-top: 1px solid currentColor;
+  }
+
+  .ProseMirror-focused .ProseMirror-gapcursor {
+    display: block;
+  }
+
+  .ProseMirror-hideselection *::selection {
+    background: transparent;
+  }
+
+  .ProseMirror-hideselection * {
+    caret-color: transparent;
+  }
+
+  .rich-text > * + * {
+    margin-top: 0.5rem;
+  }
+
+  .rich-text h1,
+  .rich-text h2,
+  .rich-text h3 {
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .rich-text h1 {
+    font-size: 1.5rem;
+  }
+
+  .rich-text h2 {
+    font-size: 1.25rem;
+  }
+
+  .rich-text h3 {
+    font-size: 1.125rem;
+  }
+
+  .rich-text p[data-size="small"] {
+    font-size: 0.8125rem;
+    color: var(--color-muted-foreground);
+  }
+
+  .rich-text mark {
+    border-radius: 0.125rem;
+    padding-inline: 0.125rem;
+    color: inherit;
+    background-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+  }
+
+  .rich-text ul,
+  .rich-text ol {
+    padding-left: 1.5rem;
+  }
+
+  .rich-text ul {
+    list-style: disc;
+  }
+
+  .rich-text ol {
+    list-style: decimal;
+  }
+
+  .rich-text li > * + * {
+    margin-top: 0.25rem;
+  }
+
+  .rich-text ul[data-type="taskList"] {
+    padding-left: 0.25rem;
+    list-style: none;
+  }
+
+  .rich-text ul[data-type="taskList"] li {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .rich-text ul[data-type="taskList"] li > label {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 1.5rem;
+    user-select: none;
+  }
+
+  .rich-text ul[data-type="taskList"] li > label input {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--color-primary);
+  }
+
+  .rich-text ul[data-type="taskList"] li > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .rich-text ul[data-type="taskList"] li[data-checked="true"] > div {
+    color: var(--color-muted-foreground);
+    text-decoration: line-through;
+  }
+
+  .rich-text blockquote {
+    border-left: 3px solid var(--color-border);
+    padding-left: 0.75rem;
+    color: var(--color-muted-foreground);
+  }
+
+  .rich-text hr {
+    margin-block: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .rich-text hr.ProseMirror-selectednode {
+    border-top-color: var(--color-ring);
+  }
+}

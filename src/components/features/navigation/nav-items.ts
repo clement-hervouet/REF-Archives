@@ -8,6 +8,7 @@ import {
   CLUBS_PATH,
   COLLEAGUES_PATH,
   GAME_NOTES_PATH,
+  IMPROVEMENT_AXES_PATH,
   INVITATIONS_PATH,
   PREPARATIONS_PATH,
   SETTINGS_PATH,
@@ -43,6 +44,12 @@ const GAME_NOTES_NAV: NavItem = {
   alsoActiveOn: ["/matchs"],
 };
 
+/** Axes d'amélioration : indépendants des matchs, rangés après « Notes de match ». */
+const IMPROVEMENT_AXES_NAV: NavItem = {
+  href: IMPROVEMENT_AXES_PATH,
+  label: fr.nav.improvementAxes,
+};
+
 /** Onglets du téléphone : « Préparation de match » y remplace « Notes de match » (§15.4.10). */
 export const MOBILE_TAB_NAV: readonly NavItem[] = [
   { href: "/", label: fr.nav.home, icon: "home" },
@@ -56,8 +63,15 @@ export const MOBILE_TAB_NAV: readonly NavItem[] = [
   PREPARATIONS_NAV,
 ];
 
-/** Pages principales de la barre latérale : les onglets du téléphone, puis « Notes de match ». */
-export const PRIMARY_NAV: readonly NavItem[] = [...MOBILE_TAB_NAV, GAME_NOTES_NAV];
+/**
+ * Pages principales de la barre latérale : les onglets du téléphone, puis « Notes de match »
+ * et « Axes d'amélioration ».
+ */
+export const PRIMARY_NAV: readonly NavItem[] = [
+  ...MOBILE_TAB_NAV,
+  GAME_NOTES_NAV,
+  IMPROVEMENT_AXES_NAV,
+];
 
 /** Pages secondaires : bas de la barre latérale, menu « Plus » du téléphone. */
 export const SECONDARY_NAV: readonly NavItem[] = [
@@ -66,8 +80,15 @@ export const SECONDARY_NAV: readonly NavItem[] = [
   { href: CLUBS_PATH, label: fr.nav.clubs },
 ];
 
-/** Haut du menu « Plus » du téléphone : « Notes de match », puis les pages secondaires. */
-export const MOBILE_PANEL_NAV: readonly NavItem[] = [GAME_NOTES_NAV, ...SECONDARY_NAV];
+/**
+ * Haut du menu « Plus » du téléphone : « Notes de match », « Axes d'amélioration », puis les
+ * pages secondaires.
+ */
+export const MOBILE_PANEL_NAV: readonly NavItem[] = [
+  GAME_NOTES_NAV,
+  IMPROVEMENT_AXES_NAV,
+  ...SECONDARY_NAV,
+];
 
 /** Pages d'administration : affichées aux admins seulement (l'accès reste contrôlé par chaque page). */
 export const ADMIN_NAV: readonly NavItem[] = [

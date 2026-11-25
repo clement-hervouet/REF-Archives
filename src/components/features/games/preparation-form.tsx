@@ -8,6 +8,7 @@
  * refusée côté serveur ; les cases arrivent pré-cochées par la page.
  */
 import { useId } from "react";
+import { RichTextField } from "@/components/features/common/rich-text-field";
 import {
   FIELD_CLASS,
   FormMessage,
@@ -56,31 +57,15 @@ type FieldProps = {
 };
 
 function TextAreaField({ id, name, label, value, error }: FieldProps) {
-  const describedBy = `${id}-hint${error !== null ? ` ${id}-error` : ""}`;
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </label>
-      <textarea
-        id={id}
-        name={name}
-        rows={4}
-        maxLength={PREPARATION_TEXT_MAX}
-        defaultValue={value}
-        aria-invalid={error !== null}
-        aria-describedby={describedBy}
-        className={FIELD_CLASS}
-      />
-      <p id={`${id}-hint`} className="sr-only">
-        {t.textHint}
-      </p>
-      {error !== null && (
-        <p id={`${id}-error`} className="text-sm font-medium text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
+    <RichTextField
+      id={id}
+      name={name}
+      label={label}
+      defaultValue={value}
+      maxLength={PREPARATION_TEXT_MAX}
+      error={error}
+    />
   );
 }
 
