@@ -83,11 +83,12 @@ describe("acceptShareLink", () => {
     query
       .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: OWNER, person_id: null }] });
     expect(await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: NONE })).toEqual({
       status: "taken",
     });
-    expect(query).toHaveBeenCalledTimes(3);
+    expect(query).toHaveBeenCalledTimes(4);
   });
 
   it("lie les comptes, partage et consomme le lien", async () => {
@@ -95,6 +96,7 @@ describe("acceptShareLink", () => {
     query
       .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null, person_id: null }] })
       .mockResolvedValueOnce({ rows: [{ person_id: PERSON_ID }] });
     expect(await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: NONE })).toEqual({
@@ -104,12 +106,29 @@ describe("acceptShareLink", () => {
       newlyLinked: true,
     });
     const statements = query.mock.calls.map(([sql]) => sql);
-    expect(statements[3]).toContain("INSERT INTO colleague_link");
-    expect(query.mock.calls[3]?.[1]).toEqual([OWNER, PERSON_ID, VIEWER]);
-    expect(statements[4]).toContain("INSERT INTO game_share");
-    expect(query.mock.calls[4]?.[1]).toEqual([OWNER, GAME_ID, PERSON_ID, VIEWER]);
-    expect(query.mock.calls[5]?.[1]).toEqual([LINK_ID, VIEWER]);
-    expect(query).toHaveBeenCalledTimes(6);
+    // Verrous dans l'ordre : le match, puis le lien.
+    expect(statements[0]).not.toContain("FOR UPDATE");
+    expect(statements[1]).toContain("FOR UPDATE OF g");
+    expect(statements[2]).toContain("FROM preparation_share_link");
+    expect(statements[2]).toContain("FOR UPDATE");
+    expect(statements[4]).toContain("INSERT INTO colleague_link");
+    expect(query.mock.calls[4]?.[1]).toEqual([OWNER, PERSON_ID, VIEWER]);
+    expect(statements[5]).toContain("INSERT INTO game_share");
+    expect(query.mock.calls[5]?.[1]).toEqual([OWNER, GAME_ID, PERSON_ID, VIEWER]);
+    expect(query.mock.calls[6]?.[1]).toEqual([LINK_ID, VIEWER]);
+    expect(query).toHaveBeenCalledTimes(7);
+  });
+
+  it("refuse un lien consommé ou révoqué pendant qu'il attendait le verrou du match", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: null }] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: NONE })).toEqual({
+      status: "invalid",
+    });
+    expect(query).toHaveBeenCalledTimes(3);
   });
 
   it("partage sans relier quand la fiche est déjà liée à ce compte", async () => {
@@ -117,6 +136,7 @@ describe("acceptShareLink", () => {
     query
       .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER, person_id: PERSON_ID }] });
     expect(
       await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: NONE }),
@@ -132,6 +152,7 @@ describe("acceptShareLink", () => {
     query
       .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER, person_id: PERSON_ID }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
@@ -141,7 +162,7 @@ describe("acceptShareLink", () => {
       .mockResolvedValueOnce({ rows: [{ person_id: NEW_PERSON }] });
     await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } });
     // Fiche créée chez le destinataire, puis liée au compte du propriétaire.
-    expect(query.mock.calls[6]?.[1]?.slice(0, 4)).toEqual([VIEWER, "Clément", "Hervouet", true]);
-    expect(query.mock.calls[8]?.[1]).toEqual([VIEWER, NEW_PERSON, OWNER]);
+    expect(query.mock.calls[7]?.[1]?.slice(0, 4)).toEqual([VIEWER, "Clément", "Hervouet", true]);
+    expect(query.mock.calls[9]?.[1]).toEqual([VIEWER, NEW_PERSON, OWNER]);
   });
 });

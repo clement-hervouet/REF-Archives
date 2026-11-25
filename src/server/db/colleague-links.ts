@@ -265,14 +265,18 @@ function toPendingLink(raw: unknown): PendingShareLink {
 }
 
 /**
- * Lien de partage valide (en attente, non expiré) pour une empreinte de jeton, verrouillé
- * jusqu'à la fin de la transaction ; `null` sinon.
+ * Lien de partage valide (en attente, non expiré) pour une empreinte de jeton ; `null`
+ * sinon. `lock` le verrouille jusqu'à la fin de la transaction : seulement APRÈS avoir
+ * verrouillé son match (ordre des verrous : match, puis lien, comme `createShareLink` et
+ * `deleteStaleShares`), sinon deux transactions peuvent s'attendre l'une l'autre.
  */
-export async function lockPendingShareLink(
+export async function findPendingShareLink(
   db: Queryable,
   tokenHash: Buffer,
+  options: { lock: boolean },
 ): Promise<PendingShareLink | null> {
-  const result = await db.query(`${PENDING_LINK_SQL} FOR UPDATE`, [tokenHash]);
+  const sql = options.lock ? `${PENDING_LINK_SQL} FOR UPDATE` : PENDING_LINK_SQL;
+  const result = await db.query(sql, [tokenHash]);
   const raw = result.rows[0];
   return raw === undefined ? null : toPendingLink(raw);
 }

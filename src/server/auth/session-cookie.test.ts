@@ -3,7 +3,10 @@ import { buildSessionCookie } from "./session-cookie";
 
 describe("buildSessionCookie", () => {
   it("fige toujours httpOnly, sameSite lax et path /", () => {
-    const { options } = buildSessionCookie({ nodeEnv: "development", appUrl: "http://localhost:3000" });
+    const { options } = buildSessionCookie({
+      nodeEnv: "development",
+      appUrl: "http://localhost:3000",
+    });
     expect(options.httpOnly).toBe(true);
     expect(options.sameSite).toBe("lax");
     expect(options.path).toBe("/");

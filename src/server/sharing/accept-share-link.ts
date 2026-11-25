@@ -12,7 +12,7 @@ import {
   checkLink,
   findAccountName,
   insertLink,
-  lockPendingShareLink,
+  findPendingShareLink,
   markShareLinkAccepted,
 } from "../db/colleague-links";
 import { insertColleague } from "../db/persons";
@@ -104,8 +104,12 @@ export async function acceptShareLink(
   if (!decision.admitted) {
     return { status: "rate_limited", retryAfterSeconds: decision.retryAfterSeconds };
   }
+  const tokenHash = hashToken(token.data);
   return deps.transaction(async (db): Promise<AcceptShareResult> => {
-    const link = await lockPendingShareLink(db, hashToken(token.data));
+    // Lu sans verrou : il faut d'abord verrouiller le match (même ordre que « Nouveau
+    // lien » et le changement d'officiels), puis le lien, relu pour vérifier qu'il n'a pas
+    // été consommé ou révoqué entre-temps.
+    const link = await findPendingShareLink(db, tokenHash, { lock: false });
     if (link === null) {
       return { status: "invalid" };
     }
@@ -118,6 +122,10 @@ export async function acceptShareLink(
       personId: link.personId,
     });
     if (target === null) {
+      return { status: "invalid" };
+    }
+    const locked = await findPendingShareLink(db, tokenHash, { lock: true });
+    if (locked?.id !== link.id) {
       return { status: "invalid" };
     }
     const linkKey = {
