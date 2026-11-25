@@ -9,9 +9,16 @@ import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { listClubs } from "@/server/db/clubs";
+import { fullNameOf } from "@/components/features/games/shared-preparation-labels";
+import { listOwnerLinks } from "@/server/db/colleague-links";
 import { listColleagues } from "@/server/db/persons";
 import { getDb } from "@/server/db/pool";
-import { createColleagueAction, deleteColleagueAction, updateColleagueAction } from "./actions";
+import {
+  createColleagueAction,
+  deleteColleagueAction,
+  unlinkColleagueAction,
+  updateColleagueAction,
+} from "./actions";
 
 const t = fr.colleagues;
 
@@ -19,10 +26,16 @@ export default async function ColleaguesPage() {
   // Chaque page vérifie elle-même (§6.2) : le layout n'est pas rendu à chaque navigation.
   const user = await requireUserOrRedirect();
   const db = getDb();
-  const [colleagues, clubList] = await Promise.all([
+  const [colleagues, clubList, links] = await Promise.all([
     listColleagues(db, user.id),
     listClubs(db, user.id),
+    listOwnerLinks(db, user.id),
   ]);
+  // Compte lié à une fiche (préparation partagée), en « Prénom Nom ».
+  const linkedNameOf = (personId: string): string | null => {
+    const linked = links.get(personId);
+    return linked === undefined ? null : fullNameOf(linked);
+  };
   const clubs = clubList.map((club) => ({
     id: club.id,
     name: club.name,
@@ -65,6 +78,8 @@ export default async function ColleaguesPage() {
                   clubs={clubs}
                   updateAction={updateColleagueAction}
                   deleteAction={deleteColleagueAction}
+                  linkedName={linkedNameOf(colleague.id)}
+                  unlinkAction={unlinkColleagueAction}
                 />
               ),
             };

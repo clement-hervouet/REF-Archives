@@ -32,6 +32,10 @@ type Props = {
   action?: string;
   /** Case « Afficher aussi les matchs sans note » : propre aux notes. */
   withNoteToggle?: boolean;
+  /** Filtre par club : absent pour les préparations partagées (clubs d'un autre compte). */
+  withClubFilter?: boolean;
+  /** Onglet à garder dans l'URL (`?vue=…`), le cas échéant. */
+  view?: string;
 };
 
 /** Nombre de filtres actifs (la page n'en est pas un). */
@@ -56,11 +60,14 @@ export function GameNotesFilters({
   clubs,
   action = GAME_NOTES_PATH,
   withNoteToggle = true,
+  withClubFilter = true,
+  view,
 }: Props) {
   const active = activeFilterCount(filters);
   return (
     <Disclosure summary={summaryLabel(active)} open={active > 0}>
       <form method="get" action={action} className="flex flex-col gap-4">
+        {view !== undefined && <input type="hidden" name="vue" value={view} />}
         <fieldset className="flex min-w-0 flex-col gap-4">
           <legend className="sr-only">{t.legend}</legend>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -118,24 +125,26 @@ export function GameNotesFilters({
                 ))}
               </select>
             </div>
-            <div className="flex min-w-0 flex-col gap-1">
-              <label htmlFor="filter-club" className="text-sm font-medium">
-                {t.club}
-              </label>
-              <select
-                id="filter-club"
-                name="club"
-                defaultValue={filters.clubId ?? ""}
-                className={FIELD_CLASS}
-              >
-                <option value="">{t.all}</option>
-                {clubs.map((club) => (
-                  <option key={club.id} value={club.id}>
-                    {club.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {withClubFilter && (
+              <div className="flex min-w-0 flex-col gap-1">
+                <label htmlFor="filter-club" className="text-sm font-medium">
+                  {t.club}
+                </label>
+                <select
+                  id="filter-club"
+                  name="club"
+                  defaultValue={filters.clubId ?? ""}
+                  className={FIELD_CLASS}
+                >
+                  <option value="">{t.all}</option>
+                  {clubs.map((club) => (
+                    <option key={club.id} value={club.id}>
+                      {club.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           {withNoteToggle && (
             <label className="flex min-h-11 items-center gap-3">

@@ -10,6 +10,7 @@ import { useCallback, useState } from "react";
 import { fr } from "@/i18n/fr";
 import type { Colleague } from "@/server/db/persons";
 import type { ColleagueFormState, DeleteColleagueState } from "@/server/games/colleagues-form";
+import type { UnlinkState } from "@/server/sharing/sharing-form";
 import { ColleagueForm } from "./colleague-form";
 import type { ClubOption } from "./colleague-form";
 import { ConfirmActionButton } from "./confirm-action-button";
@@ -25,12 +26,23 @@ type Props = {
     previous: DeleteColleagueState,
     formData: FormData,
   ) => Promise<DeleteColleagueState>;
+  /** Prénom et nom du compte lié à la fiche (préparation partagée), ou `null`. */
+  linkedName: string | null;
+  unlinkAction: (previous: UnlinkState, formData: FormData) => Promise<UnlinkState>;
 };
 
 const ICON_BUTTON_CLASS =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground";
 
-export function ColleagueCard({ colleague, name, clubs, updateAction, deleteAction }: Props) {
+export function ColleagueCard({
+  colleague,
+  name,
+  clubs,
+  updateAction,
+  deleteAction,
+  linkedName,
+  unlinkAction,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const formId = `colleague-edit-${colleague.id}`;
@@ -52,6 +64,11 @@ export function ColleagueCard({ colleague, name, clubs, updateAction, deleteActi
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
           <h2 className="font-semibold break-words">{name}</h2>
           <p className="text-sm text-muted-foreground">{details.join(" · ")}</p>
+          {linkedName !== null && (
+            <p className="text-sm text-muted-foreground">
+              {fr.sharing.colleague.linked.replace("{name}", linkedName)}
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -81,6 +98,24 @@ export function ColleagueCard({ colleague, name, clubs, updateAction, deleteActi
           messages={{ in_use: t.delete.inUse, not_found: t.errors.notFound }}
         />
       </div>
+      {linkedName !== null && (
+        <ConfirmActionButton
+          action={unlinkAction}
+          hidden={{ name: "personId", value: colleague.id }}
+          labels={{
+            submit: fr.sharing.colleague.unlink,
+            ariaLabel: fr.sharing.colleague.unlinkLabel.replace("{name}", name),
+            warning: fr.sharing.colleague.unlinkWarning,
+            confirm: fr.sharing.colleague.unlinkConfirm,
+            cancel: t.delete.cancel,
+          }}
+          messages={{
+            unlinked: fr.sharing.colleague.unlinked,
+            not_found: t.errors.notFound,
+          }}
+          successStatuses={["unlinked"]}
+        />
+      )}
       {saved && (
         <p role="status" className="border-l-4 border-success pl-3 text-sm font-medium">
           {t.edit.updated}
@@ -106,6 +141,7 @@ export function ColleagueCard({ colleague, name, clubs, updateAction, deleteActi
             }}
             onSuccess={onSaved}
             onCancel={close}
+            linked={linkedName !== null}
           />
         </div>
       )}

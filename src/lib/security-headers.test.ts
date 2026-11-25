@@ -122,6 +122,7 @@ describe("getSecurityHeaders", () => {
     // Le jeton de reset vit dans le chemin, comme pour /invitation : il ne doit jamais
     // fuiter par le Referer (intention déclarée dans security-headers.ts).
     expect(getSecurityHeaders("/reset-password/abc123")["Referrer-Policy"]).toBe("no-referrer");
+    expect(getSecurityHeaders("/partage/abc123")["Referrer-Policy"]).toBe("no-referrer");
     expect(getSecurityHeaders("/reset-password")["Referrer-Policy"]).toBe("no-referrer");
   });
 

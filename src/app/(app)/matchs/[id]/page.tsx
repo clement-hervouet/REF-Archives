@@ -16,6 +16,8 @@ import { findNote } from "@/server/db/notes";
 import { listColleagues } from "@/server/db/persons";
 import { getDb } from "@/server/db/pool";
 import { findPreparation } from "@/server/db/preparations";
+import { listShareRecipients } from "@/server/db/shared-preparations";
+import { firstNameOf, namesList } from "@/components/features/games/shared-preparation-labels";
 import { noteFormValues } from "@/server/games/note-form";
 import { officialsFormValues } from "@/server/games/officials-form";
 import {
@@ -48,11 +50,20 @@ export default async function GamePage(props: GamePageProps) {
   }
   // Un plateau n'a pas de préparation (§15.4.10).
   const plateau = game.team2Name === null;
-  const [colleagues, note, preparation] = await Promise.all([
+  const [colleagues, note, preparation, recipients] = await Promise.all([
     listColleagues(db, user.id),
     findNote(db, { gameId: game.id, userId: user.id }),
     plateau ? null : findPreparation(db, { gameId: game.id, userId: user.id }),
+    // Propriétaire du match (vérifié par `findGame`) : à qui sa préparation est partagée.
+    plateau ? [] : listShareRecipients(db, { gameId: game.id, ownerUserId: user.id }),
   ]);
+  const deleteWarning =
+    recipients.length === 0
+      ? t.delete.warning
+      : `${t.delete.warning} ${fr.sharing.deleteGameWarning.replace(
+          "{names}",
+          namesList(recipients.map((recipient) => firstNameOf(recipient))),
+        )}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,7 +206,7 @@ export default async function GamePage(props: GamePageProps) {
           hidden={{ name: "gameId", value: game.id }}
           labels={{
             submit: t.delete.submit,
-            warning: t.delete.warning,
+            warning: deleteWarning,
             confirm: t.delete.confirm,
             cancel: t.delete.cancel,
           }}

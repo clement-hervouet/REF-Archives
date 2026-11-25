@@ -4,8 +4,12 @@
  * Une seule requête, filtrée par propriétaire à chaque sous-requête (§5.6), qui construit
  * directement le document JSON avec des colonnes listées une à une : un champ ajouté plus
  * tard à une table n'entre jamais dans l'export par accident. Ne sortent jamais : le hash
- * du mot de passe, les empreintes de jetons (invitation, réinitialisation, flux iCal) et
- * les empreintes d'IP du journal.
+ * du mot de passe, les empreintes de jetons (invitation, réinitialisation, flux iCal, lien
+ * de partage) et les empreintes d'IP du journal.
+ *
+ * Préparation partagée (migration 035) : les liens et partages du compte en sortent, mais
+ * jamais le contenu d'un autre compte (la préparation partagée par un collègue reste la
+ * sienne) ; seuls le prénom et le nom du collègue, que le compte voit déjà, l'accompagnent.
  *
  * Les données supprimées mais pas encore purgées (soft delete) sont incluses, avec leur
  * `deletedAt` : elles sont encore stockées, donc elles font partie du droit d'accès.
@@ -111,9 +115,50 @@ const PREPARATIONS_SQL = list(`SELECT json_agg(json_build_object(
       'communication', p.crew_communication, 'management', p.crew_management,
       'table', p.crew_table, 'contact', p.crew_contact),
     'observed', p.observed,
+    'updatedBy', CASE WHEN p.updated_by IS NULL THEN NULL
+      WHEN p.updated_by = $1 THEN 'self' ELSE 'colleague' END,
     'createdAt', p.created_at, 'updatedAt', p.updated_at, 'deletedAt', p.deleted_at)
     ORDER BY p.created_at, p.id)
   FROM game_preparation p WHERE p.user_id = $1`);
+
+// Fiches collègues du compte liées au compte d'un collègue (sans identifiant de ce compte).
+const COLLEAGUE_LINKS_SQL = list(`SELECT json_agg(json_build_object(
+    'personId', l.person_id, 'createdAt', l.created_at)
+    ORDER BY l.created_at, l.person_id)
+  FROM colleague_link l WHERE l.owner_user_id = $1`);
+
+// Collègues qui ont lié une de leurs fiches à ce compte : leur prénom et leur nom seulement.
+const LINKED_BY_SQL = list(`SELECT json_agg(json_build_object(
+    'firstname', u.firstname, 'lastname', u.lastname, 'createdAt', l.created_at)
+    ORDER BY l.created_at, u.id)
+  FROM colleague_link l JOIN "user" u ON u.id = l.owner_user_id WHERE l.linked_user_id = $1`);
+
+// Liens de partage créés par le compte, sans l'empreinte du jeton.
+const SHARE_LINKS_SQL = list(`SELECT json_agg(json_build_object(
+    'gameId', sl.game_id, 'personId', sl.person_id, 'createdAt', sl.created_at,
+    'expiresAt', sl.expires_at, 'acceptedAt', sl.accepted_at, 'revokedAt', sl.revoked_at)
+    ORDER BY sl.created_at, sl.id)
+  FROM preparation_share_link sl WHERE sl.owner_user_id = $1`);
+
+// Préparations que le compte partage, match par match.
+const SHARES_GIVEN_SQL = list(`SELECT json_agg(json_build_object(
+    'gameId', s.game_id, 'personId', s.person_id, 'createdAt', s.created_at)
+    ORDER BY s.created_at, s.game_id)
+  FROM game_share s WHERE s.owner_user_id = $1`);
+
+// Préparations partagées avec le compte : ses propres cases « déjà arbitrée », la date du
+// match et le collègue qui partage. Le contenu de la préparation reste à ce collègue.
+const SHARES_RECEIVED_SQL = list(`SELECT json_agg(json_build_object(
+    'sharedBy', json_build_object('firstname', u.firstname, 'lastname', u.lastname),
+    'gameStartsAt', g.starts_at,
+    'team1AlreadyRefereed', s.team1_already_refereed,
+    'team2AlreadyRefereed', s.team2_already_refereed,
+    'createdAt', s.created_at, 'updatedAt', s.updated_at)
+    ORDER BY s.created_at, s.game_id)
+  FROM game_share s
+  JOIN "user" u ON u.id = s.owner_user_id
+  JOIN game g ON g.id = s.game_id AND g.user_id = s.owner_user_id
+  WHERE s.recipient_user_id = $1`);
 
 // Une fiche par compte au plus : objet, ou NULL s'il n'en a jamais enregistré.
 const IMPROVEMENT_AXES_SQL = `(SELECT json_build_object(
@@ -177,6 +222,11 @@ const DATA_EXPORT_SQL = `SELECT json_build_object(
   'games', ${GAMES_SQL},
   'notes', ${NOTES_SQL},
   'preparations', ${PREPARATIONS_SQL},
+  'colleagueLinks', ${COLLEAGUE_LINKS_SQL},
+  'linkedBy', ${LINKED_BY_SQL},
+  'shareLinks', ${SHARE_LINKS_SQL},
+  'sharesGiven', ${SHARES_GIVEN_SQL},
+  'sharesReceived', ${SHARES_RECEIVED_SQL},
   'improvementAxes', ${IMPROVEMENT_AXES_SQL},
   'compensations', ${COMPENSATIONS_SQL},
   'calendarFeed', ${CALENDAR_FEED_SQL},
@@ -201,6 +251,11 @@ const dataExportSchema = z.object({
   games: jsonList,
   notes: jsonList,
   preparations: jsonList,
+  colleagueLinks: jsonList,
+  linkedBy: jsonList,
+  shareLinks: jsonList,
+  sharesGiven: jsonList,
+  sharesReceived: jsonList,
   improvementAxes: jsonObject.nullable(),
   compensations: jsonList,
   calendarFeed: jsonObject.nullable(),

@@ -15,9 +15,15 @@ import {
   toMatchParties,
 } from "./match-info";
 import type { MatchDivision } from "./match-info";
+import { VALID_SHARE } from "./share-access";
 import type { Queryable } from "./users";
 
-export type Preparation = PreparationForm & { id: string; updatedAt: Date };
+export type Preparation = PreparationForm & {
+  id: string;
+  updatedAt: Date;
+  /** Auteur de la dernière modification (le propriétaire ou un destinataire du partage). */
+  updatedBy: string | null;
+};
 
 // ─── Écriture ───────────────────────────────────────────────────────────────
 
@@ -109,12 +115,18 @@ export async function softDeletePreparation(
 
 // ─── Lecture ────────────────────────────────────────────────────────────────
 
-const FIND_PREPARATION_SQL = `SELECT id, updated_at, team_count,
-  team1_rank, team1_wins, team1_losses, team1_players, team1_coaches, team1_already_refereed,
-  team2_rank, team2_wins, team2_losses, team2_players, team2_coaches, team2_already_refereed,
-  crew_placement, crew_communication, crew_management, crew_table, crew_contact, observed
-FROM game_preparation
-WHERE game_id = $1 AND user_id = $2 AND deleted_at IS NULL`;
+/** Colonnes d'une préparation (alias `p`), lues par `toPreparation`. */
+export const PREPARATION_COLUMNS = `p.id, p.updated_at, p.updated_by, p.team_count,
+  p.team1_rank, p.team1_wins, p.team1_losses, p.team1_players, p.team1_coaches,
+  p.team1_already_refereed,
+  p.team2_rank, p.team2_wins, p.team2_losses, p.team2_players, p.team2_coaches,
+  p.team2_already_refereed,
+  p.crew_placement, p.crew_communication, p.crew_management, p.crew_table, p.crew_contact,
+  p.observed`;
+
+const FIND_PREPARATION_SQL = `SELECT ${PREPARATION_COLUMNS}
+FROM game_preparation p
+WHERE p.game_id = $1 AND p.user_id = $2 AND p.deleted_at IS NULL`;
 
 const smallint = z.number().int().nullable();
 const text = z.string().nullable();
@@ -122,6 +134,7 @@ const text = z.string().nullable();
 const preparationRowSchema = z.object({
   id: z.uuid(),
   updated_at: z.date(),
+  updated_by: z.uuid().nullable(),
   team_count: smallint,
   team1_rank: smallint,
   team1_wins: smallint,
@@ -156,20 +169,13 @@ function toTeam(row: PreparationRow, team: "team1" | "team2"): TeamPreparation {
   };
 }
 
-/** Préparation active d'un match de l'utilisateur ; `null` s'il n'y en a pas. */
-export async function findPreparation(
-  db: Queryable,
-  input: { userId: string; gameId: string },
-): Promise<Preparation | null> {
-  const result = await db.query(FIND_PREPARATION_SQL, [input.gameId, input.userId]);
-  const raw = result.rows[0];
-  if (raw === undefined) {
-    return null;
-  }
+/** Préparation lue avec `PREPARATION_COLUMNS`. */
+export function toPreparation(raw: unknown): Preparation {
   const row = preparationRowSchema.parse(raw);
   return {
     id: row.id,
     updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
     teamCount: row.team_count,
     team1: toTeam(row, "team1"),
     team2: toTeam(row, "team2"),
@@ -182,6 +188,16 @@ export async function findPreparation(
     },
     observed: row.observed,
   };
+}
+
+/** Préparation active d'un match de l'utilisateur ; `null` s'il n'y en a pas. */
+export async function findPreparation(
+  db: Queryable,
+  input: { userId: string; gameId: string },
+): Promise<Preparation | null> {
+  const result = await db.query(FIND_PREPARATION_SQL, [input.gameId, input.userId]);
+  const raw = result.rows[0];
+  return raw === undefined ? null : toPreparation(raw);
 }
 
 // ─── « Déjà arbitrée cette saison » ─────────────────────────────────────────
@@ -265,6 +281,10 @@ export type PreparationListItem = {
   team1: TeamStanding;
   team2: TeamStanding;
   observed: boolean;
+  /** Préparation partagée avec au moins un arbitre (partage valide). */
+  shared: boolean;
+  /** Propriétaire, pour une préparation partagée avec l'utilisateur ; `null` pour la sienne. */
+  sharedBy: { firstname: string | null; lastname: string | null } | null;
 };
 
 export type PreparationsPage = { items: PreparationListItem[]; hasMore: boolean };
@@ -275,7 +295,8 @@ const LIST_PREPARATIONS_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("
   p.team_count,
   p.team1_rank, p.team1_wins, p.team1_losses, p.team1_already_refereed,
   p.team2_rank, p.team2_wins, p.team2_losses, p.team2_already_refereed,
-  p.observed
+  p.observed,
+  EXISTS (SELECT 1 FROM game_share s, colleague_link l WHERE ${VALID_SHARE}) AS shared
 FROM game_preparation p
 JOIN game g ON g.id = p.game_id AND g.user_id = p.user_id AND g.deleted_at IS NULL
 JOIN division d ON d.id = g.division_id
@@ -302,6 +323,7 @@ const listRowSchema = z.object({
   team2_losses: smallint,
   team2_already_refereed: z.boolean(),
   observed: z.boolean(),
+  shared: z.boolean(),
 });
 
 type ListRow = z.output<typeof listRowSchema>;
@@ -341,6 +363,8 @@ export async function listPreparations(
       team1: toStanding(row, "team1"),
       team2: toStanding(row, "team2"),
       observed: row.observed,
+      shared: row.shared,
+      sharedBy: null,
     })),
   };
 }

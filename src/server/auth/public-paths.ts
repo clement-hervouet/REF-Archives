@@ -11,6 +11,8 @@ export const SESSION_COOKIE_NAMES = ["authjs.session-token", "__Secure-authjs.se
 // vérifié dans chaque route. /hors-ligne : page sans donnée, mise en cache par le service
 // worker même sans session (bloc 14). /confidentialite : information RGPD, à lire avant de
 // créer son compte (§15.4.3). /demande-acces : formulaire de demande d'accès (§15.4.4).
+// /partage : lien de partage de préparation ; la page lit elle-même la session et, sans
+// session, propose de se connecter en gardant le jeton (la redirection du proxy le perdrait).
 //
 // Le manifeste (/manifest.webmanifest), les icônes et le service worker (/sw.js) n'ont pas
 // besoin d'y figurer : leur URL contient un point, et `proxy.ts` ne s'exécute pas sur ces
@@ -27,6 +29,7 @@ const PUBLIC_PATHS = [
   "/hors-ligne",
   "/confidentialite",
   "/demande-acces",
+  "/partage",
 ];
 
 /** Vrai si le chemin (ou un de ses sous-chemins) est accessible sans session. */

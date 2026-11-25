@@ -160,7 +160,7 @@ export const fr = {
       "Vos données vous appartiennent : vous pouvez en télécharger une copie complète à tout moment.",
     export: {
       label: "Télécharger mes données",
-      hint: "Un fichier JSON avec votre compte, vos indemnités, matchs, notes, préparations de match, barèmes, collègues et clubs, y compris ce que vous avez supprimé depuis moins de 30 jours. Gardez-le en lieu sûr : il contient des informations personnelles.",
+      hint: "Un fichier JSON avec votre compte, vos indemnités, matchs, notes, préparations de match (et leurs partages), barèmes, collègues et clubs, y compris ce que vous avez supprimé depuis moins de 30 jours. Gardez-le en lieu sûr : il contient des informations personnelles.",
     },
     deletion: {
       title: "Supprimer mon compte",
@@ -209,6 +209,7 @@ export const fr = {
           "Votre demande d'accès, si vous en envoyez une depuis la page de connexion : prénom, nom et adresse email.",
           "Vos réglages : rappels par email, récapitulatif du weekend, lien d'abonnement calendrier.",
           "Ce que vous saisissez : indemnités (équipes, date, heure, adresse, niveau, barème, distance, paiement), matchs complets, notes de match (confiance, stress, texte, liens vers des clips), préparations de match, axes d'amélioration, barèmes, clubs, adresses et collègues.",
+          "Si vous partagez une préparation de match ou en acceptez une : le lien entre votre fiche collègue et le compte de ce collègue, les matchs partagés, vos cases « déjà arbitrée » et l'auteur de la dernière modification de chaque préparation.",
           "Des données techniques de sécurité : sessions de connexion (date de création et de dernière activité), journal des événements de sécurité (connexions, changements de mot de passe, exports…) et compteurs anti-abus. Votre adresse IP n'y figure jamais en clair : elle est remplacée par une empreinte calculée avec une clé secrète du serveur.",
         ],
       },
@@ -229,7 +230,8 @@ export const fr = {
         title: "Les informations sur vos collègues",
         paragraphs: [
           "Quand vous enregistrez un collègue, vous saisissez des informations sur une autre personne. N'indiquez que ce qui vous sert : le nom suffit. Ces fiches ne sont visibles que par vous et ne servent jamais à contacter ces personnes.",
-          "Il en va de même pour les notes sur les joueurs et les coachs d'une préparation de match : tenez-vous-en à ce qui sert à arbitrer, sans information personnelle.",
+          "Il en va de même pour les notes sur les joueurs et les coachs d'une préparation de match : tenez-vous-en à ce qui sert à arbitrer, sans information personnelle. C'est d'autant plus important quand vous partagez la préparation : vos collègues lisent ces notes.",
+          "L'application ne cherche jamais si une personne a un compte. Une fiche collègue n'est liée à un compte que si ce collègue accepte lui-même un lien de partage que vous lui avez envoyé.",
         ],
         items: [],
       },
@@ -238,7 +240,8 @@ export const fr = {
         title: "Qui y a accès",
         paragraphs: [],
         items: [
-          "Vous seul voyez vos indemnités, matchs, notes, préparations de match, axes d'amélioration, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
+          "Vous seul voyez vos indemnités, matchs, notes, axes d'amélioration, barèmes, clubs et collègues. Aucun autre utilisateur n'y a accès.",
+          "Vos préparations de match aussi, sauf celles que vous choisissez de partager, match par match, avec un arbitre du match lié à votre compte. Il voit alors la date, les équipes, le niveau et le lieu du match, la préparation, et votre prénom et votre nom ; il peut modifier la préparation, pas le match. Le partage cesse dès que vous l'arrêtez, que vous retirez cet arbitre du match, que l'un de vous délie les comptes, ou que vous supprimez la préparation ou le match.",
           "L'administrateur gère les comptes : il voit votre email, votre prénom, votre nom, l'état de votre compte et votre dernière activité, ainsi que les demandes d'accès. Comme il administre le serveur, il a aussi un accès technique à la base de données, réservé à la maintenance et à la sécurité.",
           "Les emails (invitation, mot de passe oublié, alertes de sécurité, rappels, récapitulatif du weekend) partent par l'intermédiaire de Gmail (Google). Google traite donc leur contenu, qui peut inclure vos matchs à venir, éventuellement hors de l'Union européenne.",
           "Le bouton « Itinéraire » ouvre Google Maps avec l'adresse du match : l'adresse n'est envoyée à Google que si vous cliquez.",
@@ -260,6 +263,7 @@ export const fr = {
         items: [
           "Compte et données saisies : tant que votre compte existe.",
           "Données que vous supprimez (indemnités, matchs, notes, préparations de match, barèmes) : effacées définitivement 30 jours après leur suppression.",
+          "Liens de partage de préparation : effacés 30 jours après avoir servi, été annulés ou expiré.",
           "Compte supprimé : désactivé tout de suite, puis effacé avec toutes ses données au bout de 30 jours.",
           "Sessions de connexion : 30 jours au plus, puis effacées 30 jours après leur fin.",
           "Invitations : effacées 30 jours après avoir été acceptées, révoquées ou expirées.",
@@ -1179,6 +1183,122 @@ export const fr = {
       conflict:
         "Rien n'a été enregistré : la préparation a été modifiée ailleurs entre-temps (autre onglet ou appareil). Les autres changements sont repris ci-dessous ; vérifiez les champs signalés, puis enregistrez à nouveau.",
     },
+  },
+  // Préparation partagée entre comptes liés (migration 035).
+  sharing: {
+    panel: {
+      legend: "Partage",
+      intro:
+        "Partagez cette préparation avec les arbitres du match qui ont un compte REF-Archives. Ils la modifient avec vous ; le match (date, équipes, niveau, lieu) reste modifiable par vous seul.",
+      none: "Aucun arbitre de ce match n'a de compte REF-Archives. Cochez « A un compte REF-Archives » sur la fiche d'un collègue pour lui partager vos préparations.",
+      omitted:
+        "Les autres arbitres du match n'ont pas la case « A un compte REF-Archives » cochée sur leur fiche.",
+      linkedTo: "Compte REF-Archives : {name}",
+      notLinked: "Pas encore lié à un compte",
+      shared: "Partagée",
+      pending: "Lien envoyé, valable jusqu'au {date}",
+      share: "Partager",
+      shareLabel: "Partager la préparation avec {name}",
+      createLink: "Créer un lien de partage",
+      newLink: "Nouveau lien",
+      revokeLink: "Annuler le lien",
+      stop: "Arrêter le partage",
+      stopLabel: "Arrêter de partager la préparation avec {name}",
+      pendingAction: "Un instant…",
+      linkLabel: "Lien de partage pour {name}",
+      linkHint:
+        "Envoyez ce lien à {name} (SMS, WhatsApp…). Il n'est affiché qu'une fois, ne sert qu'une fois et reste valable jusqu'au {date}. Votre collègue doit être connecté à REF-Archives pour l'accepter.",
+      copy: "Copier le lien",
+      copied: "Lien copié.",
+      copyFailed: "Copie impossible : sélectionnez le lien et copiez-le à la main.",
+      send: "Envoyer…",
+      sendTitle: "Préparation de match",
+      sendText: "Je te partage ma préparation de match sur REF-Archives :",
+      messages: {
+        shared: "Préparation partagée.",
+        stopped: "Partage arrêté.",
+        revoked: "Lien annulé.",
+        not_found: "Ce match ou cet arbitre a changé. Rechargez la page.",
+        not_linked: "Ce collègue n'est plus lié à un compte : créez un lien de partage.",
+        already_linked: "Ce collègue est déjà lié à un compte : partagez directement.",
+        limit_reached: "Trop de liens en attente : annulez-en ou attendez qu'ils expirent.",
+      },
+    },
+    // Cases « déjà arbitrée » d'une préparation partagée : une par arbitre.
+    me: "Moi",
+    refereedHintShared:
+      "Chacun coche sa case : vous voyez ainsi si vos collègues ont déjà eu ce club cette saison.",
+    otherChecked: "{name} : déjà arbitrée",
+    otherUnchecked: "{name} : pas encore arbitrée",
+    modifiedBy: "Dernière modification par {name} le {date}.",
+    you: "vous",
+    recipient: {
+      back: "Retour aux préparations partagées",
+      sharedBy: "Partagée par {name}",
+      intro:
+        "Vous préparez ce match avec {name}. Le match (date, équipes, niveau, lieu) n'est modifiable que par {name} ; tout le reste est commun, sauf votre case « déjà arbitrée ».",
+      leave: "Quitter ce partage",
+      leaveWarning: "Vous ne verrez plus cette préparation. {name} pourra vous la repartager.",
+      leaveConfirm: "Quitter",
+      leaveCancel: "Annuler",
+    },
+    tabs: { label: "Préparations", mine: "Mes préparations", shared: "Partagées avec moi" },
+    sharedWithMe: {
+      intro:
+        "Les préparations que vos collègues vous ont partagées, du match le plus récent au plus ancien.",
+      empty:
+        "Aucune préparation partagée avec vous pour l'instant. Quand un collègue vous en partage une, elle apparaît ici.",
+      emptyFiltered: "Aucune préparation partagée ne correspond à ces filtres.",
+      by: "Partagée par {name}",
+      linkedOwners: "Collègues liés à votre compte",
+      linkedOwnersIntro:
+        "Ils peuvent vous partager leurs préparations en un clic. Vous pouvez vous délier à tout moment.",
+      unlink: "Ne plus être lié",
+      unlinkLabel: "Ne plus être lié à {name}",
+      unlinkWarning:
+        "{name} ne pourra plus vous partager de préparation, et vous perdrez l'accès à celles déjà partagées. Il lui faudra vous envoyer un nouveau lien.",
+      unlinkConfirm: "Me délier",
+      unlinked: "Vous n'êtes plus lié à ce collègue.",
+    },
+    sharedBadge: "Partagée",
+    colleague: {
+      linked: "Lié au compte de {name}",
+      unlink: "Délier",
+      unlinkLabel: "Délier {name} de son compte REF-Archives",
+      unlinkWarning:
+        "Vos préparations partagées avec ce collègue ne lui seront plus accessibles. Pour partager de nouveau, il faudra lui envoyer un nouveau lien.",
+      unlinkConfirm: "Délier",
+      unlinked: "Collègue délié de son compte.",
+      hasAccountLocked: "Lié à un compte REF-Archives : déliez-le pour décocher cette case.",
+    },
+    deleteWarning: "Cette préparation est partagée avec {names} : ils en perdront l'accès.",
+    deleteGameWarning:
+      "La préparation de ce match est partagée avec {names} : ils en perdront l'accès.",
+    namesSeparator: ", ",
+    accept: {
+      title: "Préparation partagée",
+      invalid:
+        "Ce lien de partage n'est pas valide : il a peut-être expiré, déjà servi, été annulé, ou le match a changé. Demandez un nouveau lien à votre collègue.",
+      signIn: "Connectez-vous à REF-Archives pour accepter ce partage.",
+      signInLink: "Se connecter",
+      own: "C'est votre propre lien : envoyez-le à votre collègue.",
+      intro: "{name} vous partage la préparation de son match :",
+      explain:
+        "En acceptant, votre compte est lié à la fiche que {name} a créée pour vous : {name} pourra vous partager d'autres préparations en un clic et verra votre prénom et votre nom, jamais votre email. Vous pourrez vous délier à tout moment depuis « Préparation de match ».",
+      reverseLabel: "Ajouter {name} à vos collègues",
+      reverseHint: "Pour lui partager vos propres préparations, sans nouveau lien.",
+      reverseNone: "Ne pas ajouter",
+      reverseCreate: "Créer la fiche « {name} »",
+      reverseExisting: "C'est ma fiche « {name} »",
+      submit: "Accepter le partage",
+      submitting: "Acceptation…",
+      errors: {
+        taken:
+          "Ce partage ne peut pas être accepté : la fiche de votre collègue est déjà liée à un autre compte, ou votre compte à une autre de ses fiches. Demandez-lui de vérifier ses collègues.",
+        rateLimited: "Trop de tentatives. Réessayez dans {minutes} min.",
+      },
+    },
+    loginNotice: "Connectez-vous pour accepter la préparation partagée avec vous.",
   },
   richText: {
     toolbar: "Mise en forme : {label}",

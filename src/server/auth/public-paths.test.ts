@@ -13,6 +13,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/hors-ligne")).toBe(true);
     expect(isPublicPath("/confidentialite")).toBe(true);
     expect(isPublicPath("/demande-acces")).toBe(true);
+    expect(isPublicPath("/partage/abc123")).toBe(true);
   });
 
   it("refuse les pages de l'application", () => {

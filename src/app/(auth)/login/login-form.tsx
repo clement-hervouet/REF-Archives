@@ -29,12 +29,14 @@ function errorMessage(state: LoginFormState): string | null {
 
 const FIELD_CLASS = "min-h-11 w-full rounded-md border border-input px-3 py-2";
 
-export function LoginForm() {
+/** `shareToken` : jeton d'un lien de partage, pour y revenir après la connexion. */
+export function LoginForm({ shareToken }: { shareToken?: string } = {}) {
   const [state, formAction, isPending] = useActionState(login, { status: "idle", email: "" });
   const message = errorMessage(state);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {shareToken !== undefined && <input type="hidden" name="partage" value={shareToken} />}
       {message !== null && (
         <p
           id="login-error"

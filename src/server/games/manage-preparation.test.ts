@@ -50,6 +50,7 @@ function preparationRow(preparation: PreparationForm): Record<string, unknown> {
   return {
     id: "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e01",
     updated_at: new Date("2026-11-20T10:00:00Z"),
+    updated_by: USER_ID,
     team_count: preparation.teamCount,
     ...team("team1"),
     ...team("team2"),
