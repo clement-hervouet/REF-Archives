@@ -3,6 +3,7 @@
  * Une saison est désignée par son année de début (`2026` = saison 2026-2027).
  * Pur : ni base ni React.
  */
+import { toParisIsoDate } from "./dates";
 import { isMonth } from "./months";
 import { ValidationError } from "./errors";
 import { parisLocalToUtc } from "./paris-time";
@@ -17,6 +18,11 @@ export function seasonOf(month: string): number {
   }
   const year = Number(month.slice(0, 4));
   return Number(month.slice(5, 7)) >= SEASON_FIRST_MONTH ? year : year - 1;
+}
+
+/** Début (1er juillet, Paris) de la saison d'un instant, ex. d'un match. */
+export function seasonStartOf(instant: Date): Date {
+  return seasonRange(seasonOf(toParisIsoDate(instant).slice(0, 7))).from;
 }
 
 /** Libellé court, ex. `2026` → « 2026-2027 ». */

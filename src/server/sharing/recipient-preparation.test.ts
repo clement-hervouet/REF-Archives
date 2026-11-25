@@ -30,6 +30,7 @@ const MINE = preparationFormSchema.parse({
 });
 
 const SHARE_ROW = {
+  starts_at: new Date("2026-11-28T19:00:00Z"),
   owner_user_id: OWNER,
   person_id: PERSON_ID,
   team1_already_refereed: false,
@@ -78,20 +79,25 @@ describe("saveSharedPreparation", () => {
     expect(query.mock.calls[0]?.[1]).toEqual([GAME_ID, VIEWER]);
   });
 
-  it("écrit les champs communs et range ses cases sur son partage", async () => {
+  it("crée la préparation avec le calcul « déjà arbitrée » du propriétaire et range ses cases sur son partage", async () => {
     const { deps, query } = setup();
     query
       .mockResolvedValueOnce({ rows: [SHARE_ROW] })
       .mockResolvedValueOnce({ rows: [] })
+      // Calcul du propriétaire : il a déjà eu le club de l'équipe 2 cette saison.
+      .mockResolvedValueOnce({ rows: [{ team1: false, team2: true }] })
       .mockResolvedValueOnce({ rows: [{ id: "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e01" }] });
     expect(
       await saveSharedPreparation(deps, VIEWER, GAME_ID, { preparation: MINE, base: EMPTY }),
     ).toEqual({ status: "saved" });
-    const [upsertSql, upsertValues] = query.mock.calls[2] ?? [];
-    // Les cases du propriétaire ne sont jamais écrites par le destinataire.
+    // Le calcul porte sur le compte du propriétaire, depuis le début de la saison du match.
+    expect(query.mock.calls[2]?.[1]).toEqual([GAME_ID, OWNER, new Date("2026-06-30T22:00:00Z")]);
+    const [upsertSql, upsertValues] = query.mock.calls[3] ?? [];
+    // Les cases du propriétaire ne sont jamais réécrites par le destinataire.
     expect(upsertSql).not.toMatch(/already_refereed\s*=/);
     expect(upsertValues?.slice(0, 3)).toEqual([GAME_ID, VIEWER, 10]);
-    expect(query.mock.calls[3]?.[1]).toEqual([GAME_ID, VIEWER, true, false]);
+    expect(upsertValues?.slice(19)).toEqual([false, true]);
+    expect(query.mock.calls[4]?.[1]).toEqual([GAME_ID, VIEWER, true, false]);
   });
 
   it("garde les cases du propriétaire et signale un conflit avec les cases du destinataire", async () => {

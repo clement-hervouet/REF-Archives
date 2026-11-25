@@ -41,6 +41,7 @@ function toChecks(row: { team1_already_refereed: boolean; team2_already_refereed
 // ─── Destinataire : accès et écriture ───────────────────────────────────────
 
 const recipientShareRowSchema = z.object({
+  starts_at: z.date(),
   owner_user_id: z.uuid(),
   person_id: z.uuid(),
   ...checksFields,
@@ -48,6 +49,8 @@ const recipientShareRowSchema = z.object({
 
 /** Partage valide d'un match pour le destinataire connecté. */
 export type RecipientShare = {
+  /** Date du match : sert à calculer « déjà arbitrée » du propriétaire. */
+  startsAt: Date;
   ownerUserId: string;
   /** Fiche du destinataire chez le propriétaire. */
   personId: string;
@@ -57,7 +60,7 @@ export type RecipientShare = {
 
 // Verrouille le match (comme le propriétaire, `lockGameForPreparation`) : un enregistrement
 // du propriétaire et un du destinataire passent l'un après l'autre.
-const LOCK_RECIPIENT_SHARE_SQL = `SELECT s.owner_user_id, s.person_id,
+const LOCK_RECIPIENT_SHARE_SQL = `SELECT g.starts_at, s.owner_user_id, s.person_id,
   s.team1_already_refereed, s.team2_already_refereed
 FROM ${SHARE_FROM}
 WHERE ${VALID_SHARE} AND s.game_id = $1 AND s.recipient_user_id = $2
@@ -77,7 +80,12 @@ export async function lockRecipientShare(
     return null;
   }
   const row = recipientShareRowSchema.parse(raw);
-  return { ownerUserId: row.owner_user_id, personId: row.person_id, checks: toChecks(row) };
+  return {
+    startsAt: row.starts_at,
+    ownerUserId: row.owner_user_id,
+    personId: row.person_id,
+    checks: toChecks(row),
+  };
 }
 
 const FIND_RECIPIENT_PREPARATION_SQL = `SELECT ${PREPARATION_COLUMNS}
@@ -95,15 +103,16 @@ export async function findRecipientPreparation(
   return raw === undefined ? null : toPreparation(raw);
 }
 
-// Les cases du propriétaire et l'identifiant du match ne changent jamais ici : seules les
-// colonnes communes sont écrites. Le propriétaire reste `user_id`.
+// Seules les colonnes communes sont modifiées. Les cases du propriétaire ne sont écrites
+// qu'à la création de la préparation (`ownerChecks`, son calcul « déjà arbitrée »), jamais
+// ensuite. Le propriétaire reste `user_id`.
 const UPSERT_COMMON_SQL = `INSERT INTO game_preparation (user_id, game_id, team_count,
   team1_rank, team1_wins, team1_losses, team1_players, team1_coaches,
   team2_rank, team2_wins, team2_losses, team2_players, team2_coaches,
   crew_placement, crew_communication, crew_management, crew_table, crew_contact, observed,
-  updated_by)
+  team1_already_refereed, team2_already_refereed, updated_by)
 SELECT s.owner_user_id, s.game_id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-  $16, $17, $18, $19, $2
+  $16, $17, $18, $19, $20, $21, $2
 FROM ${SHARE_FROM}
 WHERE ${VALID_SHARE} AND s.game_id = $1 AND s.recipient_user_id = $2
 ON CONFLICT (game_id) WHERE deleted_at IS NULL
@@ -126,8 +135,16 @@ RETURNING id`;
  */
 export async function saveRecipientPreparation(
   db: Queryable,
-  /** Les cases « déjà arbitrée » de `preparation` sont ignorées : celles du propriétaire restent. */
-  input: { gameId: string; viewerId: string; preparation: PreparationForm },
+  /**
+   * Les cases « déjà arbitrée » de `preparation` sont ignorées. `ownerChecks` : cases du
+   * propriétaire si la préparation est créée ici (ignorées si elle existe déjà).
+   */
+  input: {
+    gameId: string;
+    viewerId: string;
+    preparation: PreparationForm;
+    ownerChecks: RefereedChecks;
+  },
 ): Promise<boolean> {
   const { teamCount, team1, team2, crew, observed } = input.preparation;
   const team = (values: PreparationForm["team1"]) => [
@@ -149,6 +166,8 @@ export async function saveRecipientPreparation(
     crew.table,
     crew.contact,
     observed,
+    input.ownerChecks.team1,
+    input.ownerChecks.team2,
   ]);
   return result.rows.length > 0;
 }
@@ -182,7 +201,8 @@ export async function leaveShare(
 const FIND_RECIPIENT_GAME_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
   ${MATCH_ADDRESS_COLUMNS},
   s.owner_user_id, s.team1_already_refereed, s.team2_already_refereed,
-  owner.firstname AS owner_firstname, owner.lastname AS owner_lastname
+  owner.firstname AS owner_firstname, owner.lastname AS owner_lastname,
+  g.observer_id IS NOT NULL AS has_observer
 FROM ${SHARE_FROM}
 JOIN "user" owner ON owner.id = s.owner_user_id
 JOIN division d ON d.id = g.division_id
@@ -199,6 +219,7 @@ const recipientGameRowSchema = z.object({
   ...checksFields,
   owner_firstname: z.string().nullable(),
   owner_lastname: z.string().nullable(),
+  has_observer: z.boolean(),
 });
 
 /** Match partagé tel que le voit le destinataire : en lecture seule. */
@@ -212,6 +233,8 @@ export type RecipientGame = {
   owner: { userId: string; firstname: string | null; lastname: string | null };
   /** Cases « déjà arbitrée » du destinataire. */
   checks: RefereedChecks;
+  /** Un observateur est saisi : « Observé » pré-cochée, comme chez le propriétaire. */
+  hasObserver: boolean;
 };
 
 /** Match partagé avec `viewerId` (en-tête de la préparation) ; `null` sans partage valide. */
@@ -236,6 +259,7 @@ export async function findRecipientGame(
       lastname: row.owner_lastname,
     },
     checks: toChecks(row),
+    hasObserver: row.has_observer,
   };
 }
 

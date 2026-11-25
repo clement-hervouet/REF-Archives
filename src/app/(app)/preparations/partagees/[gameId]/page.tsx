@@ -60,7 +60,7 @@ export default async function SharedPreparationPage(props: SharedPreparationPage
   const ownerName = fullNameOf(game.owner);
   const initialValues =
     preparation === null
-      ? preparationFormValues(null, { alreadyRefereed: game.checks, hasObserver: false })
+      ? preparationFormValues(null, { alreadyRefereed: game.checks, hasObserver: game.hasObserver })
       : recipientFormValues(preparation, game.checks);
   // Les cases des autres : le propriétaire (celles de sa préparation), puis les autres
   // destinataires.

@@ -27,6 +27,8 @@ const PREPARATION = preparationFormSchema.parse({
   observed: false,
 });
 
+const NO_CHECKS = { team1: false, team2: false };
+
 const FILTERS = {
   category: null,
   type: null,
@@ -54,7 +56,12 @@ describe("règle d'accès des destinataires", () => {
     calls.push(["findRecipientGame", () => findRecipientGame(db, input)]);
     calls.push([
       "saveRecipientPreparation",
-      () => saveRecipientPreparation(db, { ...input, preparation: PREPARATION }),
+      () =>
+        saveRecipientPreparation(db, {
+          ...input,
+          preparation: PREPARATION,
+          ownerChecks: NO_CHECKS,
+        }),
     ]);
     calls.push([
       "listRecipientPreparations",
@@ -70,17 +77,19 @@ describe("règle d'accès des destinataires", () => {
     }
   });
 
-  it("n'écrit jamais les cases du propriétaire ni ne change le propriétaire", async () => {
+  it("ne réécrit jamais les cases du propriétaire ni ne change le propriétaire", async () => {
     const { db, query } = makeFakeDb();
     await saveRecipientPreparation(db, {
       gameId: GAME_ID,
       viewerId: VIEWER,
       preparation: PREPARATION,
+      ownerChecks: { team1: true, team2: false },
     });
     const [sql, values] = query.mock.calls[0] ?? [];
+    // Cases du propriétaire : à la création seulement (jamais dans le DO UPDATE).
     expect(sql).not.toMatch(/already_refereed\s*=/);
     expect(sql).toContain("SELECT s.owner_user_id, s.game_id");
-    expect(values).toHaveLength(19);
+    expect(values?.slice(19)).toEqual([true, false]);
   });
 
   it("limite les écritures directes du destinataire à son propre partage", async () => {

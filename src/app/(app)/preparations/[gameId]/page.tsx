@@ -17,9 +17,8 @@ import { PageTitle } from "@/components/features/common/page-title";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
 import { gamePath } from "@/lib/app-paths";
-import { toParisIsoDate } from "@/lib/dates";
 import { withTeams } from "@/lib/match-teams";
-import { seasonOf, seasonRange } from "@/lib/seasons";
+import { seasonStartOf } from "@/lib/seasons";
 import { requireUserOrRedirect } from "@/server/auth/session";
 import { findGame } from "@/server/db/games";
 import { getDb } from "@/server/db/pool";
@@ -50,7 +49,7 @@ export default async function PreparationPage(props: PreparationPageProps) {
     notFound();
   }
   // Saison FFBB du match (juillet → juin) : les matchs précédents se cherchent depuis son début.
-  const seasonFrom = seasonRange(seasonOf(toParisIsoDate(game.startsAt).slice(0, 7))).from;
+  const seasonFrom = seasonStartOf(game.startsAt);
   const [preparation, alreadyRefereed, recipients, candidates] = await Promise.all([
     findPreparation(db, { gameId: game.id, userId: user.id }),
     findAlreadyRefereed(db, { gameId: game.id, userId: user.id, seasonFrom }),

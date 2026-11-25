@@ -8,6 +8,8 @@
  * en premier ; le destinataire est noté comme auteur (`updated_by`).
  */
 import type { PreparationForm } from "@/lib/schemas/preparations";
+import { seasonStartOf } from "@/lib/seasons";
+import { findAlreadyRefereed } from "../db/preparations";
 import {
   findRecipientPreparation,
   lockRecipientShare,
@@ -58,13 +60,23 @@ export async function saveSharedPreparation(
     }
     const current = await findRecipientPreparation(db, { gameId, viewerId });
     let toWrite = input.preparation;
-    if (current !== null) {
+    // Préparation créée par le destinataire : les cases du propriétaire prennent son calcul
+    // « déjà arbitrée », comme s'il l'avait créée (partage vérifié et verrouillé ci-dessus).
+    let ownerChecks = { team1: false, team2: false };
+    if (current === null) {
+      ownerChecks =
+        (await findAlreadyRefereed(db, {
+          userId: share.ownerUserId,
+          gameId,
+          seasonFrom: seasonStartOf(share.startsAt),
+        })) ?? ownerChecks;
+    } else {
       // Les cases du propriétaire ne viennent pas de ce formulaire : on les fige des deux
       // côtés pour qu'elles ne soient jamais vues comme modifiées.
-      const ownerChecks = checksOf(current);
+      const currentOwnerChecks = checksOf(current);
       const merged = mergePreparation({
-        base: withChecks(input.base, ownerChecks),
-        mine: withChecks(input.preparation, ownerChecks),
+        base: withChecks(input.base, currentOwnerChecks),
+        mine: withChecks(input.preparation, currentOwnerChecks),
         current,
       });
       if (merged.status === "conflict") {
@@ -78,7 +90,14 @@ export async function saveSharedPreparation(
       }
       toWrite = merged.preparation;
     }
-    if (!(await writeRecipientPreparation(db, { gameId, viewerId, preparation: toWrite }))) {
+    if (
+      !(await writeRecipientPreparation(db, {
+        gameId,
+        viewerId,
+        preparation: toWrite,
+        ownerChecks,
+      }))
+    ) {
       return { status: "not_found" };
     }
     await saveRecipientChecks(db, { gameId, viewerId, checks: checksOf(input.preparation) });

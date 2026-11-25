@@ -11,9 +11,10 @@ import pg from "pg";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { preparationFieldsSchema, preparationFormSchema } from "@/lib/schemas/preparations";
+import { seasonStartOf } from "@/lib/seasons";
 import { generateToken, hashToken } from "@/server/auth/tokens";
 import { listLinkedOwners, listOwnerLinks } from "@/server/db/colleague-links";
-import { listPreparations } from "@/server/db/preparations";
+import { findAlreadyRefereed, listPreparations } from "@/server/db/preparations";
 import {
   deleteStaleShares,
   findRecipientGame,
@@ -163,7 +164,16 @@ RETURNING id`,
           crew: { ...CREW, placement: "Large" },
         }),
       );
-      // Le destinataire écrit en premier : la préparation reste au propriétaire.
+      // Le destinataire écrit en premier : la préparation reste au propriétaire, et ses
+      // cases prennent son propre calcul « déjà arbitrée » (pas celles du destinataire).
+      const startsAt = await client.query("SELECT starts_at FROM game WHERE id = $1", [GAME]);
+      const ownerDefaults = await findAlreadyRefereed(db, {
+        userId: OWNER,
+        gameId: GAME,
+        seasonFrom: seasonStartOf(
+          z.object({ starts_at: z.date() }).parse(startsAt.rows[0]).starts_at,
+        ),
+      });
       expect(
         await saveSharedPreparation({ transaction }, recipient, GAME, {
           preparation: first,
@@ -171,14 +181,15 @@ RETURNING id`,
         }),
       ).toEqual({ status: "saved" });
       const row = await client.query(
-        `SELECT user_id, updated_by, team1_already_refereed FROM game_preparation
-WHERE game_id = $1 AND deleted_at IS NULL`,
+        `SELECT user_id, updated_by, team1_already_refereed, team2_already_refereed
+FROM game_preparation WHERE game_id = $1 AND deleted_at IS NULL`,
         [GAME],
       );
       expect(row.rows[0]).toEqual({
         user_id: OWNER,
         updated_by: recipient,
-        team1_already_refereed: false,
+        team1_already_refereed: ownerDefaults?.team1,
+        team2_already_refereed: ownerDefaults?.team2,
       });
       expect(
         (await listShareRecipients(db, { gameId: GAME, ownerUserId: OWNER }))[0],
