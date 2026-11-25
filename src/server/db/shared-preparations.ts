@@ -23,7 +23,7 @@ import type { MatchAddress, MatchDivision } from "./match-info";
 import { PREPARATION_COLUMNS, toPreparation } from "./preparations";
 import type { Preparation, PreparationListItem, PreparationsPage } from "./preparations";
 import type { PreparationForm } from "@/lib/schemas/preparations";
-import { SHARE_FROM, VALID_SHARE } from "./share-access";
+import { SHARE_FROM, VALID_SHARE, notBeingDeleted } from "./share-access";
 import type { Queryable } from "./users";
 
 /** Cases « déjà arbitrée » d'un arbitre du partage. */
@@ -315,13 +315,15 @@ export async function listShareRecipients(
 const shareTargetRowSchema = z.object({ linked_user_id: z.uuid().nullable() });
 
 // Le match doit être actif, au propriétaire, hors plateau, et la fiche un collègue arbitre
-// du match. Renvoie le compte lié à la fiche (NULL si aucun).
+// du match ; le propriétaire ne doit pas avoir de suppression programmée (un lien qu'il a
+// envoyé avant ne s'accepte plus). Renvoie le compte lié à la fiche (NULL si aucun).
 const FIND_SHARE_TARGET_SQL = `SELECT l.linked_user_id
 FROM game g
 JOIN person p ON p.id = $3 AND p.user_id = g.user_id AND NOT p.is_self
 LEFT JOIN colleague_link l ON l.owner_user_id = g.user_id AND l.person_id = p.id
 WHERE g.id = $1 AND g.user_id = $2 AND g.deleted_at IS NULL AND g.team2_id IS NOT NULL
   AND p.id IN (g.referee1_id, g.referee2_id, g.referee3_id)
+  AND ${notBeingDeleted("g.user_id")}
 FOR UPDATE OF g`;
 
 /**
@@ -571,7 +573,7 @@ JOIN "user" u ON u.id = sl.owner_user_id
 JOIN division d ON d.id = g.division_id
 ${matchTeamJoins("g")}
 WHERE sl.token_hash = $1 AND sl.accepted_at IS NULL AND sl.revoked_at IS NULL
-  AND sl.expires_at > now()`;
+  AND sl.expires_at > now() AND ${notBeingDeleted("sl.owner_user_id")}`;
 
 const linkPreviewRowSchema = z.object({
   starts_at: z.date(),

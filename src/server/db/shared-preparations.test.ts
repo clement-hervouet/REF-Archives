@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { preparationFormSchema } from "@/lib/schemas/preparations";
 import { makeFakeDb } from "./fake-db";
-import { VALID_SHARE } from "./share-access";
+import { VALID_SHARE, notBeingDeleted } from "./share-access";
 import {
   findRecipientGame,
   findRecipientPreparation,
@@ -45,6 +45,10 @@ describe("règle d'accès des destinataires", () => {
     expect(VALID_SHARE).toContain("s.person_id IN (g.referee1_id, g.referee2_id, g.referee3_id)");
     expect(VALID_SHARE).toContain("l.linked_user_id = s.recipient_user_id");
     expect(VALID_SHARE).toContain("g.user_id = s.owner_user_id");
+    // Ni le propriétaire ni le destinataire en cours de suppression de compte.
+    expect(VALID_SHARE).toContain(notBeingDeleted("s.owner_user_id"));
+    expect(VALID_SHARE).toContain(notBeingDeleted("s.recipient_user_id"));
+    expect(notBeingDeleted("s.owner_user_id")).toContain("deletion_due_at IS NOT NULL");
   });
 
   it("s'applique à chaque lecture et écriture du destinataire, filtrée sur son compte", async () => {

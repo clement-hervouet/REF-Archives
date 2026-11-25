@@ -273,6 +273,18 @@ WHERE game_id = $1 AND deleted_at IS NULL`,
       });
       expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).not.toBeNull();
 
+      // Suppression programmée du compte du propriétaire, puis du destinataire : plus
+      // d'accès ; annuler la suppression le rétablit.
+      for (const account of [OWNER, recipient]) {
+        await client.query(
+          `UPDATE "user" SET deletion_due_at = now() + interval '7 days' WHERE id = $1`,
+          [account],
+        );
+        expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).toBeNull();
+        await client.query(`UPDATE "user" SET deletion_due_at = NULL WHERE id = $1`, [account]);
+        expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).not.toBeNull();
+      }
+
       // Match supprimé : plus d'accès.
       await client.query("UPDATE game SET deleted_at = now() WHERE id = $1", [GAME]);
       expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).toBeNull();
