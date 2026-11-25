@@ -7,8 +7,15 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/server/auth/session";
 import { createClubDeps } from "@/server/clubs/club-deps";
-import { handleCreateClub, handleDeleteClub, handleUpdateClub } from "@/server/clubs/manage-clubs";
-import type { ClubFormState, DeleteClubState } from "@/server/clubs/manage-clubs";
+import {
+  handleAddClubVenues,
+  handleCreateClub,
+  handleDeleteClub,
+  handleRemoveClubVenue,
+  handleSetMainClubVenue,
+  handleUpdateClub,
+} from "@/server/clubs/manage-clubs";
+import type { ClubFormState, ClubVenueState, DeleteClubState } from "@/server/clubs/manage-clubs";
 
 function revalidateClubs(): void {
   revalidatePath("/clubs");
@@ -48,6 +55,43 @@ export async function deleteClubAction(
   const user = await requireUser();
   const state = await handleDeleteClub(createClubDeps(), user.id, formData);
   if (state.status === "deleted") {
+    revalidateClubs();
+  }
+  return state;
+}
+
+/** Salles ajoutées (saisie, ou import depuis l'annuaire FFBB). */
+export async function addClubVenuesAction(
+  _previous: ClubVenueState,
+  formData: FormData,
+): Promise<ClubVenueState> {
+  const user = await requireUser();
+  const state = await handleAddClubVenues(createClubDeps(), user.id, formData);
+  if (state.status === "added") {
+    revalidateClubs();
+  }
+  return state;
+}
+
+export async function removeClubVenueAction(
+  _previous: ClubVenueState,
+  formData: FormData,
+): Promise<ClubVenueState> {
+  const user = await requireUser();
+  const state = await handleRemoveClubVenue(createClubDeps(), user.id, formData);
+  if (state.status === "removed") {
+    revalidateClubs();
+  }
+  return state;
+}
+
+export async function setMainClubVenueAction(
+  _previous: ClubVenueState,
+  formData: FormData,
+): Promise<ClubVenueState> {
+  const user = await requireUser();
+  const state = await handleSetMainClubVenue(createClubDeps(), user.id, formData);
+  if (state.status === "main_set") {
     revalidateClubs();
   }
   return state;

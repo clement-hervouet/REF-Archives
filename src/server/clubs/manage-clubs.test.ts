@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { makeFakeDb } from "../db/fake-db";
 import type { Queryable } from "../db/users";
 import {
+  handleAddClubVenues,
   handleCreateClub,
   handleDeleteClub,
+  handleRemoveClubVenue,
+  handleSetMainClubVenue,
   handleUpdateClub,
   readClubFormData,
 } from "./manage-clubs";
@@ -12,6 +15,15 @@ import type { ClubDeps } from "./manage-clubs";
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const CLUB_ID = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 const ADDRESS_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
+const VENUE_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b02";
+
+const BEAUREGARD = {
+  name: "Gymnase de Beauregard",
+  street: "Avenue André Malraux",
+  number: "17",
+  postalCode: "35000",
+  city: "Rennes",
+};
 
 function formData(entries: Record<string, string>): FormData {
   const data = new FormData();
@@ -42,11 +54,13 @@ describe("readClubFormData", () => {
   it("remplace un champ facultatif absent par une saisie vide", () => {
     expect(readClubFormData(formData({ name: "BC Béthune", postalCode: "62400" }))).toEqual({
       name: "BC Béthune",
+      venueName: "",
       street: "",
       number: "",
       postalCode: "62400",
       city: "",
       country: "",
+      venues: [],
     });
   });
 });
@@ -66,8 +80,79 @@ describe("handleCreateClub", () => {
       "62400",
       null,
       null,
+      null,
       1000,
     ]);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("crée un club de l'annuaire FFBB avec sa salle principale et ses autres salles", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] });
+    expect(
+      await handleCreateClub(
+        deps,
+        USER_ID,
+        formData({
+          ...FULL,
+          venueName: "Gymnase de la Courrouze",
+          venues: JSON.stringify([BEAUREGARD]),
+        }),
+      ),
+    ).toEqual({ status: "created" });
+    expect(query.mock.calls[0]?.[1]?.[7]).toBe("Gymnase de la Courrouze");
+    // Autre salle retrouvée ou créée, puis rattachée au club.
+    expect(query.mock.calls[1]?.[1]).toEqual([
+      USER_ID,
+      "Avenue André Malraux",
+      "17",
+      "35000",
+      "Rennes",
+      null,
+      "Gymnase de Beauregard",
+    ]);
+    expect(query.mock.calls[2]?.[0]).toContain("INSERT INTO club_venue");
+    expect(query.mock.calls[2]?.[1]).toEqual([CLUB_ID, VENUE_ID, USER_ID, 19]);
+  });
+
+  it("accepte les salles cochées telles que la liste les envoie (champs inconnus à null)", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] });
+    const venues = JSON.stringify([
+      {
+        name: "Salle du Berry",
+        number: null,
+        street: "Square du Berry",
+        postalCode: "35000",
+        city: "Rennes",
+      },
+    ]);
+    expect(await handleCreateClub(deps, USER_ID, formData({ ...FULL, venues }))).toEqual({
+      status: "created",
+    });
+    expect(query.mock.calls[1]?.[1]).toEqual([
+      USER_ID,
+      "Square du Berry",
+      null,
+      "35000",
+      "Rennes",
+      null,
+      "Salle du Berry",
+    ]);
+  });
+
+  it("refuse une liste de salles illisible, sans requête", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleCreateClub(deps, USER_ID, formData({ ...FULL, venues: "{pas du json" })),
+    ).toEqual({ status: "invalid", fields: ["venues"] });
+    expect(query).not.toHaveBeenCalled();
   });
 
   it("crée un club avec son adresse complète", async () => {
@@ -124,6 +209,7 @@ describe("handleUpdateClub", () => {
       "62400",
       "Béthune",
       null,
+      null,
     ]);
   });
 
@@ -145,22 +231,27 @@ describe("handleUpdateClub", () => {
 });
 
 describe("handleDeleteClub", () => {
-  it("supprime le club puis son adresse si elle n'est plus utilisée", async () => {
+  it("supprime le club puis ses salles qui ne sont plus utilisées", async () => {
     const { deps, query } = setup();
     query
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] })
       .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID }] })
       .mockResolvedValueOnce({ rows: [] });
     expect(await handleDeleteClub(deps, USER_ID, formData({ clubId: CLUB_ID }))).toEqual({
       status: "deleted",
     });
-    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID]);
-    expect(query.mock.calls[1]?.[0]).toContain("DELETE FROM address");
-    expect(query.mock.calls[1]?.[1]).toEqual([ADDRESS_ID, USER_ID]);
+    expect(query.mock.calls[0]?.[0]).toContain("FROM club_venue");
+    expect(query.mock.calls[1]?.[1]).toEqual([CLUB_ID, USER_ID]);
+    expect(query.mock.calls[2]?.[0]).toContain("DELETE FROM address");
+    expect(query.mock.calls[2]?.[1]).toEqual([[ADDRESS_ID, VENUE_ID], USER_ID]);
   });
 
   it("refuse un club cité par une indemnité ou un match", async () => {
     const { deps, query } = setup();
-    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
     expect(await handleDeleteClub(deps, USER_ID, formData({ clubId: CLUB_ID }))).toEqual({
       status: "in_use",
     });
@@ -168,9 +259,183 @@ describe("handleDeleteClub", () => {
 
   it("répond introuvable pour un club inconnu", async () => {
     const { deps, query } = setup();
-    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
     expect(await handleDeleteClub(deps, USER_ID, formData({ clubId: CLUB_ID }))).toEqual({
       status: "not_found",
     });
+  });
+});
+
+describe("handleAddClubVenues", () => {
+  it("rattache les salles importées, retrouvées ou créées", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] })
+      // Salle principale du club : retrouvée, mais pas rattachée une deuxième fois.
+      .mockResolvedValueOnce({ rows: [{ id: ADDRESS_ID }] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({
+          clubId: CLUB_ID,
+          venues: JSON.stringify([BEAUREGARD, { ...BEAUREGARD, name: "Courrouze" }]),
+        }),
+      ),
+    ).toEqual({ status: "added", count: 1 });
+    expect(query.mock.calls[0]?.[0]).toContain("FOR UPDATE");
+    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID]);
+    expect(query.mock.calls[2]?.[1]).toEqual([CLUB_ID, VENUE_ID, USER_ID, 19]);
+  });
+
+  it("ajoute une salle saisie à la main", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] });
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, venueName: " Salle du Berry ", postalCode: "35000" }),
+      ),
+    ).toEqual({ status: "added", count: 1 });
+    expect(query.mock.calls[1]?.[1]).toEqual([
+      USER_ID,
+      null,
+      null,
+      "35000",
+      null,
+      null,
+      "Salle du Berry",
+    ]);
+  });
+
+  it("ne crée rien quand le club a déjà toutes ses salles", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 19 }] });
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, venues: JSON.stringify([BEAUREGARD]) }),
+      ),
+    ).toEqual({ status: "full" });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("signale une salle déjà rattachée", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, venues: JSON.stringify([BEAUREGARD]) }),
+      ),
+    ).toEqual({ status: "unchanged" });
+  });
+
+  it("refuse une salle sans code postal, sans requête", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, venueName: "Salle", street: "Rue\nA", postalCode: "" }),
+      ),
+    ).toEqual({ status: "invalid", fields: ["street", "postalCode"] });
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("répond introuvable pour un club d'un autre compte", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleAddClubVenues(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, venues: JSON.stringify([BEAUREGARD]) }),
+      ),
+    ).toEqual({ status: "not_found" });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("handleRemoveClubVenue", () => {
+  it("retire la salle puis son adresse si plus rien ne la cite", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleRemoveClubVenue(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, addressId: VENUE_ID }),
+      ),
+    ).toEqual({ status: "removed" });
+    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID, VENUE_ID]);
+    expect(query.mock.calls[1]?.[1]).toEqual([[VENUE_ID], USER_ID]);
+  });
+
+  it("répond introuvable pour une salle qui n'est pas au club", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleRemoveClubVenue(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, addressId: ADDRESS_ID }),
+      ),
+    ).toEqual({ status: "not_found" });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("handleSetMainClubVenue", () => {
+  it("échange la salle principale avec une autre salle du club", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleSetMainClubVenue(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, addressId: VENUE_ID }),
+      ),
+    ).toEqual({ status: "main_set" });
+    expect(query.mock.calls[2]?.[0]).toContain("UPDATE club SET address_id");
+    expect(query.mock.calls[2]?.[1]).toEqual([CLUB_ID, USER_ID, VENUE_ID]);
+    // L'ancienne salle principale reste une salle du club.
+    expect(query.mock.calls[3]?.[1]).toEqual([CLUB_ID, USER_ID, ADDRESS_ID]);
+  });
+
+  it("répond introuvable pour une salle qui n'est pas au club", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [{ address_id: ADDRESS_ID, venue_count: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+    expect(
+      await handleSetMainClubVenue(
+        deps,
+        USER_ID,
+        formData({ clubId: CLUB_ID, addressId: VENUE_ID }),
+      ),
+    ).toEqual({ status: "not_found" });
+    expect(query).toHaveBeenCalledTimes(2);
   });
 });

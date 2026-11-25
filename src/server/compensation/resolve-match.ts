@@ -1,9 +1,9 @@
 /**
  * Résolution des informations d'un match dans une transaction, commune à l'indemnité
  * (bloc 6) et au match complet (bloc 9) : clubs existants verrouillés ou créés à la volée
- * (nom et code postal, adresse de la salle s'il vient de l'annuaire FFBB, §15.4.1),
- * adresse du match (celle du club de l'équipe 1 sauf exception), équipes retrouvées ou
- * créées au niveau du match.
+ * (nom et code postal, salles s'il vient de l'annuaire FFBB, §15.4.1), adresse du match
+ * (salle principale du club de l'équipe 1, ou une autre, rattachée alors aux salles de ce
+ * club), équipes retrouvées ou créées au niveau du match.
  *
  * Le niveau (division) et le tour de coupe ne sont pas vérifiés ici : chaque service les
  * vérifie avant toute écriture (`match-level.ts`), dans l'ordre qui lui convient. Un refus passe par `reject`, que le service
@@ -12,11 +12,11 @@
 import type { MatchInfo } from "@/lib/schemas/compensations";
 import { addressBelongsTo } from "../db/compensations";
 import {
+  attachClubVenue,
   ensureTeam,
-  insertAddress,
-  insertClub,
+  findOrInsertAddress,
+  insertNewClub,
   lockOwnedClubs,
-  newClubAddress,
 } from "../db/compensation-writes";
 import type { LockedClub } from "../db/compensation-writes";
 import type { CupRound } from "../db/divisions";
@@ -54,16 +54,13 @@ async function resolveClub(
   if (choice.kind === "existing") {
     return lockedClubs.get(choice.clubId) ?? reject({ status: "not_found", field: side });
   }
-  // Nouveau club : code postal seul (le reste se complète dans « Clubs »), ou adresse de
-  // sa salle s'il vient de l'annuaire FFBB.
-  const addressId = await insertAddress(db, { userId, address: newClubAddress(choice) });
-  const clubId = await insertClub(db, { userId, name: choice.name, addressId });
-  return clubId === null
-    ? reject({ status: "limit_reached", resource: "club" })
-    : { id: clubId, addressId };
+  // Nouveau club : code postal seul (le reste se complète dans « Clubs »), ou ses salles
+  // s'il vient de l'annuaire FFBB.
+  const club = await insertNewClub(db, { userId, club: choice });
+  return club ?? reject({ status: "limit_reached", resource: "club" });
 }
 
-/** Adresse du match : celle du club de l'équipe 1, sauf exception. */
+/** Adresse du match : la salle principale du club de l'équipe 1, ou une autre. */
 async function resolveVenue(
   db: Queryable,
   userId: string,
@@ -79,7 +76,7 @@ async function resolveVenue(
         ? venue.addressId
         : reject({ status: "not_found", field: "venue" });
     case "new":
-      return insertAddress(db, { userId, address: venue.address });
+      return findOrInsertAddress(db, { userId, address: venue.address });
   }
 }
 
@@ -99,6 +96,11 @@ export async function resolveMatchInfo(
       ? null
       : await resolveClub(db, userId, info.team2, "team2", lockedClubs, reject);
   const addressId = await resolveVenue(db, userId, info.venue, club1, reject);
+  // Le club de l'équipe 1 reçoit dans cette salle : elle rejoint ses salles, proposées
+  // ensuite dans la liste « Salle » (rien si c'est déjà l'une d'elles).
+  if (addressId !== club1.addressId) {
+    await attachClubVenue(db, { userId, clubId: club1.id, addressId });
+  }
 
   const team1Id = await ensureTeam(db, { userId, clubId: club1.id, divisionId: info.divisionId });
   const team2Id =

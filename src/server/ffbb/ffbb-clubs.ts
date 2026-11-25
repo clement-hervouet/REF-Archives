@@ -1,8 +1,8 @@
 /**
  * Annuaire des clubs de la FFBB (API publique https://ffbb-api.desimone.fr), pour la seule
- * saisie d'un club : recherche des clubs domiciliés dans une ville, puis adresse de leur
- * salle principale. Lecture seule : rien n'est enregistré ici, le formulaire envoie ensuite
- * les champs habituels (nom, adresse).
+ * saisie d'un club : recherche des clubs domiciliés dans une ville, puis leurs salles (la
+ * principale et celles où ils reçoivent cette saison). Lecture seule : rien n'est
+ * enregistré ici, le formulaire envoie ensuite les champs habituels (nom, adresses).
  *
  * L'API est un service tiers lent et parfois indisponible : toute panne (délai dépassé,
  * erreur HTTP, réponse inattendue) donne `{ ok: false }`, et le formulaire repasse à la
@@ -10,12 +10,23 @@
  * supposer de plus que les champs utilisés.
  */
 import { z } from "zod";
+import { normalizePlace } from "@/lib/places";
 
 const FFBB_API_URL = "https://ffbb-api.desimone.fr/api/v1";
 /** La recherche répond parfois en 5 à 7 s : au-delà de 10 s, on abandonne. */
 const TIMEOUT_MS = 10_000;
 /** Paris compte environ 150 clubs : la liste défile, on garde une borne de sécurité. */
 const MAX_RESULTS = 200;
+/** Matchs lus par page, et pages au plus (un gros club joue environ 300 matchs à mi-saison). */
+const MATCHES_PAGE_SIZE = 200;
+const MAX_MATCHES_PAGES = 5;
+/**
+ * Une salle où le club n'a reçu qu'une fois (tournoi, match délocalisé) n'est pas une de
+ * ses salles : il en faut au moins deux.
+ */
+const MIN_HOME_MATCHES = 2;
+/** Autres salles proposées au plus, des plus utilisées aux moins utilisées. */
+const MAX_OTHER_VENUES = 10;
 
 /** Lit un chemin de l'API (`/search?query=…`) et rend le JSON ; lève en cas d'échec. */
 export type FfbbFetch = (path: string) => Promise<unknown>;
@@ -49,37 +60,33 @@ export type FfbbClubHit = {
   kind: FfbbClubKind;
 };
 
+/** Salle d'un club : nom et adresse, le code postal toujours connu. */
+export type FfbbVenue = {
+  name: string | null;
+  street: string | null;
+  number: string | null;
+  postalCode: string;
+  city: string | null;
+};
+
 /**
- * Fiche réduite aux champs du formulaire : adresse de la salle principale, sinon celle du
- * siège. `postalCode` est `null` si la FFBB n'en donne aucun de valable (saisie manuelle).
+ * Fiche réduite aux champs du formulaire : salle principale (celle de la fiche FFBB, sinon
+ * celle où le club reçoit le plus, sinon le siège), puis ses autres salles. `postalCode`
+ * est `null` si la FFBB n'en donne aucun de valable (saisie manuelle).
  */
 export type FfbbClubDetails = {
   name: string;
-  /** Nom de la salle principale, pour confirmation à l'écran (non enregistré). */
+  /** Nom de la salle principale. */
   venue: string | null;
   street: string | null;
   number: string | null;
   postalCode: string | null;
   city: string | null;
+  /** Autres salles où le club reçoit cette saison, de la plus utilisée à la moins utilisée. */
+  venues: FfbbVenue[];
 };
 
 // ─── Mise en forme ──────────────────────────────────────────────────────────
-
-/**
- * Forme comparable d'un nom de lieu : minuscules sans accents ni ponctuation, « st » et
- * « ste » développés. « St-Grégoire » → « saint gregoire ». C'est aussi ce qui est envoyé
- * à la recherche, qui ne trouve pas « Bédée » mais trouve « bedee ».
- */
-export function normalizePlace(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\bst\b/g, "saint")
-    .replace(/\bste\b/g, "sainte");
-}
 
 const LOWERCASE_WORDS = new Set([
   "de",
@@ -130,7 +137,7 @@ function cleanText(value: string | null | undefined, max: number): string | null
   return cleaned === "" ? null : cleaned;
 }
 
-/** Rue saisie tout en majuscules ou tout en minuscules : remise en forme ; sinon gardée. */
+/** Texte saisi tout en majuscules ou tout en minuscules : remis en forme ; sinon gardé. */
 function tidyStreet(value: string): string {
   return value === value.toLocaleUpperCase("fr-FR") || value === value.toLocaleLowerCase("fr-FR")
     ? titleCase(value)
@@ -177,6 +184,53 @@ const ARRONDISSEMENT = /\s+\d{1,2}\s*(?:e|er|ème)\s+arrondissement$/i;
 function cityOf(value: string | null | undefined): string | null {
   const cleaned = cleanText(cleanText(value, 255)?.replace(ARRONDISSEMENT, ""), 255);
   return cleaned === null ? null : titleCase(cleaned);
+}
+
+/** Nom d'une salle : « GYMNASE DE LA COURROUZE » → « Gymnase de la Courrouze ». */
+function venueNameOf(value: string | null | undefined): string | null {
+  const cleaned = cleanText(value, 255);
+  return cleaned === null ? null : cleanText(tidyStreet(cleaned), 255);
+}
+
+/** « 35000 RENNES » en fin de lieu de match. */
+const LOCALITY_PATTERN = /^(\d{5})\s+(.+)$/;
+
+/**
+ * Lieu d'un match tel que la FFBB l'écrit, « NOM, RUE, CP VILLE » : « GYMNASE DE LA
+ * COURROUZE, 72 RUE CLAUDE BERNARD, 35000 RENNES ». `null` sans code postal en fin.
+ */
+export function parseLocation(location: string | null | undefined): FfbbVenue | null {
+  const parts = (cleanText(location, 500) ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+  const match = LOCALITY_PATTERN.exec(parts.pop() ?? "");
+  if (match === null) {
+    return null;
+  }
+  const [, postalCode = "", city = ""] = match;
+  const [name, ...street] = parts;
+  return {
+    name: venueNameOf(name),
+    ...splitStreet(street.join(", ")),
+    postalCode,
+    city: cityOf(city),
+  };
+}
+
+/** Même salle : même code postal, puis même nom, ou même rue et même numéro. */
+function isSameVenue(a: FfbbVenue, b: FfbbVenue): boolean {
+  if (a.postalCode !== b.postalCode) {
+    return false;
+  }
+  const sameName =
+    a.name !== null && b.name !== null && normalizePlace(a.name) === normalizePlace(b.name);
+  const sameStreet =
+    a.street !== null &&
+    b.street !== null &&
+    normalizePlace(a.street) === normalizePlace(b.street) &&
+    a.number === b.number;
+  return sameName || sameStreet;
 }
 
 // ─── Recherche par ville ────────────────────────────────────────────────────
@@ -301,47 +355,135 @@ const clubResponseSchema = z.object({
     .nullish(),
 });
 
-/** Le club `id` : salle principale si son adresse est exploitable, sinon siège du club. */
+const matchesPageSchema = z.object({
+  matches: z.array(z.unknown()),
+  pagination: z.object({ total: z.number().int().nonnegative(), has_more: z.boolean() }).nullish(),
+});
+
+const matchSchema = z.object({ isHome: z.boolean(), location: z.string().nullish() });
+
+type MatchesPage = z.output<typeof matchesPageSchema>;
+
+/** Matchs de la saison du club (toutes ses équipes), page par page. */
+async function readMatches(fetchJson: FfbbFetch, id: string): Promise<unknown[]> {
+  const page = async (offset: number): Promise<MatchesPage> =>
+    matchesPageSchema.parse(
+      await fetchJson(
+        `/club/${encodeURIComponent(id)}/matches?limit=${String(MATCHES_PAGE_SIZE)}&offset=${String(offset)}`,
+      ),
+    );
+  const first = await page(0);
+  const offsets: number[] = [];
+  if (first.pagination?.has_more === true) {
+    const total = Math.min(first.pagination.total, MATCHES_PAGE_SIZE * MAX_MATCHES_PAGES);
+    for (let offset = MATCHES_PAGE_SIZE; offset < total; offset += MATCHES_PAGE_SIZE) {
+      offsets.push(offset);
+    }
+  }
+  const rest = await Promise.all(offsets.map(page));
+  return [first, ...rest].flatMap((entry) => entry.matches);
+}
+
+/**
+ * Salles où le club reçoit cette saison (au moins `MIN_HOME_MATCHES` matchs), de la plus
+ * utilisée à la moins utilisée. Facultatives : une panne donne une liste vide.
+ */
+async function readHomeVenues(fetchJson: FfbbFetch, id: string): Promise<FfbbVenue[]> {
+  let matches: unknown[];
+  try {
+    matches = await readMatches(fetchJson, id);
+  } catch (error) {
+    console.error(`[ffbb] matchs du club impossibles (${errorName(error)})`);
+    return [];
+  }
+  const counted: { venue: FfbbVenue; count: number }[] = [];
+  for (const candidate of matches) {
+    const match = matchSchema.safeParse(candidate);
+    const venue = match.success && match.data.isHome ? parseLocation(match.data.location) : null;
+    if (venue === null) {
+      continue;
+    }
+    const known = counted.find((entry) => isSameVenue(entry.venue, venue));
+    if (known === undefined) {
+      counted.push({ venue, count: 1 });
+    } else {
+      known.count += 1;
+    }
+  }
+  return counted
+    .filter((entry) => entry.count >= MIN_HOME_MATCHES)
+    .sort(
+      (a, b) => b.count - a.count || (a.venue.name ?? "").localeCompare(b.venue.name ?? "", "fr"),
+    )
+    .map((entry) => entry.venue);
+}
+
+/** Salle de la fiche FFBB, si son adresse est exploitable. */
+function mainVenueOf(club: z.output<typeof clubResponseSchema>): FfbbVenue | null {
+  const venue = club.salle;
+  const postalCode = postalCodeOf(venue?.commune?.codePostal);
+  if (!venue || cleanText(venue.adresse, 300) === null || postalCode === null) {
+    return null;
+  }
+  return {
+    name: venueNameOf(venue.libelle),
+    ...splitStreet(venue.adresse),
+    postalCode,
+    city: cityOf(venue.commune?.libelle),
+  };
+}
+
+/**
+ * Le club `id` et ses salles. Salle principale : celle de sa fiche FFBB, sinon celle où il
+ * reçoit le plus, sinon son siège. Fiche et matchs sont lus en même temps ; seule la
+ * fiche est indispensable.
+ */
 export async function getFfbbClub(
   fetchJson: FfbbFetch,
   id: string,
 ): Promise<FfbbResult<FfbbClubDetails>> {
-  let raw: unknown;
-  try {
-    raw = await fetchJson(`/club/${encodeURIComponent(id)}`);
-  } catch (error) {
-    console.error(`[ffbb] fiche club impossible (${errorName(error)})`);
+  const [raw, homeVenues] = await Promise.all([
+    fetchJson(`/club/${encodeURIComponent(id)}`).then(
+      (value) => ({ ok: true as const, value }),
+      (error: unknown) => {
+        console.error(`[ffbb] fiche club impossible (${errorName(error)})`);
+        return { ok: false as const };
+      },
+    ),
+    readHomeVenues(fetchJson, id),
+  ]);
+  if (!raw.ok) {
     return { ok: false };
   }
-  const parsed = clubResponseSchema.safeParse(raw);
+  const parsed = clubResponseSchema.safeParse(raw.value);
   if (!parsed.success) {
     console.error("[ffbb] fiche club inattendue");
     return { ok: false };
   }
   const club = parsed.data;
   const name = cleanText(club.nom, 255) ?? club.nom;
-  const venue = club.salle;
-  const venuePostalCode = postalCodeOf(venue?.commune?.codePostal);
-  if (venue && cleanText(venue.adresse, 300) !== null && venuePostalCode !== null) {
+  const main = mainVenueOf(club) ?? homeVenues[0] ?? null;
+  if (main === null) {
     return {
       ok: true,
       value: {
         name,
-        venue: cleanText(venue.libelle, 255),
-        ...splitStreet(venue.adresse),
-        postalCode: venuePostalCode,
-        city: cityOf(venue.commune?.libelle),
+        venue: null,
+        ...splitStreet(club.adresse),
+        postalCode: postalCodeOf(club.commune?.codePostal),
+        city: cityOf(club.commune?.libelle),
+        venues: [],
       },
     };
   }
+  const { name: venue, ...address } = main;
   return {
     ok: true,
     value: {
       name,
-      venue: null,
-      ...splitStreet(club.adresse),
-      postalCode: postalCodeOf(club.commune?.codePostal),
-      city: cityOf(club.commune?.libelle),
+      venue,
+      ...address,
+      venues: homeVenues.filter((other) => !isSameVenue(other, main)).slice(0, MAX_OTHER_VENUES),
     },
   };
 }

@@ -3,6 +3,7 @@ import {
   compensationFormSchema,
   newAddressSchema,
   oneWayDistanceSchema,
+  teamChoiceSchema,
   type CompensationFormInput,
 } from "./compensations";
 
@@ -13,6 +14,7 @@ const CLUB_B = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02";
 const ADDRESS_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
 
 const ADDRESS = {
+  name: "",
   street: "Avenue du Sport",
   number: "2",
   postalCode: "62400",
@@ -67,6 +69,7 @@ describe("oneWayDistanceSchema", () => {
 describe("newAddressSchema", () => {
   it("transforme les champs facultatifs vides en null", () => {
     expect(newAddressSchema.parse({ ...ADDRESS, number: " " })).toEqual({
+      name: null,
       street: "Avenue du Sport",
       number: null,
       postalCode: "62400",
@@ -130,6 +133,8 @@ describe("compensationFormSchema", () => {
           street: " Boulevard Albert 1er ",
           number: "12",
           city: "",
+          venueName: "Salle Colette Besson",
+          venues: [{ name: "", street: "", number: "", postalCode: "35000", city: "Rennes" }],
         },
       }),
     );
@@ -140,7 +145,39 @@ describe("compensationFormSchema", () => {
       street: "Boulevard Albert 1er",
       number: "12",
       city: null,
+      venueName: "Salle Colette Besson",
+      venues: [{ name: null, street: null, number: null, postalCode: "35000", city: "Rennes" }],
     });
+  });
+
+  it("accepte les autres salles d'un nouveau club venues de l'annuaire (champs à null)", () => {
+    const venues: unknown = JSON.parse(
+      JSON.stringify([
+        { name: "Salle du Berry", number: null, street: null, postalCode: "35000", city: "Rennes" },
+      ]),
+    );
+    const parsed = teamChoiceSchema.safeParse({
+      kind: "new",
+      name: "Rennes Avenir",
+      postalCode: "35000",
+      venues,
+    });
+    expect(parsed.success && parsed.data.kind === "new" && parsed.data.venues).toEqual([
+      { name: "Salle du Berry", number: null, street: null, postalCode: "35000", city: "Rennes" },
+    ]);
+  });
+
+  it("refuse une autre salle sans code postal", () => {
+    expect(
+      errorPaths({
+        team1: {
+          kind: "new",
+          name: "BC Béthune",
+          postalCode: "62400",
+          venues: [{ name: "Salle", street: "", number: "", postalCode: "", city: "" }],
+        },
+      }),
+    ).toEqual(["team1"]);
   });
 
   it("exige le code postal d'un nouveau club", () => {

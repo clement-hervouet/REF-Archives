@@ -21,16 +21,17 @@ import {
 } from "@/components/features/scales/form-parts";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
-import { NEW_CHOICE } from "@/lib/compensation-form-fields";
+import { MAIN_VENUE, NEW_CHOICE, OTHER_VENUE } from "@/lib/compensation-form-fields";
 import type { CompensationFormState } from "@/server/compensation/compensation-form";
 import type { CompensationFormData } from "@/server/compensation/form-data";
 import { toParisIsoDate } from "@/lib/dates";
 import { isPlateauPeriod } from "@/lib/plateaux";
 import { MAX_GAME_COUNT } from "@/server/compensation/amount";
 import { CUP_ROUNDS } from "@/server/db/divisions";
+import type { ClubSummary } from "@/server/db/clubs";
 import type { Division } from "@/server/db/divisions";
 import { AddressFields } from "./address-fields";
-import { addressLabel } from "./address-label";
+import { venueLabel } from "./address-label";
 import { ClubFields } from "./club-fields";
 import { previewCompensation } from "@/server/compensation/preview";
 import {
@@ -167,6 +168,27 @@ function frequentDivisions(
   return frequentIds.flatMap((divisionId) => byId.get(divisionId) ?? []);
 }
 
+/**
+ * Choix de départ de la liste « Salle » (club de l'équipe 1 à plusieurs salles) : celui
+ * conservé après un envoi refusé, sinon l'adresse enregistrée (modification) si c'est une
+ * des salles du club, une autre adresse sinon, et la salle principale sans exception.
+ */
+function initialVenueClub(
+  valueOf: (name: string) => string,
+  clubs: readonly ClubSummary[],
+): string {
+  const kept = valueOf("venueClub");
+  if (kept !== "") {
+    return kept;
+  }
+  if (valueOf("venueException") !== "on") {
+    return MAIN_VENUE;
+  }
+  const club = clubs.find((candidate) => candidate.id === valueOf("team1Club"));
+  const address = valueOf("venueAddress");
+  return club?.venues.some((venue) => venue.id === address) === true ? address : OTHER_VENUE;
+}
+
 /** Champs d'un match (date, niveau, équipes, adresse), plus barème et distance pour une indemnité. */
 export function MatchFields({
   data,
@@ -188,6 +210,7 @@ export function MatchFields({
   const [team1Club, setTeam1Club] = useState(valueOf("team1Club"));
   const [team2Club, setTeam2Club] = useState(valueOf("team2Club"));
   const [venueException, setVenueException] = useState(valueOf("venueException") === "on");
+  const [venueClub, setVenueClub] = useState(() => initialVenueClub(valueOf, data.clubs));
   const [venueAddress, setVenueAddress] = useState(valueOf("venueAddress"));
   // Doublé (§15.4.5) : `null` = automatique, la case suit la détection (saisie seulement).
   // En modification, ou dès que la case a été touchée, elle garde le choix fait.
@@ -198,6 +221,10 @@ export function MatchFields({
   );
 
   const club1 = data.clubs.find((club) => club.id === team1Club);
+  // Club de l'équipe 1 à plusieurs salles : la liste « Salle » remplace la case d'exception.
+  const club1Venues = club1?.venues ?? [];
+  const venueSelect = club1 !== undefined && club1Venues.length > 0;
+  const otherAddress = venueSelect ? venueClub === OTHER_VENUE : venueException;
   // Plateaux (§15.4.7) : proposés pour un match de juillet à fin octobre (date du jour tant
   // qu'aucune n'est saisie), et toujours s'ils sont déjà choisis (modification).
   const plateauPeriod = isPlateauPeriod(matchDate === "" ? toParisIsoDate(new Date()) : matchDate);
@@ -219,8 +246,10 @@ export function MatchFields({
     switch (name) {
       case "team1Club":
         return team1Club;
+      case "venueClub":
+        return venueSelect ? venueClub : "";
       case "venueException":
-        return venueException ? "on" : "";
+        return !venueSelect && venueException ? "on" : "";
       case "venueAddress":
         return venueAddress;
       default:
@@ -374,7 +403,11 @@ export function MatchFields({
           legend={isPlateau ? t.sections.host : t.sections.team1}
           clubs={data.clubs}
           value={team1Club}
-          onChange={setTeam1Club}
+          onChange={(value) => {
+            setTeam1Club(value);
+            // Autre club : sa salle principale par défaut.
+            setVenueClub(MAIN_VENUE);
+          }}
           valueOf={valueOf}
           state={state}
           onNewClubChange={onNewClubChange}
@@ -397,26 +430,50 @@ export function MatchFields({
 
       <fieldset className="flex min-w-0 flex-col gap-4 rounded-md border border-border p-4">
         <legend className="px-1 font-semibold">{t.sections.venue}</legend>
-        {!venueException && (club1 !== undefined || team1Club === NEW_CHOICE) && (
-          <p id={venueHintId} className="text-sm text-muted-foreground">
-            {club1 !== undefined
-              ? t.fields.defaultVenue.replace("{address}", addressLabel(club1.address))
-              : t.fields.defaultVenueNewClub}
-          </p>
+        {venueSelect ? (
+          <SelectField
+            id={`${id}-venue-club`}
+            name="venueClub"
+            label={t.fields.venueClub}
+            hint={t.fields.venueClubHint}
+            value={venueClub}
+            onChange={setVenueClub}
+            error={otherAddress ? null : fieldError("venue", state)}
+          >
+            <option value={MAIN_VENUE}>
+              {t.fields.mainVenue.replace("{venue}", venueLabel(club1.address))}
+            </option>
+            {club1Venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
+                {venueLabel(venue)}
+              </option>
+            ))}
+            <option value={OTHER_VENUE}>{t.fields.otherVenue}</option>
+          </SelectField>
+        ) : (
+          <>
+            {!venueException && (club1 !== undefined || team1Club === NEW_CHOICE) && (
+              <p id={venueHintId} className="text-sm text-muted-foreground">
+                {club1 !== undefined
+                  ? t.fields.defaultVenue.replace("{address}", venueLabel(club1.address))
+                  : t.fields.defaultVenueNewClub}
+              </p>
+            )}
+            <label className="flex min-h-11 items-center gap-3">
+              <input
+                type="checkbox"
+                name="venueException"
+                checked={venueException}
+                onChange={(event) => {
+                  setVenueException(event.target.checked);
+                }}
+                className="h-5 w-5 shrink-0"
+              />
+              <span>{t.fields.venueException}</span>
+            </label>
+          </>
         )}
-        <label className="flex min-h-11 items-center gap-3">
-          <input
-            type="checkbox"
-            name="venueException"
-            checked={venueException}
-            onChange={(event) => {
-              setVenueException(event.target.checked);
-            }}
-            className="h-5 w-5 shrink-0"
-          />
-          <span>{t.fields.venueException}</span>
-        </label>
-        {venueException && (
+        {otherAddress && (
           <>
             <SelectField
               id={`${id}-venue`}
@@ -429,7 +486,7 @@ export function MatchFields({
               <option value="">{t.fields.chooseAddress}</option>
               {data.addresses.map((address) => (
                 <option key={address.id} value={address.id}>
-                  {addressLabel(address)}
+                  {venueLabel(address)}
                 </option>
               ))}
               <option value={NEW_CHOICE}>{t.fields.newAddress}</option>

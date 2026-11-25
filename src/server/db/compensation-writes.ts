@@ -8,6 +8,8 @@
  * l'imposent aussi en base.
  */
 import { z } from "zod";
+import { MAX_CLUB_VENUES } from "@/lib/schemas/compensations";
+import type { ClubVenue, NewClubChoice } from "@/lib/schemas/compensations";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
 import { cupRoundSchema } from "./divisions";
 import type { CupRound } from "./divisions";
@@ -18,6 +20,8 @@ export const MAX_CLUBS_PER_USER = 1000;
 
 /** Adresse à créer : seul le code postal est obligatoire (adresse de club partielle, §15.4.1). */
 export type NewAddress = {
+  /** Nom de la salle (« Gymnase de la Courrouze »), facultatif. */
+  name: string | null;
   street: string | null;
   number: string | null;
   postalCode: string;
@@ -27,15 +31,17 @@ export type NewAddress = {
 
 /**
  * Adresse d'un club créé à la volée (indemnité, match, collègue) : code postal seul, ou
- * adresse de sa salle quand il a été choisi dans l'annuaire FFBB.
+ * adresse de sa salle principale quand il a été choisi dans l'annuaire FFBB.
  */
-export function newClubAddress(club: {
+function newClubAddress(club: {
   postalCode: string;
   street?: string | null | undefined;
   number?: string | null | undefined;
   city?: string | null | undefined;
+  venueName?: string | null | undefined;
 }): NewAddress {
   return {
+    name: club.venueName ?? null,
     street: club.street ?? null,
     number: club.number ?? null,
     postalCode: club.postalCode,
@@ -74,25 +80,100 @@ const nullableIdRowSchema = z.object({ id: z.uuid().nullable() });
 
 // ─── Adresses et clubs ──────────────────────────────────────────────────────
 
-const INSERT_ADDRESS_SQL = `INSERT INTO address (user_id, street, number, postal_code, city, country)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id`;
+// Même salle = même code postal et même ville, puis même rue et même numéro ; sans rue,
+// même nom. Une adresse réduite au code postal n'est jamais partagée : elle se complète
+// dans « Clubs », en place, et ne doit pas entraîner celle d'un autre club. Une salle
+// retrouvée sans nom prend celui qui arrive.
+const FIND_OR_INSERT_ADDRESS_SQL = `WITH found AS (
+  SELECT id FROM address
+  WHERE user_id = $1::uuid AND postal_code = $4::text
+    AND lower(coalesce(city, '')) = lower(coalesce($5::text, ''))
+    AND (
+      ($2::text IS NOT NULL AND lower(street) = lower($2::text)
+        AND number IS NOT DISTINCT FROM $3::text)
+      OR ($2::text IS NULL AND $7::text IS NOT NULL AND street IS NULL
+        AND lower(name) = lower($7::text))
+    )
+  ORDER BY created_at, id
+  LIMIT 1
+),
+named AS (
+  UPDATE address SET name = $7::text
+  WHERE id = (SELECT id FROM found) AND user_id = $1::uuid AND name IS NULL
+    AND $7::text IS NOT NULL
+),
+inserted AS (
+  INSERT INTO address (user_id, street, number, postal_code, city, country, name)
+  SELECT $1::uuid, $2::text, $3::text, $4::text, $5::text, $6::text, $7::text
+  WHERE NOT EXISTS (SELECT 1 FROM found)
+  RETURNING id
+)
+SELECT id FROM found UNION ALL SELECT id FROM inserted`;
 
-/** Crée une adresse de l'utilisateur. */
-export async function insertAddress(
+/**
+ * Adresse de l'utilisateur : la salle déjà connue s'il l'a (voir la règle ci-dessus),
+ * sinon une nouvelle. Une salle partagée par deux clubs garde ainsi une seule adresse, ce
+ * qui repère un doublé (§15.4.5).
+ */
+export async function findOrInsertAddress(
   db: Queryable,
   input: { userId: string; address: NewAddress },
 ): Promise<string> {
   const { address } = input;
-  const result = await db.query(INSERT_ADDRESS_SQL, [
+  const result = await db.query(FIND_OR_INSERT_ADDRESS_SQL, [
     input.userId,
     address.street,
     address.number,
     address.postalCode,
     address.city,
     address.country,
+    address.name,
   ]);
   return idRowSchema.parse(result.rows[0]).id;
+}
+
+// ─── Salles d'un club ───────────────────────────────────────────────────────
+
+// Autres salles du club seulement : la principale (club.address_id) n'y entre jamais.
+// Club et adresse de l'utilisateur, nombre de salles borné ; déjà rattachée : rien.
+const ATTACH_CLUB_VENUE_SQL = `INSERT INTO club_venue (club_id, address_id, user_id)
+SELECT c.id, a.id, c.user_id
+FROM club c
+JOIN address a ON a.id = $2::uuid AND a.user_id = c.user_id
+WHERE c.id = $1::uuid AND c.user_id = $3::uuid AND c.address_id <> a.id
+  AND (SELECT count(*) FROM club_venue v WHERE v.club_id = c.id) < $4::integer
+ON CONFLICT DO NOTHING
+RETURNING address_id`;
+
+/**
+ * Rattache une salle (adresse de l'utilisateur) à son club. Faux si rien n'a changé : déjà
+ * rattachée, salle principale, club plein, ou club ou adresse introuvables.
+ */
+export async function attachClubVenue(
+  db: Queryable,
+  input: { userId: string; clubId: string; addressId: string },
+): Promise<boolean> {
+  const result = await db.query(ATTACH_CLUB_VENUE_SQL, [
+    input.clubId,
+    input.addressId,
+    input.userId,
+    MAX_CLUB_VENUES - 1,
+  ]);
+  return result.rows.length > 0;
+}
+
+/** Autres salles d'un club (annuaire FFBB) : chacune retrouvée ou créée, puis rattachée. */
+export async function insertClubVenues(
+  db: Queryable,
+  input: { userId: string; clubId: string; venues: readonly ClubVenue[] },
+): Promise<void> {
+  for (const venue of input.venues) {
+    const addressId = await findOrInsertAddress(db, {
+      userId: input.userId,
+      address: { ...venue, country: null },
+    });
+    await attachClubVenue(db, { userId: input.userId, clubId: input.clubId, addressId });
+  }
 }
 
 // Ne lève jamais d'erreur : id NULL = limite atteinte.
@@ -130,6 +211,25 @@ export async function insertClub(
     MAX_CLUBS_PER_USER,
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
+}
+
+/**
+ * Crée un club à la volée (indemnité, match, collègue) avec sa salle principale et ses
+ * autres salles. `null` si l'utilisateur a atteint la limite de clubs : l'appelant annule
+ * alors sa transaction (l'adresse créée part avec).
+ */
+export async function insertNewClub(
+  db: Queryable,
+  input: { userId: string; club: NewClubChoice },
+): Promise<LockedClub | null> {
+  const { userId, club } = input;
+  const addressId = await findOrInsertAddress(db, { userId, address: newClubAddress(club) });
+  const clubId = await insertClub(db, { userId, name: club.name, addressId });
+  if (clubId === null) {
+    return null;
+  }
+  await insertClubVenues(db, { userId, clubId, venues: club.venues ?? [] });
+  return { id: clubId, addressId };
 }
 
 /**

@@ -143,6 +143,7 @@ describe("nouveau club depuis un collègue", () => {
     clubPostalCode: "35000",
   };
   const ADDRESS_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
+  const VENUE_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02";
 
   it("crée l'adresse, le club puis le collègue rattaché", async () => {
     const { deps, query } = setup();
@@ -154,7 +155,7 @@ describe("nouveau club depuis un collègue", () => {
       status: "created",
     });
     expect(query.mock.calls[0]?.[0]).toContain("INSERT INTO address");
-    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, null, null, "35000", null, null]);
+    expect(query.mock.calls[0]?.[1]).toEqual([USER_ID, null, null, "35000", null, null, null]);
     expect(query.mock.calls[1]?.[0]).toContain("INSERT INTO club");
     expect(query.mock.calls[1]?.[1]?.slice(0, 3)).toEqual([USER_ID, ADDRESS_ID, "BC RENNES"]);
     expect(query.mock.calls[2]?.[1]?.[5]).toBe(CLUB_ID);
@@ -165,14 +166,18 @@ describe("nouveau club depuis un collègue", () => {
     query
       .mockResolvedValueOnce({ rows: [{ id: ADDRESS_ID }] })
       .mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: VENUE_ID }] })
+      .mockResolvedValueOnce({ rows: [{ address_id: VENUE_ID }] })
       .mockResolvedValueOnce({ rows: [{ id: PERSON_A }] });
     const form = formData({
       ...NEW_CLUB,
       clubStreet: "Boulevard Albert 1er",
       clubNumber: "12",
       clubCity: "Rennes",
-      // Nom de la salle : affiché seulement, ignoré par le serveur.
-      clubVenue: "SALLE COLETTE BESSON",
+      clubVenue: "Salle Colette Besson",
+      clubVenues: JSON.stringify([
+        { name: "Salle du Berry", street: "", number: "", postalCode: "35000", city: "Rennes" },
+      ]),
     });
     expect(await handleCreateColleague(deps, USER_ID, form)).toEqual({ status: "created" });
     expect(query.mock.calls[0]?.[1]).toEqual([
@@ -182,7 +187,12 @@ describe("nouveau club depuis un collègue", () => {
       "35000",
       "Rennes",
       null,
+      "Salle Colette Besson",
     ]);
+    // Autre salle du club : retrouvée ou créée, puis rattachée.
+    expect(query.mock.calls[2]?.[1]?.[6]).toBe("Salle du Berry");
+    expect(query.mock.calls[3]?.[1]).toEqual([CLUB_ID, VENUE_ID, USER_ID, 19]);
+    expect(query.mock.calls[4]?.[1]?.[5]).toBe(CLUB_ID);
   });
 
   it("signale les champs invalides du club sans requête", async () => {

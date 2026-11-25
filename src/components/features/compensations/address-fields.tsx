@@ -1,7 +1,8 @@
 /**
- * Champs d'une nouvelle adresse de salle (exception à l'adresse du club de l'équipe 1).
- * Les noms suivent `compensation-form.ts` : `venueStreet`, `venueCity`… ; les erreurs,
- * `venue.street`, `venue.city`… Un nouveau club ne prend que son code postal (§15.4.1).
+ * Champs d'une nouvelle adresse de salle (autre que les salles du club de l'équipe 1).
+ * Les noms suivent `compensation-form.ts` : `venueName`, `venueStreet`, `venueCity`… ; les
+ * erreurs, `venue.name`, `venue.street`, `venue.city`… Un nouveau club ne prend que son
+ * code postal (§15.4.1).
  */
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
@@ -20,6 +21,17 @@ type Props = {
 export function AddressFields({ idBase, prefix, valueOf, state }: Props) {
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem]">
+      <div className="md:col-span-2">
+        <TextField
+          id={`${idBase}-name`}
+          name={`${prefix}Name`}
+          label={t.venueName}
+          maxLength={255}
+          required={false}
+          defaultValue={valueOf(`${prefix}Name`)}
+          error={fieldError(`${prefix}.name`, state)}
+        />
+      </div>
       <TextField
         id={`${idBase}-street`}
         name={`${prefix}Street`}

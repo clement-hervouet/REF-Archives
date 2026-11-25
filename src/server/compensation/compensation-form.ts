@@ -8,10 +8,12 @@
  * - cupRound : tour, pour un niveau de coupe seulement (§15.4.6) ;
  * - payer : organisme qui verse, vide = déduit du niveau et de l'adresse (bloc 10) ;
  * - team1Club / team2Club : identifiant d'un club, ou `new` (teamNName et teamNPostalCode
- *   d'un nouveau club, §15.4.1 ; teamNStreet, teamNNumber, teamNCity s'il vient de
- *   l'annuaire FFBB) ;
- * - venueException : case « autre adresse que celle de l'équipe 1 » ;
- *   venueAddress : identifiant d'une adresse connue, ou `new` (champs venue*) ;
+ *   d'un nouveau club, §15.4.1 ; teamNVenue, teamNStreet, teamNNumber, teamNCity et
+ *   teamNVenues, liste JSON de ses autres salles, s'il vient de l'annuaire FFBB) ;
+ * - venueClub : liste « Salle » d'un club de l'équipe 1 à plusieurs salles (`main` = salle
+ *   principale, identifiant d'une autre salle, ou `other`) ; sinon venueException, case
+ *   « autre adresse que celle de l'équipe 1 ». Pour une autre adresse : venueAddress,
+ *   identifiant d'une adresse connue, ou `new` (champs venue*, dont venueName) ;
  * - travelShared : case « doublé », déplacement déjà compté sur un autre match (§15.4.5) ;
  * - gameCount, plateauGameAmount : nombre de matchs et montant par match (euros) d'un
  *   plateau (§15.4.7), dont la liste team2Club est alors absente (club organisateur seul).
@@ -20,11 +22,13 @@ import { z } from "zod";
 import {
   COMPENSATION_FIELDS,
   NEW_CHOICE,
+  MAIN_VENUE,
+  OTHER_VENUE,
   type AddressPart,
   type CompensationField,
 } from "@/lib/compensation-form-fields";
 import { toParisIsoDate } from "@/lib/dates";
-import { readText } from "@/lib/form-data";
+import { readJsonList, readText } from "@/lib/form-data";
 import { oneWayKmInput } from "@/lib/distance";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
@@ -63,10 +67,14 @@ const ADDRESS_INPUT_SUFFIX: Record<AddressPart, string> = {
   country: "Country",
 };
 
-function readAddress(formData: FormData, prefix: "venue"): Record<AddressPart, string | undefined> {
+function readAddress(
+  formData: FormData,
+  prefix: "venue",
+): Record<AddressPart | "name", string | undefined> {
   const field = (part: AddressPart): string | undefined =>
     readText(formData, `${prefix}${ADDRESS_INPUT_SUFFIX[part]}`);
   return {
+    name: readText(formData, `${prefix}Name`) ?? "",
     street: field("street"),
     // Champs facultatifs : absents du formulaire, ils valent une saisie vide.
     number: field("number") ?? "",
@@ -83,8 +91,8 @@ function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string,
     return null;
   }
   if (club === NEW_CHOICE) {
-    // Nouveau club : nom et code postal (§15.4.1) ; rue, numéro et ville en plus s'il a
-    // été choisi dans l'annuaire FFBB (champs absents sinon).
+    // Nouveau club : nom et code postal (§15.4.1) ; nom de la salle, rue, numéro, ville et
+    // autres salles en plus s'il a été choisi dans l'annuaire FFBB (champs absents sinon).
     return {
       kind: "new",
       name: readText(formData, `${prefix}Name`),
@@ -92,14 +100,23 @@ function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string,
       street: readText(formData, `${prefix}Street`),
       number: readText(formData, `${prefix}Number`),
       city: readText(formData, `${prefix}City`),
+      venueName: readText(formData, `${prefix}Venue`),
+      venues: readJsonList(formData, `${prefix}Venues`),
     };
   }
   return { kind: "existing", clubId: club };
 }
 
 function readVenue(formData: FormData): Record<string, unknown> {
-  // Case non cochée : l'adresse est celle du club de l'équipe 1 (cas normal).
-  if (readText(formData, "venueException") !== "on") {
+  const clubVenue = readText(formData, "venueClub");
+  // Club à plusieurs salles : la liste « Salle » remplace la case d'exception.
+  if (clubVenue !== undefined && clubVenue !== OTHER_VENUE) {
+    return clubVenue === MAIN_VENUE
+      ? { kind: "team1" }
+      : { kind: "existing", addressId: clubVenue };
+  }
+  // Case non cochée : l'adresse est la salle principale du club de l'équipe 1 (cas normal).
+  if (clubVenue === undefined && readText(formData, "venueException") !== "on") {
     return { kind: "team1" };
   }
   const address = readText(formData, "venueAddress");
@@ -242,8 +259,8 @@ function centsToEuroInput(cents: number): string {
 
 /**
  * Valeurs du formulaire pour modifier une indemnité : mêmes noms de champs que la
- * saisie. L'adresse du match n'est une « exception » que si elle diffère de celle du
- * club de l'équipe 1.
+ * saisie. L'adresse du match n'est une « exception » que si elle diffère de la salle
+ * principale du club de l'équipe 1 (le formulaire la retrouve parmi ses autres salles).
  */
 export function compensationFormValues(compensation: CompensationForEdit): Record<string, string> {
   const values: Record<string, string> = {

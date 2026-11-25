@@ -37,6 +37,7 @@ const INPUT_NAMES = {
   number: "clubNumber",
   city: "clubCity",
   venue: "clubVenue",
+  venues: "clubVenues",
 };
 
 export function ColleagueClubField({ idBase, clubs, valueOf, state, inline }: Props) {

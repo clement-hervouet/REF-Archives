@@ -5,18 +5,19 @@
  *
  * Champs HTML : `firstname`, `lastname`, `hasAccount` (case), `clubId` (vide = aucun club,
  * identifiant d'un club de l'utilisateur, ou `new` avec `clubName` et `clubPostalCode`
- * pour le créer, comme depuis une indemnité, §15.4.1, plus `clubStreet`, `clubNumber` et
- * `clubCity` s'il vient de l'annuaire FFBB) ; `personId` (caché) pour modifier
+ * pour le créer, comme depuis une indemnité, §15.4.1, plus `clubVenue`, `clubStreet`,
+ * `clubNumber`, `clubCity` et `clubVenues` s'il vient de l'annuaire FFBB) ; `personId` (caché) pour modifier
  * ou supprimer. Un nouveau club et le collègue sont écrits dans la même transaction : un
  * refus (limite atteinte) n'en laisse rien, adresse comprise.
  */
 import { z } from "zod";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
-import { readText } from "@/lib/form-data";
+import { readJsonList, readText } from "@/lib/form-data";
 import { teamChoiceSchema } from "@/lib/schemas/compensations";
+import type { NewClubChoice } from "@/lib/schemas/compensations";
 import { newColleagueSchema } from "@/lib/schemas/officials";
 import { isOwnedClub } from "../db/clubs";
-import { insertAddress, insertClub, newClubAddress } from "../db/compensation-writes";
+import { insertNewClub } from "../db/compensation-writes";
 import { deleteColleague, insertColleague, updateColleague } from "../db/persons";
 import type { Queryable } from "../db/users";
 import { rejectGame, runRejectable } from "./rejection";
@@ -49,17 +50,7 @@ function parseColleague(formData: FormData) {
 
 const idSchema = z.uuid();
 
-type ClubChoice =
-  | { kind: "none" }
-  | { kind: "existing"; clubId: string }
-  | {
-      kind: "new";
-      name: string;
-      postalCode: string;
-      street?: string | null | undefined;
-      number?: string | null | undefined;
-      city?: string | null | undefined;
-    };
+type ClubChoice = { kind: "none" } | { kind: "existing"; clubId: string } | NewClubChoice;
 
 type ClubRead = { ok: true; choice: ClubChoice } | { ok: false; state: ColleagueFormState };
 
@@ -96,6 +87,8 @@ function readClubChoice(formData: FormData): ClubRead {
       street: readText(formData, "clubStreet"),
       number: readText(formData, "clubNumber"),
       city: readText(formData, "clubCity"),
+      venueName: readText(formData, "clubVenue"),
+      venues: readJsonList(formData, "clubVenues"),
     });
     if (!parsed.success) {
       return { ok: false, state: { status: "club_invalid", fields: newClubErrors(parsed.error) } };
@@ -126,9 +119,8 @@ async function resolveClubId(
     case "existing":
       return (await isOwnedClub(db, { userId, clubId: choice.clubId })) ? choice.clubId : undefined;
     case "new": {
-      const addressId = await insertAddress(db, { userId, address: newClubAddress(choice) });
-      const clubId = await insertClub(db, { userId, name: choice.name, addressId });
-      return clubId ?? rejectGame({ status: "limit_reached", resource: "club" });
+      const club = await insertNewClub(db, { userId, club: choice });
+      return club?.id ?? rejectGame({ status: "limit_reached", resource: "club" });
     }
   }
 }

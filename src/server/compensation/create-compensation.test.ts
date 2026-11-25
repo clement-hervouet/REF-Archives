@@ -24,6 +24,7 @@ const TEAM_2 = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02";
 const COMPENSATION_ID = "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01";
 
 const ADDRESS = {
+  name: "",
   street: "Rue du Gymnase",
   number: "",
   postalCode: "62400",
@@ -273,6 +274,7 @@ describe("createCompensation", () => {
       [{ id: ADDRESS_A }],
       [{ id: CLUB_NEW }],
       [{ id: ADDRESS_NEW }],
+      [{ address_id: ADDRESS_NEW }],
       [],
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
@@ -294,11 +296,14 @@ describe("createCompensation", () => {
     // Seul le club existant est verrouillé.
     expect(query.mock.calls[2]?.[1]).toEqual([[CLUB_B], USER_ID]);
     // Adresse du nouveau club : code postal seul (§15.4.1).
-    expect(query.mock.calls[3]?.[1]).toEqual([USER_ID, null, null, "62400", null, null]);
+    expect(query.mock.calls[3]?.[1]).toEqual([USER_ID, null, null, "62400", null, null, null]);
     expect(query.mock.calls[4]?.[1]).toEqual([USER_ID, ADDRESS_A, "BC BÉTHUNE", 1000]);
     expect(query.mock.calls[5]?.[1]?.[1]).toBe("Salle Pierre de Coubertin");
+    // La salle rejoint celles du nouveau club de l'équipe 1.
+    expect(query.mock.calls[6]?.[0]).toContain("INSERT INTO club_venue");
+    expect(query.mock.calls[6]?.[1]).toEqual([CLUB_NEW, ADDRESS_NEW, USER_ID, 19]);
     // L'indemnité prend l'adresse d'exception, pas celle du nouveau club.
-    expect(query.mock.calls[9]?.[1]?.[7]).toBe(ADDRESS_NEW);
+    expect(query.mock.calls[10]?.[1]?.[7]).toBe(ADDRESS_NEW);
   });
 
   it("accepte une adresse d'exception déjà connue de l'utilisateur", async () => {
@@ -309,6 +314,8 @@ describe("createCompensation", () => {
       RATES,
       BOTH_CLUBS,
       [{ id: ADDRESS_NEW }],
+      // Déjà une salle du club : rien de rattaché.
+      [],
       [{ id: TEAM_1 }],
       [{ id: TEAM_2 }],
       [{ id: COMPENSATION_ID }],
@@ -322,6 +329,8 @@ describe("createCompensation", () => {
     );
     expect(result.status).toBe("created");
     expect(query.mock.calls[3]?.[1]).toEqual([ADDRESS_NEW, USER_ID]);
+    expect(query.mock.calls[4]?.[1]).toEqual([CLUB_A, ADDRESS_NEW, USER_ID, 19]);
+    expect(query.mock.calls[7]?.[1]?.[7]).toBe(ADDRESS_NEW);
   });
 
   it("refuse un niveau inconnu sans rien écrire", async () => {

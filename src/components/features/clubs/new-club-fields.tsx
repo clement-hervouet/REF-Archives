@@ -3,8 +3,9 @@
 /**
  * Nouveau club créé depuis un formulaire (indemnité, match, collègue), §15.4.1. Par défaut,
  * recherche dans l'annuaire FFBB par ville : le club choisi est résumé à l'écran et ses
- * champs (nom, rue, numéro, code postal, ville) partent en champs cachés. Si la recherche
- * échoue ou sur demande : saisie manuelle du nom et du code postal, comme avant.
+ * champs (nom, salle principale, autres salles en liste JSON) partent en champs cachés. Si
+ * la recherche échoue ou sur demande : saisie manuelle du nom et du code postal, comme
+ * avant.
  *
  * Rendu dans un `<form>` remonté après chaque envoi : le mode repart des valeurs conservées
  * (club choisi si son adresse est là, saisie manuelle sinon, recherche si rien n'est saisi).
@@ -13,12 +14,19 @@ import { useEffect, useRef, useState } from "react";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { TextField } from "@/components/features/scales/form-parts";
 import { fr } from "@/i18n/fr";
+import { isSameCity } from "@/lib/places";
+import { clubVenuesSchema } from "@/lib/schemas/compensations";
+import type { ClubVenue } from "@/lib/schemas/compensations";
 import type { FfbbClubDetails } from "@/server/ffbb/ffbb-clubs";
 import { FfbbClubSearch } from "./ffbb-club-search";
+import { OtherVenues } from "./other-venues";
 
 const t = fr.clubs.ffbb;
 
-/** Noms des champs HTML envoyés au serveur (`venue` : nom de la salle, ignoré par lui). */
+/**
+ * Noms des champs HTML envoyés au serveur : `venue`, nom de la salle principale ;
+ * `venues`, autres salles du club (liste JSON).
+ */
 type NewClubInputNames = {
   name: string;
   postalCode: string;
@@ -26,6 +34,7 @@ type NewClubInputNames = {
   number: string;
   city: string;
   venue: string;
+  venues: string;
 };
 
 type PickedClub = {
@@ -35,6 +44,7 @@ type PickedClub = {
   number: string | null;
   postalCode: string;
   city: string | null;
+  venues: readonly ClubVenue[];
 };
 
 type Mode =
@@ -62,6 +72,19 @@ function orNull(value: string): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
+/** Autres salles conservées après un envoi refusé ; une liste illisible est ignorée. */
+export function keptVenues(value: string): ClubVenue[] {
+  if (value === "") {
+    return [];
+  }
+  try {
+    const parsed = clubVenuesSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Mode au montage, d'après les valeurs conservées après un envoi refusé. */
 function initialMode(
   names: NewClubInputNames,
@@ -85,6 +108,7 @@ function initialMode(
         city,
         number: orNull(valueOf(names.number)),
         venue: orNull(valueOf(names.venue)),
+        venues: keptVenues(valueOf(names.venues)),
       },
     };
   }
@@ -113,7 +137,10 @@ export function NewClubFields({ idBase, names, labels, valueOf, errors, onResolv
       });
       return;
     }
-    setMode({ kind: "picked", club: { ...club, postalCode: club.postalCode } });
+    // Pas de cases à cocher ici : seules les salles de la ville du club sont gardées (les
+    // autres s'ajoutent depuis l'onglet « Clubs »).
+    const venues = club.venues.filter((venue) => isSameCity(venue.city, club.city));
+    setMode({ kind: "picked", club: { ...club, postalCode: club.postalCode, venues } });
   }
 
   if (mode.kind === "search") {
@@ -149,12 +176,14 @@ export function NewClubFields({ idBase, names, labels, valueOf, errors, onResolv
         <p className="font-semibold">{club.name}</p>
         {club.venue !== null && <p className="text-sm">{t.venue.replace("{venue}", club.venue)}</p>}
         <p className="text-sm">{addressLabel(club)}</p>
+        <OtherVenues venues={club.venues} />
         <input type="hidden" name={names.name} value={club.name} />
         <input type="hidden" name={names.postalCode} value={club.postalCode} />
         <input type="hidden" name={names.street} value={club.street ?? ""} />
         <input type="hidden" name={names.number} value={club.number ?? ""} />
         <input type="hidden" name={names.city} value={club.city ?? ""} />
         <input type="hidden" name={names.venue} value={club.venue ?? ""} />
+        <input type="hidden" name={names.venues} value={JSON.stringify(club.venues)} />
         {backToSearch(t.change)}
       </div>
     );

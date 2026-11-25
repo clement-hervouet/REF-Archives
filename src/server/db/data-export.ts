@@ -33,13 +33,15 @@ function list(select: string): string {
 }
 
 const ADDRESSES_SQL = list(`SELECT json_agg(json_build_object(
-    'id', a.id, 'number', a.number, 'street', a.street, 'postalCode', a.postal_code,
+    'id', a.id, 'name', a.name, 'number', a.number, 'street', a.street, 'postalCode', a.postal_code,
     'city', a.city, 'country', a.country, 'createdAt', a.created_at, 'updatedAt', a.updated_at)
     ORDER BY a.created_at, a.id)
   FROM address a WHERE a.user_id = $1`);
 
 const CLUBS_SQL = list(`SELECT json_agg(json_build_object(
     'id', c.id, 'name', c.name, 'licence', c.licence, 'addressId', c.address_id,
+    'otherVenueAddressIds', ${list(`SELECT json_agg(v.address_id ORDER BY v.created_at, v.address_id)
+      FROM club_venue v WHERE v.club_id = c.id AND v.user_id = c.user_id`)},
     'correspondentId', c.correspondent_id, 'createdAt', c.created_at, 'updatedAt', c.updated_at)
     ORDER BY c.name, c.id)
   FROM club c WHERE c.user_id = $1`);

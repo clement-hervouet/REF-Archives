@@ -1,9 +1,10 @@
 /**
  * Lecture des champs du formulaire d'indemnité pour le récapitulatif en direct (bloc 10).
  * Pur : prend une fonction de lecture (`FormData.get` ou valeurs de départ), aucun DOM ici.
- * Mêmes règles que le serveur : adresse du club de l'équipe 1 sauf exception cochée.
+ * Mêmes règles que le serveur : salle principale du club de l'équipe 1, sauf autre salle
+ * choisie (liste « Salle ») ou exception cochée.
  */
-import { NEW_CHOICE } from "@/lib/compensation-form-fields";
+import { MAIN_VENUE, NEW_CHOICE, OTHER_VENUE } from "@/lib/compensation-form-fields";
 import { departmentFromPostalCode } from "@/lib/payers";
 import { gameAmountSchema } from "@/lib/schemas/scales";
 import type { DepartmentCode } from "@/lib/payers";
@@ -44,13 +45,33 @@ function typedAddress(read: Read, prefix: "team1" | "venue"): PreviewInput["venu
   return { postalCode, country: country === "" ? null : country };
 }
 
+/**
+ * Adresse du match choisie dans le formulaire : salle principale du club de l'équipe 1
+ * (`team1`), une adresse connue par son identifiant (autre salle du club, adresse de la
+ * liste), ou une nouvelle adresse saisie. Même lecture que le serveur.
+ */
+type VenueChoice = { kind: "team1" } | { kind: "known"; addressId: string } | { kind: "new" };
+
+function venueChoice(read: Read): VenueChoice {
+  // Vide : pas de liste « Salle » (club à une seule salle), la case d'exception décide.
+  const clubVenue = read("venueClub");
+  if (clubVenue === MAIN_VENUE || (clubVenue === "" && read("venueException") !== "on")) {
+    return { kind: "team1" };
+  }
+  if (clubVenue !== "" && clubVenue !== OTHER_VENUE) {
+    return { kind: "known", addressId: clubVenue };
+  }
+  const address = read("venueAddress");
+  return address === NEW_CHOICE ? { kind: "new" } : { kind: "known", addressId: address };
+}
+
 function venue(read: Read, data: CompensationFormData): PreviewInput["venue"] {
-  if (read("venueException") === "on") {
-    const address = read("venueAddress");
-    if (address === NEW_CHOICE) {
-      return typedAddress(read, "venue");
-    }
-    const known = data.addresses.find((candidate) => candidate.id === address);
+  const choice = venueChoice(read);
+  if (choice.kind === "new") {
+    return typedAddress(read, "venue");
+  }
+  if (choice.kind === "known") {
+    const known = data.addresses.find((candidate) => candidate.id === choice.addressId);
     return known === undefined ? null : { postalCode: known.postalCode, country: known.country };
   }
   // Cas normal : l'adresse du club de l'équipe 1, existant ou nouveau.
@@ -108,13 +129,18 @@ export function previewInputFromForm(read: Read, data: CompensationFormData): Fo
 }
 
 /**
- * Identifiant de l'adresse du match si elle est déjà connue (club existant de l'équipe 1 ou
- * adresse choisie dans la liste), sinon `null` (nouveau club, nouvelle adresse, rien choisi).
+ * Identifiant de l'adresse du match si elle est déjà connue (salle d'un club existant de
+ * l'équipe 1 ou adresse choisie dans la liste), sinon `null` (nouveau club, nouvelle
+ * adresse, rien choisi).
  */
 function venueAddressId(read: Read, data: CompensationFormData): string | null {
-  if (read("venueException") === "on") {
-    const address = read("venueAddress");
-    return data.addresses.some((candidate) => candidate.id === address) ? address : null;
+  const choice = venueChoice(read);
+  if (choice.kind === "new") {
+    return null;
+  }
+  if (choice.kind === "known") {
+    const { addressId } = choice;
+    return data.addresses.some((candidate) => candidate.id === addressId) ? addressId : null;
   }
   const club = data.clubs.find((candidate) => candidate.id === read("team1Club"));
   return club?.address.id ?? null;

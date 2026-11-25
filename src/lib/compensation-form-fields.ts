@@ -7,6 +7,16 @@
 /** Valeur des listes de club et d'adresse qui demande d'en créer un nouveau. */
 export const NEW_CHOICE = "new";
 
+/**
+ * Liste « Salle » d'un club de l'équipe 1 à plusieurs salles (`venueClub`) : `main` = salle
+ * principale, identifiant = une autre salle du club, `other` = une autre adresse (liste
+ * `venueAddress`, comme la case d'exception d'un club à une seule salle). Jamais de valeur
+ * vide : la liste est obligatoire, et le navigateur refuserait l'envoi (« sélectionnez un
+ * élément »).
+ */
+export const MAIN_VENUE = "main";
+export const OTHER_VENUE = "other";
+
 const ADDRESS_PARTS = ["street", "number", "postalCode", "city", "country"] as const;
 
 export type AddressPart = (typeof ADDRESS_PARTS)[number];
@@ -28,6 +38,7 @@ export const COMPENSATION_FIELDS = [
   "team2.name",
   ...ADDRESS_PARTS.map((part) => `team2.${part}` as const),
   "venue",
+  "venue.name",
   ...ADDRESS_PARTS.map((part) => `venue.${part}` as const),
   "oneWayDistance",
 ] as const;

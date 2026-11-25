@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Fiche d'un club (§15.4.1) : nom et code postal obligatoires, rue, numéro, ville et pays
- * facultatifs. Sert à l'ajout (formulaire vidé après succès) et à la modification dans la
- * carte du club (champ caché `clubId`, vérifié côté serveur ; `onSuccess` referme la carte).
- * Grille en requêtes de conteneur : elle suit la largeur de la carte, pas celle de l'écran.
+ * Fiche d'un club (§15.4.1) : nom et code postal obligatoires ; nom de la salle principale,
+ * rue, numéro, ville et pays facultatifs. Sert à l'ajout (formulaire vidé après succès) et
+ * à la modification dans la carte du club (champ caché `clubId`, vérifié côté serveur ;
+ * `onSuccess` referme la carte). Grille en requêtes de conteneur : elle suit la largeur de
+ * la carte, pas celle de l'écran.
  *
  * Ajout : on cherche d'abord le club dans l'annuaire FFBB par sa ville ; le club choisi
- * pré-remplit la fiche (adresse de sa salle principale), à vérifier avant l'envoi. Si la
+ * pré-remplit la fiche (sa salle principale) et propose ses autres salles, à cocher. Si la
  * recherche échoue ou sur demande, la fiche s'affiche vide, à saisir comme avant.
  */
 import { useEffect, useId, useState } from "react";
@@ -20,10 +21,13 @@ import {
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
 import type { ClubField } from "@/lib/schemas/clubs";
+import type { ClubVenue } from "@/lib/schemas/compensations";
 import type { ClubFormState } from "@/server/clubs/manage-clubs";
 import type { FfbbClubDetails } from "@/server/ffbb/ffbb-clubs";
 import { clubFieldError, clubStatusMessage } from "./club-messages";
 import { FfbbClubSearch } from "./ffbb-club-search";
+import { keptVenues } from "./new-club-fields";
+import { VenueChecklist } from "./venue-checklist";
 
 const t = fr.clubs;
 
@@ -36,8 +40,12 @@ type Props = {
   onCancel?: () => void;
 };
 
-const MAX_LENGTHS: Record<ClubField, number> = {
+/** Champs texte de la fiche (les autres salles partent en liste, à part). */
+type ClubTextField = Exclude<ClubField, "venues">;
+
+const MAX_LENGTHS: Record<ClubTextField, number> = {
   name: 255,
+  venueName: 255,
   street: 255,
   number: 20,
   postalCode: 10,
@@ -45,7 +53,7 @@ const MAX_LENGTHS: Record<ClubField, number> = {
   country: 100,
 };
 
-const REQUIRED: readonly ClubField[] = ["name", "postalCode"];
+const REQUIRED: readonly ClubTextField[] = ["name", "postalCode"];
 
 /**
  * Étape de l'ajout : recherche FFBB, ou fiche (pré-remplie par le club choisi, `prefill`,
@@ -55,15 +63,20 @@ const REQUIRED: readonly ClubField[] = ["name", "postalCode"];
 type AddStep = {
   key: number;
   step: "search" | "form";
-  prefill: Readonly<Record<ClubField, string>> | null;
+  prefill: Readonly<Record<ClubTextField, string>> | null;
+  /** Autres salles du club choisi, proposées à l'ajout. */
+  venues: readonly ClubVenue[];
+  /** Ville du club choisi : ses salles sont cochées au départ (`null` : toutes). */
+  homeCity: string | null;
   notice: string | null;
   /** Remonte la fiche à chaque pré-remplissage (champs non contrôlés). */
   version: number;
 };
 
-function prefillOf(club: FfbbClubDetails): Record<ClubField, string> {
+function prefillOf(club: FfbbClubDetails): Record<ClubTextField, string> {
   return {
     name: club.name,
+    venueName: club.venue ?? "",
     street: club.street ?? "",
     number: club.number ?? "",
     postalCode: club.postalCode ?? "",
@@ -92,6 +105,8 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
     key: formKey,
     step: "search",
     prefill: null,
+    venues: [],
+    homeCity: null,
     notice: null,
     version: 0,
   });
@@ -102,15 +117,32 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
           key: formKey,
           step: state.status === "created" ? "search" : "form",
           prefill: null,
+          // Ajout refusé : les salles cochées sont reproposées.
+          venues: state.status === "created" ? [] : keptVenues(valueOf("venues")),
+          // Ajout refusé : seules les salles cochées reviennent, toutes cochées.
+          homeCity: null,
           notice: null,
           version: addStep.version + 1,
         };
   const step = editing ? "form" : current.step;
-  const showForm = (prefill: AddStep["prefill"], notice: string | null) => {
-    setAddStep({ ...current, step: "form", prefill, notice, version: current.version + 1 });
+  const showForm = (
+    prefill: AddStep["prefill"],
+    venues: AddStep["venues"],
+    homeCity: string | null,
+    notice: string | null,
+  ) => {
+    setAddStep({
+      ...current,
+      step: "form",
+      prefill,
+      venues,
+      homeCity,
+      notice,
+      version: current.version + 1,
+    });
   };
 
-  const field = (name: ClubField) => (
+  const field = (name: ClubTextField) => (
     <TextField
       id={`${id}-${name}`}
       name={name}
@@ -136,11 +168,13 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
             onPick={(club) => {
               showForm(
                 prefillOf(club),
+                club.venues,
+                club.city,
                 club.postalCode === null ? t.ffbb.missingPostalCode : t.ffbb.prefilled,
               );
             }}
             onManual={(notice) => {
-              showForm(null, notice);
+              showForm(null, [], null, notice);
             }}
           />
         </div>
@@ -155,7 +189,14 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
           <button
             type="button"
             onClick={() => {
-              setAddStep({ ...current, step: "search", prefill: null, notice: null });
+              setAddStep({
+                ...current,
+                step: "search",
+                prefill: null,
+                venues: [],
+                homeCity: null,
+                notice: null,
+              });
             }}
             className="text-sm font-medium text-primary underline underline-offset-2"
           >
@@ -175,6 +216,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
             {field("name")}
             {field("postalCode")}
           </div>
+          {field("venueName")}
           <div className="grid gap-3 @md:grid-cols-[minmax(0,1fr)_8rem]">
             {field("street")}
             {field("number")}
@@ -183,6 +225,20 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
             {field("city")}
             {field("country")}
           </div>
+          {!editing && current.venues.length > 0 && (
+            <VenueChecklist
+              venues={current.venues}
+              homeCity={current.homeCity}
+              name="venues"
+              legend={t.venues.importLegend}
+              hint={t.venues.importHint}
+            />
+          )}
+          {clubFieldError("venues", state) !== null && (
+            <p className="text-sm font-medium text-destructive">
+              {clubFieldError("venues", state)}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
               {isPending ? labels.submitting : labels.submit}
