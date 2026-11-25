@@ -43,6 +43,27 @@ export function teamFieldName(
   return `${team}${part}`;
 }
 
+/** Tous les champs du formulaire (noms HTML), dans l'ordre d'affichage. */
+export const PREPARATION_FIELDS: readonly string[] = [
+  TEAM_COUNT_FIELD,
+  ...PREPARATION_TEAMS.flatMap((team) =>
+    ([...TEAM_NUMBER_PARTS, TEAM_REFEREED_PART, ...TEAM_TEXT_PARTS] as const).map((part) =>
+      teamFieldName(team, part),
+    ),
+  ),
+  ...CREW_FIELDS,
+  OBSERVED_FIELD,
+];
+
+/**
+ * Champ caché qui porte la valeur de départ d'un champ (`base.team1Rank`) : le serveur
+ * compare valeur de départ, valeur saisie et valeur enregistrée pour n'écrire que les
+ * champs modifiés et repérer ceux changés ailleurs entre-temps.
+ */
+export function baseFieldName(name: string): string {
+  return `base.${name}`;
+}
+
 /** Valeur envoyée par une case cochée. */
 export const CHECKBOX_ON = "1";
 

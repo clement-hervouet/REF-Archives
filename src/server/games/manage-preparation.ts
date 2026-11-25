@@ -1,6 +1,8 @@
 /**
  * Préparation de match (§15.4.10) : écrite sous verrou du match (une suppression
- * simultanée du match ne peut pas passer entre-temps), jamais pour un plateau. Création du
+ * simultanée du match ne peut pas passer entre-temps, deux enregistrements simultanés
+ * passent l'un après l'autre), jamais pour un plateau, et champ par champ : seuls les
+ * champs modifiés dans le formulaire sont écrits (voir `preparation-values.ts`). Création du
  * match complet depuis une indemnité pour la préparer (« Préparer le match »).
  *
  * Ni Next.js ni authentification ici : la Server Action vérifie l'utilisateur et valide le
@@ -9,22 +11,36 @@
 import type { Officials } from "@/lib/schemas/officials";
 import type { PreparationForm } from "@/lib/schemas/preparations";
 import { findCompensationForGame } from "../db/games";
-import { lockGameForPreparation, savePreparation } from "../db/preparations";
+import { findPreparation, lockGameForPreparation, savePreparation } from "../db/preparations";
 import { createGameFromCompensation } from "./manage-game";
+import { mergePreparation, preparationValues } from "./preparation-values";
 import type { GameDeps } from "./rejection";
 
 export type SavePreparationResult =
   | { status: "saved" }
   | { status: "not_found" }
   /** Plateau (§15.4.7) : pas de préparation. */
-  | { status: "plateau" };
+  | { status: "plateau" }
+  /**
+   * Modifiée ailleurs entre-temps, rien n'est écrit : `saved` est la préparation
+   * enregistrée (valeurs de formulaire, nouvelles valeurs de départ), `conflicts` les
+   * champs (noms HTML) à signaler.
+   */
+  | {
+      status: "conflict";
+      saved: Readonly<Record<string, string>>;
+      conflicts: readonly string[];
+    };
 
-/** Crée ou remplace la préparation d'un match de `userId`. */
+/**
+ * Crée la préparation d'un match de `userId`, ou y écrit les champs modifiés depuis
+ * `base` (valeurs de départ du formulaire).
+ */
 export async function saveGamePreparation(
   deps: GameDeps,
   userId: string,
   gameId: string,
-  preparation: PreparationForm,
+  input: { preparation: PreparationForm; base: PreparationForm },
 ): Promise<SavePreparationResult> {
   return deps.transaction(async (db): Promise<SavePreparationResult> => {
     const game = await lockGameForPreparation(db, { gameId, userId });
@@ -34,7 +50,28 @@ export async function saveGamePreparation(
     if (game.plateau) {
       return { status: "plateau" };
     }
-    await savePreparation(db, { userId, gameId, preparation });
+    // Lue après le verrou du match : un enregistrement concurrent est déjà validé.
+    const current = await findPreparation(db, { gameId, userId });
+    // Pas encore de préparation (ou supprimée entre-temps) : la saisie est écrite telle quelle.
+    if (current === null) {
+      await savePreparation(db, {
+        userId,
+        gameId,
+        updatedBy: userId,
+        preparation: input.preparation,
+      });
+      return { status: "saved" };
+    }
+    const merged = mergePreparation({ base: input.base, mine: input.preparation, current });
+    if (merged.status === "conflict") {
+      return { status: "conflict", saved: preparationValues(current), conflicts: merged.conflicts };
+    }
+    await savePreparation(db, {
+      userId,
+      gameId,
+      updatedBy: userId,
+      preparation: merged.preparation,
+    });
     return { status: "saved" };
   });
 }

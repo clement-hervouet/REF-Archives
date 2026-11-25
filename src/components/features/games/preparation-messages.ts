@@ -4,6 +4,8 @@
  */
 import { fr } from "@/i18n/fr";
 import type { ScaleMessage } from "@/components/features/scales/scale-messages";
+import { CHECKBOX_ON, OBSERVED_FIELD, TEAM_REFEREED_PART } from "@/lib/preparation-form-fields";
+import { richTextToPlain } from "@/lib/rich-text/plain-text";
 import type { PreparationFormState } from "@/server/games/preparation-form";
 
 const t = fr.preparations;
@@ -20,7 +22,24 @@ export function preparationStatusMessage(state: PreparationFormState): ScaleMess
       return { tone: "error", text: t.errors.gameNotFound };
     case "plateau":
       return { tone: "error", text: t.errors.plateau };
+    case "conflict":
+      return { tone: "error", text: t.errors.conflict };
   }
+}
+
+/**
+ * Version enregistrée d'un champ modifié ailleurs entre-temps (nom HTML : `team1Rank`,
+ * `placement`…), en texte lisible, ou `null` si le champ n'est pas signalé.
+ */
+export function preparationConflictText(field: string, state: PreparationFormState): string | null {
+  if (state.status !== "conflict" || !state.conflicts.includes(field)) {
+    return null;
+  }
+  const value = state.saved[field] ?? "";
+  if (field === OBSERVED_FIELD || field.endsWith(TEAM_REFEREED_PART)) {
+    return value === CHECKBOX_ON ? t.form.conflictChecked : t.form.conflictUnchecked;
+  }
+  return value === "" ? t.form.conflictEmpty : richTextToPlain(value);
 }
 
 /** Message d'un champ numérique invalide, selon sa partie (`team1Rank` → position). */

@@ -6,26 +6,25 @@
  * Champs HTML : `gameId` (caché), `teamCount` (nombre d'équipes de la poule, commun aux
  * deux équipes), par équipe `team1Rank`, `team1Wins`, `team1Losses`, `team1Players`,
  * `team1Coaches`, `team1AlreadyRefereed` (case), idem pour `team2…`, puis `placement`,
- * `communication`, `management`, `table`, `contact` et `observed` (case).
+ * `communication`, `management`, `table`, `contact` et `observed` (case). Chaque champ a
+ * son jumeau caché `base.…` (valeur de départ) : l'enregistrement se fait champ par champ
+ * (voir `preparation-values.ts`).
  */
 import { z } from "zod";
 import { readText } from "@/lib/form-data";
 import {
-  CHECKBOX_ON,
   CREW_FIELDS,
-  OBSERVED_FIELD,
   PREPARATION_TEAMS,
   TEAM_COUNT_FIELD,
-  TEAM_NUMBER_PARTS,
-  TEAM_REFEREED_PART,
-  TEAM_TEXT_PARTS,
-  teamFieldName,
+  baseFieldName,
 } from "@/lib/preparation-form-fields";
 import type { CrewField, PreparationTeam } from "@/lib/preparation-form-fields";
-import { preparationFormSchema } from "@/lib/schemas/preparations";
-import type { TeamPreparation } from "@/lib/schemas/preparations";
+import { preparationFieldsSchema, preparationFormSchema } from "@/lib/schemas/preparations";
+import type { PreparationForm, TeamPreparation } from "@/lib/schemas/preparations";
 import { softDeletePreparation } from "../db/preparations";
 import { prepareFromCompensation, saveGamePreparation } from "./manage-preparation";
+import type { SavePreparationResult } from "./manage-preparation";
+import { preparationInput, preparationValues } from "./preparation-values";
 import type { GameDeps } from "./rejection";
 
 /** Champ en erreur : nom du champ HTML (`team1Rank`, `placement`…). */
@@ -39,39 +38,22 @@ export type PreparationFormState =
       fields: Readonly<Record<string, PreparationIssue>>;
       empty: boolean;
     }
-  | { status: "saved" }
-  | { status: "not_found" }
-  | { status: "plateau" };
+  | SavePreparationResult;
 
 export type DeletePreparationState =
   { status: "idle" } | { status: "deleted" } | { status: "not_found" };
 
 export type PrepareMatchState = { status: "idle" } | { status: "not_found" | "limit_reached" };
 
-/** Clés du schéma pour une partie d'équipe : `Rank` → `rank`, `TeamCount` → `teamCount`. */
-function schemaKey(part: string): string {
-  return part.charAt(0).toLowerCase() + part.slice(1);
-}
-
-function readTeam(formData: FormData, team: PreparationTeam): Record<string, unknown> {
-  const values: Record<string, unknown> = {};
-  for (const part of [...TEAM_NUMBER_PARTS, ...TEAM_TEXT_PARTS]) {
-    values[schemaKey(part)] = readText(formData, teamFieldName(team, part)) ?? "";
-  }
-  values.alreadyRefereed =
-    readText(formData, teamFieldName(team, TEAM_REFEREED_PART)) === CHECKBOX_ON;
-  return values;
-}
-
-/** Reconstruit l'objet attendu par `preparationFormSchema` ; rien n'est validé ici. */
-export function readPreparationFormData(formData: FormData): Record<string, unknown> {
-  return {
-    teamCount: readText(formData, TEAM_COUNT_FIELD) ?? "",
-    team1: readTeam(formData, "team1"),
-    team2: readTeam(formData, "team2"),
-    crew: Object.fromEntries(CREW_FIELDS.map((field) => [field, readText(formData, field) ?? ""])),
-    observed: readText(formData, OBSERVED_FIELD) === CHECKBOX_ON,
-  };
+/**
+ * Reconstruit l'objet attendu par les schémas de préparation : la saisie, ou avec
+ * `fieldName = baseFieldName` les valeurs de départ. Rien n'est validé ici.
+ */
+export function readPreparationFormData(
+  formData: FormData,
+  fieldName: (name: string) => string = (name) => name,
+): Record<string, unknown> {
+  return preparationInput((name) => readText(formData, fieldName(name)) ?? "");
 }
 
 function isTeam(value: unknown): value is PreparationTeam {
@@ -129,7 +111,16 @@ export async function handleSavePreparation(
   if (!parsed.success) {
     return invalidState(parsed.error);
   }
-  return saveGamePreparation(deps, userId, gameId.data, parsed.data);
+  // Valeurs de départ : celles affichées à l'ouverture, donc déjà valides (sans les règles
+  // d'ensemble : une préparation pas encore écrite est vide). Invalides = formulaire bricolé.
+  const base = preparationFieldsSchema.safeParse(readPreparationFormData(formData, baseFieldName));
+  if (!base.success) {
+    return { status: "invalid", fields: {}, empty: false };
+  }
+  return saveGamePreparation(deps, userId, gameId.data, {
+    preparation: parsed.data,
+    base: base.data,
+  });
 }
 
 /** Supprime (soft delete) la préparation du match désigné par le champ caché `gameId`. */
@@ -174,21 +165,6 @@ export type PreparationDefaults = {
   hasObserver: boolean;
 };
 
-function numberValue(value: number | null): string {
-  return value === null ? "" : String(value);
-}
-
-function teamValues(team: PreparationTeam, values: TeamPreparation): Record<string, string> {
-  return {
-    [teamFieldName(team, "Rank")]: numberValue(values.rank),
-    [teamFieldName(team, "Wins")]: numberValue(values.wins),
-    [teamFieldName(team, "Losses")]: numberValue(values.losses),
-    [teamFieldName(team, "Players")]: values.players ?? "",
-    [teamFieldName(team, "Coaches")]: values.coaches ?? "",
-    [teamFieldName(team, TEAM_REFEREED_PART)]: values.alreadyRefereed ? CHECKBOX_ON : "",
-  };
-}
-
 const EMPTY_TEAM: TeamPreparation = {
   rank: null,
   wins: null,
@@ -203,27 +179,16 @@ const EMPTY_TEAM: TeamPreparation = {
  * des champs vides avec les cases pré-cochées par le calcul et l'observateur du match.
  */
 export function preparationFormValues(
-  preparation: {
-    teamCount: number | null;
-    team1: TeamPreparation;
-    team2: TeamPreparation;
-    crew: Record<CrewField, string | null>;
-    observed: boolean;
-  } | null,
+  preparation: PreparationForm | null,
   defaults: PreparationDefaults,
 ): Record<string, string> {
-  const source = preparation ?? {
-    teamCount: null,
-    team1: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team1 },
-    team2: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team2 },
-    crew: { placement: null, communication: null, management: null, table: null, contact: null },
-    observed: defaults.hasObserver,
-  };
-  return {
-    [TEAM_COUNT_FIELD]: numberValue(source.teamCount),
-    ...teamValues("team1", source.team1),
-    ...teamValues("team2", source.team2),
-    ...Object.fromEntries(CREW_FIELDS.map((field) => [field, source.crew[field] ?? ""])),
-    [OBSERVED_FIELD]: source.observed ? CHECKBOX_ON : "",
-  };
+  return preparationValues(
+    preparation ?? {
+      teamCount: null,
+      team1: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team1 },
+      team2: { ...EMPTY_TEAM, alreadyRefereed: defaults.alreadyRefereed.team2 },
+      crew: { placement: null, communication: null, management: null, table: null, contact: null },
+      observed: defaults.hasObserver,
+    },
+  );
 }

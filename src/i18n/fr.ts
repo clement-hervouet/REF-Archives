@@ -1159,6 +1159,11 @@ export const fr = {
       saved: "Préparation enregistrée.",
       delete: "Supprimer la préparation",
       deleted: "Préparation supprimée.",
+      // Champ modifié ailleurs entre-temps (enregistrement champ par champ).
+      conflictLabel: "Modifié ailleurs entre-temps. Version enregistrée :",
+      conflictChecked: "cochée",
+      conflictUnchecked: "décochée",
+      conflictEmpty: "(vide)",
     },
     errors: {
       invalid: "Certains champs sont invalides : corrigez-les ci-dessous.",
@@ -1171,6 +1176,8 @@ export const fr = {
       text: "Texte trop long (4 096 caractères maximum) ou caractère interdit.",
       gameNotFound: "Ce match n'existe plus. Revenez à la liste.",
       plateau: "Un plateau n'a pas de préparation.",
+      conflict:
+        "Rien n'a été enregistré : la préparation a été modifiée ailleurs entre-temps (autre onglet ou appareil). Les autres changements sont repris ci-dessous ; vérifiez les champs signalés, puis enregistrez à nouveau.",
     },
   },
   richText: {

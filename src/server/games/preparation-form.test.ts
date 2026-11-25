@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { baseFieldName } from "@/lib/preparation-form-fields";
 import { makeFakeDb } from "../db/fake-db";
 import type { Queryable } from "../db/users";
 import {
@@ -73,6 +74,16 @@ describe("readPreparationFormData", () => {
   });
 });
 
+describe("readPreparationFormData avec les valeurs de départ", () => {
+  it("lit les champs cachés `base.…` et ignore la saisie", () => {
+    const read = readPreparationFormData(
+      form({ team1Rank: "3", "base.team1Rank": "2", "base.observed": "1" }),
+      baseFieldName,
+    );
+    expect(read).toMatchObject({ team1: { rank: "2" }, observed: true });
+  });
+});
+
 describe("handleSavePreparation", () => {
   it("enregistre une préparation valide", async () => {
     const { deps, query } = setup();
@@ -102,6 +113,18 @@ describe("handleSavePreparation", () => {
       fields: { team1Wins: "invalid", team2Rank: "rank_above_count" },
       empty: false,
     });
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("refuse des valeurs de départ bricolées sans écrire", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleSavePreparation(
+        deps,
+        USER_ID,
+        form({ gameId: GAME_ID, team1Wins: "4", "base.team1Wins": "abc" }),
+      ),
+    ).toEqual({ status: "invalid", fields: {}, empty: false });
     expect(query).not.toHaveBeenCalled();
   });
 
