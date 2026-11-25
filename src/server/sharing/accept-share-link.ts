@@ -11,11 +11,12 @@ import { tokenSchema } from "@/lib/schemas/auth";
 import {
   checkLink,
   findAccountName,
+  findLinkedPerson,
   insertLink,
   findPendingShareLink,
   markShareLinkAccepted,
 } from "../db/colleague-links";
-import { insertColleague } from "../db/persons";
+import { deleteColleague, insertColleague } from "../db/persons";
 import { insertShare, lockShareTarget } from "../db/shared-preparations";
 import type { Queryable, Transaction } from "../db/users";
 import { hashIdentifier } from "../auth/rate-limit";
@@ -60,10 +61,18 @@ async function linkBack(
   input: { viewerId: string; ownerUserId: string; reverse: ReverseLink },
 ): Promise<void> {
   const { viewerId, ownerUserId, reverse } = input;
-  let personId: string | null = null;
+  if (reverse.kind === "none") {
+    return;
+  }
+  // Déjà lié au propriétaire par une autre fiche (page restée ouverte, autre lien accepté) :
+  // rien à faire, et surtout pas de fiche en double.
+  if ((await findLinkedPerson(db, { ownerUserId: viewerId, linkedUserId: ownerUserId })) !== null) {
+    return;
+  }
+  let personId: string | null;
   if (reverse.kind === "existing") {
     personId = reverse.personId;
-  } else if (reverse.kind === "create") {
+  } else {
     const name = await findAccountName(db, ownerUserId);
     if (name?.lastname == null) {
       return;
@@ -76,14 +85,13 @@ async function linkBack(
   if (personId === null) {
     return;
   }
-  const check = await checkLink(db, {
-    ownerUserId: viewerId,
-    personId,
-    linkedUserId: ownerUserId,
-  });
-  if (check === "free") {
-    // Faux si la fiche n'est pas un collègue du destinataire : rien n'est lié.
-    await insertLink(db, { ownerUserId: viewerId, personId, linkedUserId: ownerUserId });
+  const link = { ownerUserId: viewerId, personId, linkedUserId: ownerUserId };
+  // `insertLink` est faux si la fiche n'est pas un collègue du destinataire, ou si une
+  // acceptation simultanée a lié le propriétaire entre-temps.
+  const linked = (await checkLink(db, link)) === "free" && (await insertLink(db, link));
+  if (!linked && reverse.kind === "create") {
+    // Fiche créée ici pour rien : elle est retirée (aucun match ne la cite encore).
+    await deleteColleague(db, { userId: viewerId, personId });
   }
 }
 

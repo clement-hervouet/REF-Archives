@@ -58,6 +58,21 @@ export async function checkLink(
   return row.linked_user_id === null && row.person_id === null ? "free" : "taken";
 }
 
+const linkedPersonRowSchema = z.object({ person_id: z.uuid() });
+
+/** Fiche du propriétaire liée au compte `linkedUserId`, ou `null`. */
+export async function findLinkedPerson(
+  db: Queryable,
+  input: { ownerUserId: string; linkedUserId: string },
+): Promise<string | null> {
+  const result = await db.query(
+    `SELECT person_id FROM colleague_link WHERE owner_user_id = $1 AND linked_user_id = $2`,
+    [input.ownerUserId, input.linkedUserId],
+  );
+  const raw = result.rows[0];
+  return raw === undefined ? null : linkedPersonRowSchema.parse(raw).person_id;
+}
+
 // La fiche doit être un collègue (pas la fiche « moi ») du propriétaire. La case « a un
 // compte » est cochée dans la même requête.
 const INSERT_LINK_SQL = `WITH colleague AS (

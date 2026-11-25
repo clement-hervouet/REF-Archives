@@ -156,13 +156,55 @@ describe("acceptShareLink", () => {
       .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER, person_id: PERSON_ID }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ firstname: "Clément", lastname: "Hervouet" }] })
       .mockResolvedValueOnce({ rows: [{ id: NEW_PERSON }] })
       .mockResolvedValueOnce({ rows: [{ linked_user_id: null, person_id: null }] })
       .mockResolvedValueOnce({ rows: [{ person_id: NEW_PERSON }] });
     await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } });
-    // Fiche créée chez le destinataire, puis liée au compte du propriétaire.
-    expect(query.mock.calls[7]?.[1]?.slice(0, 4)).toEqual([VIEWER, "Clément", "Hervouet", true]);
-    expect(query.mock.calls[9]?.[1]).toEqual([VIEWER, NEW_PERSON, OWNER]);
+    // Pas encore lié au propriétaire : fiche créée chez le destinataire, puis liée.
+    expect(query.mock.calls[6]?.[1]).toEqual([VIEWER, OWNER]);
+    expect(query.mock.calls[8]?.[1]?.slice(0, 4)).toEqual([VIEWER, "Clément", "Hervouet", true]);
+    expect(query.mock.calls[10]?.[1]).toEqual([VIEWER, NEW_PERSON, OWNER]);
+    expect(query).toHaveBeenCalledTimes(11);
+  });
+
+  it("ne crée pas de fiche en double si le destinataire est déjà lié au propriétaire", async () => {
+    const { deps, query } = setup();
+    query
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER, person_id: PERSON_ID }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ person_id: "0d1e2f3a-4b5c-4d6e-8f7a-8b9c0d1e2f01" }] });
+    expect(
+      await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } }),
+    ).toMatchObject({ status: "accepted" });
+    expect(query.mock.calls.map(([sql]) => sql).join("\n")).not.toContain("INSERT INTO person");
+    expect(query).toHaveBeenCalledTimes(7);
+  });
+
+  it("retire la fiche créée si une acceptation simultanée a déjà lié le propriétaire", async () => {
+    const { deps, query } = setup();
+    const NEW_PERSON = "0d1e2f3a-4b5c-4d6e-8f7a-8b9c0d1e2f01";
+    query
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER }] })
+      .mockResolvedValueOnce({ rows: [LINK_ROW] })
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: VIEWER, person_id: PERSON_ID }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ firstname: "Clément", lastname: "Hervouet" }] })
+      .mockResolvedValueOnce({ rows: [{ id: NEW_PERSON }] })
+      // Entre-temps, le propriétaire est lié à une autre fiche du destinataire.
+      .mockResolvedValueOnce({ rows: [{ linked_user_id: null, person_id: PERSON_ID }] })
+      .mockResolvedValueOnce({ rows: [{ id: NEW_PERSON }] });
+    await acceptShareLink(deps, { token: TOKEN, viewerId: VIEWER, reverse: { kind: "create" } });
+    const last = query.mock.calls.at(-1);
+    expect(last?.[0]).toContain("DELETE FROM person");
+    expect(last?.[1]).toEqual([NEW_PERSON, VIEWER]);
   });
 });
