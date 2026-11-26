@@ -126,6 +126,12 @@ describe("getSecurityHeaders", () => {
     expect(getSecurityHeaders("/reset-password")["Referrer-Policy"]).toBe("no-referrer");
   });
 
+  it("supprime le Referer là où un lien de partage attend la connexion ou le profil", () => {
+    // `?partage=<jeton>` : le jeton suit la connexion et « Compléter mon profil ».
+    expect(getSecurityHeaders("/login")["Referrer-Policy"]).toBe("no-referrer");
+    expect(getSecurityHeaders("/completer-profil")["Referrer-Policy"]).toBe("no-referrer");
+  });
+
   it("ne confond pas /reset-password avec un chemin voisin", () => {
     expect(getSecurityHeaders("/reset-passwords/x")["Referrer-Policy"]).toBe(
       "strict-origin-when-cross-origin",
