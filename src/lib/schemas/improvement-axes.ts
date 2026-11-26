@@ -3,23 +3,29 @@
  * acceptée : elle efface tout.
  */
 import { z } from "zod";
-import type { ImprovementAxis } from "@/lib/improvement-axes-fields";
+import { IMPROVEMENT_LABEL_MAX } from "@/lib/improvement-axes-fields";
 import { noteBodySchema } from "./notes";
 
 /**
  * Texte libre, multiligne, 4 096 caractères au plus, sans caractère de contrôle (hors saut
  * de ligne et tabulation) : mêmes règles que le texte de la note. Vide → `null`.
  */
-const axisTextSchema = noteBodySchema;
+export const axisTextSchema = noteBodySchema;
 
-export const improvementAxesSchema = z.object({
-  mechanicsAk: axisTextSchema,
-  mechanicsAt: axisTextSchema,
-  mechanicsTransitions: axisTextSchema,
-  decisionMaking: axisTextSchema,
-  signals: axisTextSchema,
-  foulJudgment: axisTextSchema,
-  violationJudgment: axisTextSchema,
-} satisfies Record<ImprovementAxis, typeof axisTextSchema>);
+/** Ordre envoyé par le formulaire : la liste des axes (`slot`), du premier au dernier. */
+export const axisOrderSchema = z.array(z.string().min(1).max(64)).min(1).max(100);
 
-export type ImprovementAxes = z.output<typeof improvementAxesSchema>;
+/**
+ * Nom d'une catégorie personnelle : espaces regroupés et retirés aux extrémités, sans
+ * caractère de contrôle. Codes d'erreur : `required`, `too_long`, `invalid`.
+ */
+export const axisLabelSchema = z
+  .string()
+  .transform((value) => value.replace(/\s+/g, " ").trim())
+  .pipe(
+    z
+      .string()
+      .min(1, "required")
+      .max(IMPROVEMENT_LABEL_MAX, "too_long")
+      .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "invalid"),
+  );

@@ -1,9 +1,11 @@
 "use client";
 
 /**
- * Axes d'amélioration : un texte libre par axe (mécaniques AK, AT et transitions, prise de
- * décision, gestuelle, jugement des fautes et des violations). Tout est facultatif ; un
- * champ vidé est effacé à l'enregistrement.
+ * Axes d'amélioration : un texte libre par axe, dans l'ordre choisi par l'utilisateur. Tout
+ * est facultatif ; un champ vidé est effacé à l'enregistrement.
+ *
+ * Les éditeurs sont indexés par axe : quand l'ordre change, ils se déplacent avec leur
+ * saisie en cours, sans être recréés.
  */
 import { useId } from "react";
 import { RichTextField } from "@/components/features/common/rich-text-field";
@@ -11,8 +13,9 @@ import { FormMessage, SUBMIT_BUTTON_CLASS } from "@/components/features/scales/f
 import type { ScaleMessage } from "@/components/features/scales/scale-messages";
 import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
-import { IMPROVEMENT_AXES, IMPROVEMENT_TEXT_MAX } from "@/lib/improvement-axes-fields";
-import type { ImprovementAxesFormState } from "@/server/improvement/improvement-axes-form";
+import { IMPROVEMENT_TEXT_MAX } from "@/lib/improvement-axes-fields";
+import type { ImprovementAxesFormState } from "@/server/improvement/manage-improvement-axes";
+import type { AxisLabel } from "./improvement-axes-manager";
 
 const t = fr.improvementAxes;
 
@@ -21,7 +24,9 @@ type Props = {
     previous: ImprovementAxesFormState,
     formData: FormData,
   ) => Promise<ImprovementAxesFormState>;
-  /** Fiche enregistrée (ou champs vides), relue après chaque enregistrement. */
+  /** Les axes, dans l'ordre d'affichage. */
+  axes: readonly AxisLabel[];
+  /** Textes enregistrés (ou vides), par axe, relus après chaque enregistrement. */
   initialValues: Readonly<Record<string, string>>;
 };
 
@@ -36,7 +41,7 @@ function statusMessage(state: ImprovementAxesFormState): ScaleMessage | null {
   }
 }
 
-export function ImprovementAxesForm({ action, initialValues }: Props) {
+export function ImprovementAxesForm({ action, axes, initialValues }: Props) {
   const id = useId();
   const { state, valueOf, formKey, formAction, isPending } = useScaleForm(
     action,
@@ -51,21 +56,21 @@ export function ImprovementAxesForm({ action, initialValues }: Props) {
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        {IMPROVEMENT_AXES.map((axis) => {
-          const fieldId = `${id}-${axis}`;
-          const error = state.status === "invalid" && state.fields.includes(axis);
+      {/* Une case par ligne, sur toute la largeur ; chacune grandit avec son texte. */}
+      <div className="flex flex-col gap-4">
+        {axes.map(({ slot, label }) => {
+          const error = state.status === "invalid" && state.fields.includes(slot);
           return (
             <RichTextField
-              key={axis}
-              id={fieldId}
-              name={axis}
-              label={t.axes[axis]}
+              key={slot}
+              id={`${id}-${slot}`}
+              name={slot}
+              label={label}
               labelClassName="font-medium"
-              defaultValue={current(axis)}
+              defaultValue={current(slot)}
               maxLength={IMPROVEMENT_TEXT_MAX}
               error={error ? t.errors.text : null}
-              height="lg"
+              height="xs"
             />
           );
         })}

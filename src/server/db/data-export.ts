@@ -167,14 +167,14 @@ const SHARES_RECEIVED_SQL = list(`SELECT json_agg(json_build_object(
   CROSS JOIN LATERAL (SELECT coalesce(${VALID_SHARE}, false) AS active) v
   WHERE s.recipient_user_id = $1`);
 
-// Une fiche par compte au plus : objet, ou NULL s'il n'en a jamais enregistré.
-const IMPROVEMENT_AXES_SQL = `(SELECT json_build_object(
-    'mechanicsAk', i.mechanics_ak, 'mechanicsAt', i.mechanics_at,
-    'mechanicsTransitions', i.mechanics_transitions, 'decisionMaking', i.decision_making,
-    'signals', i.signals, 'foulJudgment', i.foul_judgment,
-    'violationJudgment', i.violation_judgment,
+// Un objet par axe enregistré (axe par défaut, éventuellement supprimé, ou catégorie
+// personnelle), dans l'ordre choisi.
+const IMPROVEMENT_AXES_SQL = list(`SELECT json_agg(json_build_object(
+    'id', i.id, 'defaultKey', i.default_key, 'label', i.label, 'hidden', i.hidden,
+    'position', i.position, 'body', i.body,
     'createdAt', i.created_at, 'updatedAt', i.updated_at)
-  FROM improvement_axes i WHERE i.user_id = $1)`;
+    ORDER BY i.position)
+  FROM improvement_axis i WHERE i.user_id = $1`);
 
 // La ligne de barème est jointe sans filtre de propriétaire : elle peut appartenir au barème
 // commun. L'indemnité, elle, est filtrée par propriétaire.
@@ -263,7 +263,7 @@ const dataExportSchema = z.object({
   shareLinks: jsonList,
   sharesGiven: jsonList,
   sharesReceived: jsonList,
-  improvementAxes: jsonObject.nullable(),
+  improvementAxes: jsonList,
   compensations: jsonList,
   calendarFeed: jsonObject.nullable(),
   sessions: jsonList,

@@ -30,7 +30,7 @@ const DATA: UserDataExport = {
   shareLinks: [],
   sharesGiven: [],
   sharesReceived: [],
-  improvementAxes: null,
+  improvementAxes: [],
   compensations: [],
   calendarFeed: null,
   sessions: [],

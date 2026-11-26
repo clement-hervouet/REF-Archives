@@ -21,7 +21,7 @@ function emptyData(account: Record<string, unknown> | null) {
     shareLinks: [],
     sharesGiven: [],
     sharesReceived: [],
-    improvementAxes: null,
+    improvementAxes: [],
     compensations: [],
     calendarFeed: null,
     sessions: [],
