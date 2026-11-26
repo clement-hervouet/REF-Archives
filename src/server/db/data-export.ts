@@ -15,6 +15,7 @@
  * `deletedAt` : elles sont encore stockées, donc elles font partie du droit d'accès.
  */
 import { z } from "zod";
+import { VALID_SHARE } from "./share-access";
 import type { Queryable } from "./users";
 
 const DIVISION_JSON = `json_build_object('division', d.division, 'type', d.type, 'level', d.level,
@@ -146,11 +147,15 @@ const SHARES_GIVEN_SQL = list(`SELECT json_agg(json_build_object(
     ORDER BY s.created_at, s.game_id)
   FROM game_share s WHERE s.owner_user_id = $1`);
 
-// Préparations partagées avec le compte : ses propres cases « déjà arbitrée », la date du
-// match et le collègue qui partage. Le contenu de la préparation reste à ce collègue.
+// Préparations partagées avec le compte, encore stockées : ses propres cases « déjà
+// arbitrée » et le collègue qui partage. `active` reprend la règle d'accès de l'application
+// (`VALID_SHARE`) ; la date du match, donnée du collègue, ne sort que tant que le partage est
+// actif (pas après la suppression du match, par exemple). Le contenu de la préparation reste
+// à ce collègue.
 const SHARES_RECEIVED_SQL = list(`SELECT json_agg(json_build_object(
     'sharedBy', json_build_object('firstname', u.firstname, 'lastname', u.lastname),
-    'gameStartsAt', g.starts_at,
+    'active', v.active,
+    'gameStartsAt', CASE WHEN v.active THEN g.starts_at END,
     'team1AlreadyRefereed', s.team1_already_refereed,
     'team2AlreadyRefereed', s.team2_already_refereed,
     'createdAt', s.created_at, 'updatedAt', s.updated_at)
@@ -158,6 +163,8 @@ const SHARES_RECEIVED_SQL = list(`SELECT json_agg(json_build_object(
   FROM game_share s
   JOIN "user" u ON u.id = s.owner_user_id
   JOIN game g ON g.id = s.game_id AND g.user_id = s.owner_user_id
+  LEFT JOIN colleague_link l ON l.owner_user_id = s.owner_user_id AND l.person_id = s.person_id
+  CROSS JOIN LATERAL (SELECT coalesce(${VALID_SHARE}, false) AS active) v
   WHERE s.recipient_user_id = $1`);
 
 // Une fiche par compte au plus : objet, ou NULL s'il n'en a jamais enregistré.

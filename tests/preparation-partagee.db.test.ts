@@ -14,6 +14,7 @@ import { preparationFieldsSchema, preparationFormSchema } from "@/lib/schemas/pr
 import { seasonStartOf } from "@/lib/seasons";
 import { generateToken, hashToken } from "@/server/auth/tokens";
 import { listLinkedOwners, listOwnerLinks } from "@/server/db/colleague-links";
+import { readUserDataExport } from "@/server/db/data-export";
 import { findAlreadyRefereed, listPreparations } from "@/server/db/preparations";
 import {
   deleteStaleShares,
@@ -285,9 +286,20 @@ WHERE game_id = $1 AND deleted_at IS NULL`,
         expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).not.toBeNull();
       }
 
-      // Match supprimé : plus d'accès.
+      // Export du destinataire : partage actif, date du match incluse.
+      const activeExport = await readUserDataExport(db, recipient);
+      expect(activeExport?.sharesReceived).toMatchObject([
+        { active: true, sharedBy: { firstname: "Clément" } },
+      ]);
+      expect(activeExport?.sharesReceived[0]?.gameStartsAt).not.toBeNull();
+
+      // Match supprimé : plus d'accès, et l'export garde le partage (encore stocké) sans
+      // la date du match, donnée du propriétaire.
       await client.query("UPDATE game SET deleted_at = now() WHERE id = $1", [GAME]);
       expect(await findRecipientGame(db, { gameId: GAME, viewerId: recipient })).toBeNull();
+      expect((await readUserDataExport(db, recipient))?.sharesReceived).toMatchObject([
+        { active: false, gameStartsAt: null, sharedBy: { firstname: "Clément" } },
+      ]);
       await client.query("UPDATE game SET deleted_at = NULL WHERE id = $1", [GAME]);
 
       // Le destinataire se délie : partages retirés, et il faut un nouveau lien.
