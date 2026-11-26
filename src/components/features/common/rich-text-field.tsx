@@ -43,8 +43,11 @@ import { cn } from "@/lib/utils";
 
 const t = fr.richText;
 
-/** Hauteur minimale de la zone de saisie, comme les `rows` d'un textarea. */
-const MIN_HEIGHT = { sm: "min-h-24", md: "min-h-32", lg: "min-h-40" } as const;
+/**
+ * Hauteur minimale de la zone de saisie, comme les `rows` d'un textarea ; elle grandit
+ * ensuite avec le contenu. `xs` : deux lignes environ, pour une liste de champs courts.
+ */
+const MIN_HEIGHT = { xs: "min-h-16", sm: "min-h-24", md: "min-h-32", lg: "min-h-40" } as const;
 
 type Props = {
   id: string;
