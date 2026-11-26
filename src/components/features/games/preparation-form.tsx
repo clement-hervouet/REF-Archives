@@ -7,6 +7,9 @@
  * (cinq textes, case « observé »). Tout est facultatif, mais une préparation vide est
  * refusée côté serveur ; les cases arrivent pré-cochées par la page.
  *
+ * Préparation partagée (`others`) : une case « déjà arbitrée » par arbitre ; seule celle de
+ * l'utilisateur est modifiable, les autres sont affichées en lecture seule.
+ *
  * Enregistrement champ par champ : chaque champ a son jumeau caché `base.…` (valeur de
  * départ). Si la préparation a été modifiée ailleurs entre-temps, rien n'est écrit ; le
  * formulaire garde alors la saisie des champs modifiés ici, reprend la version enregistrée
@@ -57,6 +60,18 @@ type Props = {
   teamNames: Readonly<Record<PreparationTeam, string>>;
   /** Préparation enregistrée (ou valeurs pré-cochées), relue après chaque enregistrement. */
   initialValues: Readonly<Record<string, string>>;
+  /**
+   * Préparation partagée : les autres arbitres du partage, avec leurs cases « déjà
+   * arbitrée » (lecture seule). Vide ou absent : une seule case, celle de l'utilisateur.
+   */
+  others?: readonly SharedReferee[];
+};
+
+/** Autre arbitre d'une préparation partagée, et ses cases « déjà arbitrée ». */
+type SharedReferee = {
+  key: string;
+  name: string;
+  checks: Readonly<Record<PreparationTeam, boolean>>;
 };
 
 type FieldProps = {
@@ -163,7 +178,63 @@ function CheckboxField({ id, name, label, hint, checked, conflict }: CheckboxPro
   );
 }
 
-export function PreparationForm({ action, gameId, teamNames, initialValues }: Props) {
+type RefereedProps = {
+  id: string;
+  name: string;
+  team: PreparationTeam;
+  checked: boolean;
+  others: readonly SharedReferee[];
+  conflict: string | null;
+};
+
+/**
+ * « Déjà arbitrée cette saison » d'une préparation partagée : la case de l'utilisateur
+ * (« Moi ») et, en lecture seule, celles des autres arbitres du partage.
+ */
+function SharedRefereedField({ id, name, team, checked, others, conflict }: RefereedProps) {
+  const shared = fr.sharing;
+  return (
+    <fieldset className="flex flex-col gap-1" aria-describedby={`${id}-hint`}>
+      <legend className="font-medium">{t.alreadyRefereed}</legend>
+      <div className="flex flex-wrap gap-x-6">
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            id={id}
+            type="checkbox"
+            name={name}
+            value={CHECKBOX_ON}
+            defaultChecked={checked}
+            className="h-5 w-5 shrink-0"
+          />
+          <span>{shared.me}</span>
+        </label>
+        {others.map((other) => (
+          <p key={other.key} className="flex min-h-11 items-center gap-3">
+            {/* Case d'un autre arbitre : affichée, jamais envoyée (pas de `name`). */}
+            <input
+              type="checkbox"
+              checked={other.checks[team]}
+              disabled
+              readOnly
+              aria-label={(other.checks[team]
+                ? shared.otherChecked
+                : shared.otherUnchecked
+              ).replace("{name}", other.name)}
+              className="h-5 w-5 shrink-0"
+            />
+            <span aria-hidden="true">{other.name}</span>
+          </p>
+        ))}
+      </div>
+      <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+        {shared.refereedHintShared}
+      </p>
+      <ConflictNote id={`${id}-conflict`} text={conflict} />
+    </fieldset>
+  );
+}
+
+export function PreparationForm({ action, gameId, teamNames, initialValues, others = [] }: Props) {
   const id = useId();
   const { state, valueOf, formKey, formAction, isPending } = useScaleForm(
     action,
@@ -219,14 +290,25 @@ export function PreparationForm({ action, gameId, teamNames, initialValues }: Pr
                   />
                 ))}
               </div>
-              <CheckboxField
-                id={`${id}-${team}-refereed`}
-                name={teamFieldName(team, TEAM_REFEREED_PART)}
-                label={t.alreadyRefereed}
-                hint={t.alreadyRefereedHint}
-                checked={current(teamFieldName(team, TEAM_REFEREED_PART)) === CHECKBOX_ON}
-                conflict={preparationConflictText(teamFieldName(team, TEAM_REFEREED_PART), state)}
-              />
+              {others.length > 0 ? (
+                <SharedRefereedField
+                  id={`${id}-${team}-refereed`}
+                  name={teamFieldName(team, TEAM_REFEREED_PART)}
+                  team={team}
+                  checked={current(teamFieldName(team, TEAM_REFEREED_PART)) === CHECKBOX_ON}
+                  others={others}
+                  conflict={preparationConflictText(teamFieldName(team, TEAM_REFEREED_PART), state)}
+                />
+              ) : (
+                <CheckboxField
+                  id={`${id}-${team}-refereed`}
+                  name={teamFieldName(team, TEAM_REFEREED_PART)}
+                  label={t.alreadyRefereed}
+                  hint={t.alreadyRefereedHint}
+                  checked={current(teamFieldName(team, TEAM_REFEREED_PART)) === CHECKBOX_ON}
+                  conflict={preparationConflictText(teamFieldName(team, TEAM_REFEREED_PART), state)}
+                />
+              )}
               <TextAreaField {...field(teamFieldName(team, "Players"), t.players)} />
               <TextAreaField {...field(teamFieldName(team, "Coaches"), t.coaches)} />
             </fieldset>

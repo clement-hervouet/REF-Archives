@@ -36,6 +36,10 @@ export const securityEventTypeSchema = z.enum([
   // `invitation_created`.
   "access_requested",
   "access_request_refused",
+  // Préparation partagée (migration 035) : liaison et déliaison de comptes, lien de partage.
+  "colleague_linked",
+  "colleague_unlinked",
+  "share_link_created",
 ]);
 export type SecurityEventType = z.infer<typeof securityEventTypeSchema>;
 

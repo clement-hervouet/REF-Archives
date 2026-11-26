@@ -1,7 +1,8 @@
 "use server";
 
 import { AuthError, CredentialsSignin } from "next-auth";
-import { loginSchema } from "@/lib/schemas/auth";
+import { sharePath } from "@/lib/app-paths";
+import { loginSchema, tokenSchema } from "@/lib/schemas/auth";
 import { AccountSuspendedError, RateLimitedError, signIn } from "@/server/auth/auth";
 
 /** `email` est renvoyé dans tous les états pour que le champ ne soit pas vidé après une erreur. */
@@ -13,6 +14,16 @@ export type LoginFormState =
   | { status: "blocked"; email: string; until: string | null }
   | { status: "deletion_pending"; email: string }
   | { status: "error"; email: string };
+
+/**
+ * Page où aller après la connexion : celle d'un lien de partage de préparation si le
+ * formulaire en porte un jeton bien formé (champ caché `partage`), sinon l'accueil. Le
+ * chemin est construit ici à partir du jeton validé : jamais une URL reçue telle quelle.
+ */
+function redirectAfterLogin(formData: FormData): string {
+  const token = tokenSchema.safeParse(formData.get("partage"));
+  return token.success ? sharePath(token.data) : "/";
+}
 
 export async function login(
   _previous: LoginFormState,
@@ -30,7 +41,7 @@ export async function login(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/",
+      redirectTo: redirectAfterLogin(formData),
     });
   } catch (error: unknown) {
     if (error instanceof RateLimitedError) {

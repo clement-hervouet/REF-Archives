@@ -1,9 +1,11 @@
 /**
  * Requêtes SQL des personnes (bloc 9) : la fiche « moi » et les collègues.
  *
- * Un collègue est une fiche nom seul, propre à l'utilisateur (§3.8, §3.11) : la case
- * `has_account` est informative, aucune requête ne cherche ni ne relie un autre compte
- * (§6.5 : pas d'oracle d'existence de compte). Chaque requête filtre sur `user_id`.
+ * Un collègue est une fiche nom seul, propre à l'utilisateur (§3.8, §3.11). La case
+ * `has_account` propose le partage de la préparation ; le lien vers le compte du collègue
+ * (`colleague_link`, `colleague-links.ts`) ne se crée que quand il accepte un lien de
+ * partage : aucune requête ne cherche un autre compte (§6.5 : pas d'oracle d'existence de
+ * compte). Chaque requête filtre sur `user_id`.
  * Un collègue peut être rattaché à un club de l'utilisateur (bloc 10, colonne `club_id` de
  * la migration 002 ; la clé `(club_id, user_id)` interdit le club d'un autre compte).
  */
@@ -125,8 +127,13 @@ inserted AS (
 )
 SELECT (SELECT id FROM inserted) AS id`;
 
+// Une fiche liée à un compte (préparation partagée) garde « a un compte » : la décocher
+// n'a pas d'effet, il faut la délier.
 const UPDATE_COLLEAGUE_SQL = `UPDATE person
-SET firstname = $3, lastname = $4, has_account = $5, club_id = $6
+SET firstname = $3, lastname = $4, club_id = $6,
+  has_account = $5 OR EXISTS (
+    SELECT 1 FROM colleague_link l WHERE l.owner_user_id = $2 AND l.person_id = $1
+  )
 WHERE id = $1 AND user_id = $2 AND NOT is_self
 RETURNING id`;
 

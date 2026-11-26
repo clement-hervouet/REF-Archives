@@ -5,6 +5,8 @@ import { ProfileForm } from "@/components/features/account/profile-form";
 import { SECONDARY_BUTTON_CLASS } from "@/components/features/scales/form-parts";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
+import { sharePath } from "@/lib/app-paths";
+import { tokenSchema } from "@/lib/schemas/auth";
 import { hasCompleteProfile } from "@/server/auth/current-user";
 import { requireSignedInOrRedirect } from "@/server/auth/session";
 import { completeProfileAction } from "./actions";
@@ -18,10 +20,19 @@ export const metadata: Metadata = { title: t.title };
  * Passage obligé des comptes sans nom ni prénom (créés avant le bloc 10, ou premier admin) :
  * toutes les autres pages y redirigent tant que le profil est incomplet (§3.12).
  */
-export default async function CompleteProfilePage() {
+// Type explicite plutôt que `PageProps` (généré par `next typegen`) : ESLint tourne en CI
+// avant le typecheck, sur un clone sans `.next/types`.
+type CompleteProfilePageProps = {
+  /** `partage` : jeton du lien de partage de préparation qui a amené ici, à rouvrir ensuite. */
+  searchParams: Promise<{ partage?: string | string[] }>;
+};
+
+export default async function CompleteProfilePage(props: CompleteProfilePageProps) {
   const user = await requireSignedInOrRedirect();
+  const token = tokenSchema.safeParse((await props.searchParams).partage);
+  const shareToken = token.success ? token.data : null;
   if (hasCompleteProfile(user)) {
-    redirect("/");
+    redirect(shareToken === null ? "/" : sharePath(shareToken));
   }
 
   return (
@@ -33,7 +44,7 @@ export default async function CompleteProfilePage() {
       </div>
       <ProfileForm
         profile={{ firstname: user.firstname ?? "", lastname: user.lastname ?? "" }}
-        action={completeProfileAction}
+        action={completeProfileAction.bind(null, shareToken)}
         submitLabel={t.submit}
         submittingLabel={t.submitting}
       />

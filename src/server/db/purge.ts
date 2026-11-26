@@ -76,6 +76,11 @@ const PURGE_ENDED_SESSIONS_SQL = counted(`  DELETE FROM session
 const PURGE_ENDED_INVITATIONS_SQL = counted(`  DELETE FROM invitation
   WHERE coalesce(accepted_at, revoked_at, expires_at) < ${OLDER_THAN_DAYS}`);
 
+// Lien de partage de préparation terminé (accepté, révoqué, sinon expiré) : comme une
+// invitation, un lien encore valable n'est jamais effacé.
+const PURGE_ENDED_SHARE_LINKS_SQL = counted(`  DELETE FROM preparation_share_link
+  WHERE coalesce(accepted_at, revoked_at, expires_at) < ${OLDER_THAN_DAYS}`);
+
 // Demande d'accès traitée depuis plus de $1 jours, ou jamais traitée depuis plus de $2 jours
 // (§15.4.4). Une demande en attente plus récente n'est jamais effacée.
 const PURGE_OLD_ACCESS_REQUESTS_SQL = counted(`  DELETE FROM access_request
@@ -142,6 +147,11 @@ export function purgeEndedSessions(db: Queryable, days: number): Promise<number>
 /** Invitations acceptées, révoquées ou expirées depuis plus de `days` jours. */
 export function purgeEndedInvitations(db: Queryable, days: number): Promise<number> {
   return runCount(db, PURGE_ENDED_INVITATIONS_SQL, [days]);
+}
+
+/** Liens de partage de préparation acceptés, révoqués ou expirés depuis plus de `days` jours. */
+export function purgeEndedShareLinks(db: Queryable, days: number): Promise<number> {
+  return runCount(db, PURGE_ENDED_SHARE_LINKS_SQL, [days]);
 }
 
 /**

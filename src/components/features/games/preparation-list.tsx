@@ -7,12 +7,13 @@ import Link from "next/link";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
 import { fr } from "@/i18n/fr";
-import { preparationPath } from "@/lib/app-paths";
+import { preparationPath, sharedPreparationPath } from "@/lib/app-paths";
 import { toParisIsoDate } from "@/lib/dates";
 import { formatIsoDate } from "@/lib/format";
 import { withTeams } from "@/lib/match-teams";
 import type { PreparationListItem } from "@/server/db/preparations";
 import { standingText } from "./preparation-messages";
+import { fullNameOf } from "./shared-preparation-labels";
 
 const t = fr.preparations;
 
@@ -32,6 +33,9 @@ function teamLine(
 }
 
 function PreparationCard({ item }: { item: PreparationListItem }) {
+  // Préparation partagée par un collègue : elle s'ouvre sur la page du destinataire.
+  const href =
+    item.sharedBy === null ? preparationPath(item.gameId) : sharedPreparationPath(item.gameId);
   const date = formatIsoDate(toParisIsoDate(item.startsAt));
   const teams = withTeams(t.teams, item.team1Name, item.team2Name);
   const lines = [
@@ -46,7 +50,7 @@ function PreparationCard({ item }: { item: PreparationListItem }) {
       <div className="flex min-w-0 flex-col gap-1">
         <h2 className="font-semibold break-words">
           <Link
-            href={preparationPath(item.gameId)}
+            href={href}
             aria-label={`${teams}, ${t.openLabel.replace("{date}", date)}`}
             className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
           >
@@ -54,6 +58,11 @@ function PreparationCard({ item }: { item: PreparationListItem }) {
           </Link>
         </h2>
         <p className="text-sm text-muted-foreground">{matchLevelLabel(item.division)}</p>
+        {item.sharedBy !== null && (
+          <p className="text-sm text-muted-foreground">
+            {fr.sharing.sharedWithMe.by.replace("{name}", fullNameOf(item.sharedBy))}
+          </p>
+        )}
         {lines.map((line) => (
           <p key={line} className="text-sm break-words">
             {line}
@@ -61,11 +70,18 @@ function PreparationCard({ item }: { item: PreparationListItem }) {
         ))}
       </div>
 
-      {item.observed && (
-        <div className="md:pt-0.5">
-          <p className="inline-flex rounded-sm border border-primary px-2 py-0.5 text-sm font-medium">
-            {t.observed}
-          </p>
+      {(item.observed || (item.shared && item.sharedBy === null)) && (
+        <div className="flex flex-wrap gap-2 md:flex-col md:items-end md:pt-0.5">
+          {item.observed && (
+            <p className="inline-flex rounded-sm border border-primary px-2 py-0.5 text-sm font-medium">
+              {t.observed}
+            </p>
+          )}
+          {item.shared && item.sharedBy === null && (
+            <p className="inline-flex rounded-sm border border-border px-2 py-0.5 text-sm font-medium">
+              {fr.sharing.sharedBadge}
+            </p>
+          )}
         </div>
       )}
     </article>

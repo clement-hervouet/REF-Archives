@@ -46,8 +46,18 @@ export function buildContentSecurityPolicy({ nonce, isDevelopment }: CspOptions)
 }
 
 // Chemins dont l'URL contient un jeton secret : leur adresse ne doit jamais fuiter par le Referer.
-// /reset-password/<jeton> porte un jeton de 256 bits dans le chemin, comme /invitation.
-const TOKEN_PATH_PREFIXES = ["/invitation", "/reset-password", "/api/ical"];
+// /reset-password/<jeton> porte un jeton de 256 bits dans le chemin, comme /invitation et
+// /partage (lien de partage d'une préparation). /login et /completer-profil le portent en
+// paramètre (`?partage=<jeton>`) le temps de se connecter ou de compléter son profil :
+// toujours sans Referer, ces pages n'en ont jamais besoin.
+const TOKEN_PATH_PREFIXES = [
+  "/invitation",
+  "/reset-password",
+  "/partage",
+  "/login",
+  "/completer-profil",
+  "/api/ical",
+];
 
 function isTokenPath(pathname: string): boolean {
   return TOKEN_PATH_PREFIXES.some(

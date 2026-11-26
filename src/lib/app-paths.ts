@@ -55,6 +55,19 @@ export function preparationPath(gameId: string): string {
   return `${PREPARATIONS_PATH}/${gameId}`;
 }
 
+/** Préparation d'un match partagé par un collègue, vue par le destinataire. */
+export function sharedPreparationPath(gameId: string): string {
+  return `${PREPARATIONS_PATH}/partagees/${gameId}`;
+}
+
+/** Onglet « Partagées avec moi » de « Préparation de match ». */
+export const SHARED_PREPARATIONS_PATH = `${PREPARATIONS_PATH}?vue=partagees`;
+
+/** Page d'un lien de partage de préparation. Le chemin contient le jeton : ne jamais le journaliser. */
+export function sharePath(token: string): string {
+  return `/partage/${token}`;
+}
+
 /** Valeur de `?suite=` : après création d'un match sans indemnité, ouvrir sa préparation. */
 export const NEW_GAME_NEXT_PREPARATION = "preparation";
 

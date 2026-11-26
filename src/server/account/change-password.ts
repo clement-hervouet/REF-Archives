@@ -71,7 +71,10 @@ export async function handleChangePassword(
   }
   const parsedNew = passwordSchema.safeParse(readText(formData, "newPassword"));
   if (!parsedNew.success) {
-    return { status: "invalid_password", issues: parsedNew.error.issues.map((issue) => issue.message) };
+    return {
+      status: "invalid_password",
+      issues: parsedNew.error.issues.map((issue) => issue.message),
+    };
   }
   const newPassword = parsedNew.data;
   if (newPassword !== readText(formData, "confirmation")) {

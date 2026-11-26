@@ -97,12 +97,14 @@ function invalidState(error: z.ZodError): PreparationFormState {
 
 const idSchema = z.uuid();
 
-/** Valide puis enregistre la préparation du match désigné par le champ caché `gameId`. */
-export async function handleSavePreparation(
-  deps: GameDeps,
-  userId: string,
-  formData: FormData,
-): Promise<PreparationFormState> {
+/** Enregistrement validé : match visé, saisie et valeurs de départ du formulaire. */
+type ParsedSave = { gameId: string; preparation: PreparationForm; base: PreparationForm };
+
+/**
+ * Lit et valide un enregistrement de préparation (champ caché `gameId`, saisie, valeurs de
+ * départ `base.…`) : l'enregistrement à faire, ou l'état d'erreur à afficher.
+ */
+export function parsePreparationSave(formData: FormData): ParsedSave | PreparationFormState {
   const gameId = idSchema.safeParse(readText(formData, "gameId"));
   if (!gameId.success) {
     return { status: "not_found" };
@@ -117,10 +119,20 @@ export async function handleSavePreparation(
   if (!base.success) {
     return { status: "invalid", fields: {}, empty: false };
   }
-  return saveGamePreparation(deps, userId, gameId.data, {
-    preparation: parsed.data,
-    base: base.data,
-  });
+  return { gameId: gameId.data, preparation: parsed.data, base: base.data };
+}
+
+/** Valide puis enregistre la préparation du match désigné par le champ caché `gameId`. */
+export async function handleSavePreparation(
+  deps: GameDeps,
+  userId: string,
+  formData: FormData,
+): Promise<PreparationFormState> {
+  const save = parsePreparationSave(formData);
+  if ("status" in save) {
+    return save;
+  }
+  return saveGamePreparation(deps, userId, save.gameId, save);
 }
 
 /** Supprime (soft delete) la préparation du match désigné par le champ caché `gameId`. */

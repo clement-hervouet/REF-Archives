@@ -5,6 +5,9 @@
  * le propriétaire vient toujours de la session, jamais du formulaire.
  */
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { getClientIp } from "@/server/auth/client-ip";
+import { recordSecurityEvent } from "@/server/auth/record-security-event";
 import { requireUser } from "@/server/auth/session";
 import {
   handleCreateColleague,
@@ -13,6 +16,9 @@ import {
 } from "@/server/games/colleagues-form";
 import type { ColleagueFormState, DeleteColleagueState } from "@/server/games/colleagues-form";
 import { createGameDeps } from "@/server/games/game-deps";
+import { createSharingDeps } from "@/server/sharing/sharing-deps";
+import { handleUnlinkColleague } from "@/server/sharing/sharing-form";
+import type { UnlinkState } from "@/server/sharing/sharing-form";
 
 function revalidateColleagues(): void {
   revalidatePath("/collegues");
@@ -55,6 +61,30 @@ export async function deleteColleagueAction(
   const state = await handleDeleteColleague(createGameDeps(), user.id, formData);
   if (state.status === "deleted") {
     revalidateColleagues();
+  }
+  return state;
+}
+
+/** Délie un collègue de son compte : ses préparations partagées ne lui sont plus accessibles. */
+export async function unlinkColleagueAction(
+  _previous: UnlinkState,
+  formData: FormData,
+): Promise<UnlinkState> {
+  const user = await requireUser();
+  const { linkedUserId, ...state } = await handleUnlinkColleague(
+    createSharingDeps(),
+    user.id,
+    formData,
+  );
+  if (state.status === "unlinked") {
+    await recordSecurityEvent({
+      type: "colleague_unlinked",
+      userId: user.id,
+      ...(linkedUserId !== undefined ? { targetUserId: linkedUserId } : {}),
+      ip: getClientIp(await headers()),
+    });
+    revalidateColleagues();
+    revalidatePath("/preparations", "layout");
   }
   return state;
 }

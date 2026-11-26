@@ -34,6 +34,8 @@ type Props = {
   /** Modification : valeurs de départ, dont `personId`. Sans elles : ajout. */
   initialValues?: Readonly<Record<string, string>>;
   labels: { submit: string; submitting: string; ariaLabel?: string };
+  /** Fiche liée à un compte : « a un compte » reste cochée (il faut délier la fiche). */
+  linked?: boolean;
   /** `stacked` : champs empilés, pour une carte étroite. */
   layout?: "inline" | "stacked";
   onSuccess?: () => void;
@@ -48,6 +50,7 @@ export function ColleagueForm({
   layout = "inline",
   onSuccess,
   onCancel,
+  linked = false,
 }: Props) {
   const id = useId();
   const editing = initialValues !== undefined;
@@ -106,15 +109,25 @@ export function ColleagueForm({
           state={state}
           inline={inline}
         />
-        <label className="flex min-h-11 items-center gap-3">
-          <input
-            type="checkbox"
-            name="hasAccount"
-            defaultChecked={valueOf("hasAccount") === "on"}
-            className="h-5 w-5 shrink-0"
-          />
-          <span>{t.hasAccount}</span>
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              type="checkbox"
+              name="hasAccount"
+              defaultChecked={linked || valueOf("hasAccount") === "on"}
+              disabled={linked}
+              aria-describedby={linked ? `${id}-has-account-locked` : undefined}
+              className="h-5 w-5 shrink-0"
+            />
+            <span>{t.hasAccount}</span>
+          </label>
+          {/* Case désactivée : elle n'est pas envoyée, et la base la garde cochée. */}
+          {linked && (
+            <p id={`${id}-has-account-locked`} className="text-sm text-muted-foreground">
+              {fr.sharing.colleague.hasAccountLocked}
+            </p>
+          )}
+        </div>
         <div className={cn("flex flex-wrap gap-2", inline && "md:self-end")}>
           <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
             {isPending ? labels.submitting : labels.submit}

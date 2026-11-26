@@ -25,6 +25,7 @@ import {
   updateGameInfo as updateGameInfoRow,
   updateGameOfficials,
 } from "../db/game-writes";
+import { deleteStaleShares } from "../db/shared-preparations";
 import type { Queryable } from "../db/users";
 import { findEffectiveRate } from "../scales/effective-rate";
 import { rejectGame, runRejectable } from "./rejection";
@@ -104,6 +105,8 @@ export async function updateOfficials(
     }
     const officialIds = await resolveOfficials(db, userId, officials);
     await updateGameOfficials(db, { gameId, userId, officials: officialIds });
+    // Un arbitre retiré du match perd le partage de sa préparation (et son lien en attente).
+    await deleteStaleShares(db, { gameId, ownerUserId: userId });
     return { status: "updated" };
   });
 }

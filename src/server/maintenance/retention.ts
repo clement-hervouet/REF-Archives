@@ -26,6 +26,9 @@ export const ENDED_SESSION_RETENTION_DAYS = 30;
 /** Invitations acceptées, révoquées ou expirées : elles contiennent un email. */
 export const ENDED_INVITATION_RETENTION_DAYS = 30;
 
+/** Liens de partage de préparation acceptés, révoqués ou expirés. */
+export const ENDED_SHARE_LINK_RETENTION_DAYS = 30;
+
 /** Demandes d'accès traitées (invitées ou refusées) : elles contiennent un email et un nom. */
 export const DECIDED_ACCESS_REQUEST_RETENTION_DAYS = 30;
 

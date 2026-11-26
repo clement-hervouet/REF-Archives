@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PageTitle } from "@/components/features/common/page-title";
 import { fr } from "@/i18n/fr";
-import { PRIVACY_PATH } from "@/lib/app-paths";
+import { PRIVACY_PATH, sharePath } from "@/lib/app-paths";
+import { tokenSchema } from "@/lib/schemas/auth";
 import { getCurrentUser } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
 import { AppBrand } from "@/components/features/common/app-brand";
@@ -12,7 +13,12 @@ import { AppBrand } from "@/components/features/common/app-brand";
 export const metadata: Metadata = { title: fr.auth.login.title };
 
 type LoginPageProps = {
-  searchParams: Promise<{ reset?: string | string[]; deleted?: string | string[] }>;
+  searchParams: Promise<{
+    reset?: string | string[];
+    deleted?: string | string[];
+    /** Jeton d'un lien de partage de préparation à rouvrir après la connexion. */
+    partage?: string | string[];
+  }>;
 };
 
 /**
@@ -20,12 +26,29 @@ type LoginPageProps = {
  * vérification en base), pas le proxy : un cookie périmé provoquerait une boucle.
  * Sous <Suspense> car la lecture de la session utilise les cookies de la requête.
  */
-async function RedirectIfSignedIn() {
+async function RedirectIfSignedIn({ searchParams }: LoginPageProps) {
   const user = await getCurrentUser();
   if (user !== null) {
-    redirect("/");
+    const token = tokenSchema.safeParse((await searchParams).partage);
+    redirect(token.success ? sharePath(token.data) : "/");
   }
   return null;
+}
+
+/** Jeton de partage bien formé de l'URL, à renvoyer avec le formulaire ; sinon rien. */
+async function ShareLogin({ searchParams }: LoginPageProps) {
+  const token = tokenSchema.safeParse((await searchParams).partage);
+  if (!token.success) {
+    return <LoginForm />;
+  }
+  return (
+    <>
+      <p role="status" className="rounded-md border border-input p-3 text-sm">
+        {fr.sharing.loginNotice}
+      </p>
+      <LoginForm shareToken={token.data} />
+    </>
+  );
 }
 
 /**
@@ -54,14 +77,16 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 p-6">
       <Suspense fallback={null}>
-        <RedirectIfSignedIn />
+        <RedirectIfSignedIn searchParams={searchParams} />
       </Suspense>
       <AppBrand />
       <PageTitle>{fr.auth.login.title}</PageTitle>
       <Suspense fallback={null}>
         <LoginNotice searchParams={searchParams} />
       </Suspense>
-      <LoginForm />
+      <Suspense fallback={<LoginForm />}>
+        <ShareLogin searchParams={searchParams} />
+      </Suspense>
       <Link
         href={PRIVACY_PATH}
         className="inline-flex min-h-11 items-center self-start text-sm text-muted-foreground underline"
