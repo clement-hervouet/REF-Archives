@@ -15,13 +15,18 @@ type Props = {
   /** Étiquette accessible complète, ex. « Plus d'actions pour le match du 14/11/2026 ». */
   ariaLabel: string;
   children: ReactNode;
+  /**
+   * Bulle « ⋯ » dans le coin haut droit de la carte (ancêtre `relative`, qui doit lui laisser
+   * la place) ; le panneau s'ouvre dessous, aligné à droite. Sinon, dans le flux.
+   */
+  corner?: boolean;
 };
 
 /**
  * Bouton discret (icône seule, sans bordure) : l'étiquette accessible et l'infobulle
  * (`title`) disent ce qu'il fait.
  */
-export function ActionsMenu({ ariaLabel, children }: Props) {
+export function ActionsMenu({ ariaLabel, children, corner = false }: Props) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -53,7 +58,8 @@ export function ActionsMenu({ ariaLabel, children }: Props) {
   return (
     // Sur téléphone, le panneau se place par rapport à la carte (ancêtre `relative`) et en
     // prend la largeur : ancré au bouton, il sortait de l'écran. Sur ordinateur, sous le bouton.
-    <div ref={rootRef} className="md:relative">
+    // Dans le coin, le bouton est au bord droit de la carte : le panneau, aligné à droite, tient.
+    <div ref={rootRef} className={corner ? "absolute top-1 right-1" : "md:relative"}>
       <button
         ref={buttonRef}
         type="button"
@@ -79,7 +85,12 @@ export function ActionsMenu({ ariaLabel, children }: Props) {
               setOpen(false);
             }
           }}
-          className="absolute inset-x-2 top-full z-20 -mt-2 flex flex-col gap-0.5 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-sm md:inset-x-auto md:right-0 md:mt-1 md:w-72"
+          className={cn(
+            "absolute top-full z-20 flex flex-col gap-0.5 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-sm",
+            corner
+              ? "right-0 mt-1 w-72 max-w-[calc(100vw-2rem)]"
+              : "inset-x-2 -mt-2 md:inset-x-auto md:right-0 md:mt-1 md:w-72",
+          )}
         >
           {children}
         </div>
