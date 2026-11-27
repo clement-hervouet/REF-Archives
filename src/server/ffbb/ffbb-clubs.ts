@@ -405,6 +405,15 @@ const communeSchema = z
   .object({ codePostal: z.string().nullish(), libelle: z.string().nullish() })
   .nullish();
 
+/**
+ * Logo de la fiche : UUID de l'asset et couleur de fond. Absent pour près de la moitié des
+ * clubs ; illisible, il est ignoré sans refuser la fiche.
+ */
+const logoSchema = z
+  .object({ id: z.uuid(), gradient_color: z.string().nullish() })
+  .nullish()
+  .catch(null);
+
 const clubResponseSchema = z.object({
   nom: z.string().trim().min(1),
   logo: logoSchema,
