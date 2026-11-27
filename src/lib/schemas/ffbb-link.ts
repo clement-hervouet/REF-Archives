@@ -1,7 +1,7 @@
 /**
  * Lien d'un club avec l'annuaire FFBB : son identifiant, l'UUID de son logo et sa couleur
  * (fond de la pastille). Arrive dans un champ caché (JSON) quand le club est choisi dans
- * l'annuaire, ou par l'action « Lier à l'annuaire FFBB » de l'onglet « Clubs ».
+ * l'annuaire, ou par l'action « Lier à la FFBB » de l'onglet « Clubs ».
  *
  * L'utilisateur ne voit pas ce champ et ne peut pas le corriger : un lien illisible est
  * abandonné (`null`) au lieu de refuser tout le formulaire. Les valeurs venant du

@@ -11,6 +11,7 @@ import { getAvailabilityAckWeek, getReminderSettings } from "@/server/db/reminde
 import { listUpcomingMatches } from "@/server/db/upcoming-matches";
 import { availabilityReminderState } from "@/server/home/availability-reminder";
 import { upcomingRanges } from "@/server/reminders/upcoming";
+import { prepareMatchAction } from "./preparations/actions";
 import { acknowledgeAvailabilityAction, undoAvailabilityAcknowledgementAction } from "./actions";
 
 /**
@@ -46,7 +47,12 @@ export default async function HomePage() {
       )}
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <WeekSummary sunday={ranges.sunday} today={today} matches={weekMatches} />
+        <WeekSummary
+          sunday={ranges.sunday}
+          today={today}
+          matches={weekMatches}
+          prepareAction={prepareMatchAction}
+        />
         <UnpaidSummaryCard summary={summarizeUnpaid(unpaid)} byPayer={groupByPayer(unpaid)} />
       </div>
     </div>

@@ -19,8 +19,7 @@ type Props = {
 };
 
 export function PayerSelect({ id, defaultValue, error }: Props) {
-  const hintId = `${useId()}-payer-hint`;
-  const errorId = `${hintId}-error`;
+  const errorId = `${useId()}-payer-error`;
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <label htmlFor={id} className="text-sm font-medium">
@@ -31,7 +30,7 @@ export function PayerSelect({ id, defaultValue, error }: Props) {
         name="payer"
         defaultValue={defaultValue}
         aria-invalid={error !== null}
-        aria-describedby={error === null ? hintId : `${hintId} ${errorId}`}
+        aria-describedby={error === null ? undefined : errorId}
         className={FIELD_CLASS}
       >
         <option value="">{t.payerAuto}</option>
@@ -54,9 +53,6 @@ export function PayerSelect({ id, defaultValue, error }: Props) {
           ))}
         </optgroup>
       </select>
-      <p id={hintId} className="text-sm text-muted-foreground">
-        {t.payerHint}
-      </p>
       {error !== null && (
         <p id={errorId} className="text-sm font-medium text-destructive">
           {error}

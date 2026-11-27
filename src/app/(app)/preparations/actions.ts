@@ -2,7 +2,8 @@
 
 /**
  * Server Actions de la préparation de match (§15.4.10) : enregistrement, suppression, et
- * « Préparer le match » depuis une indemnité (menus de « Mes indemnités » et « À venir »).
+ * « Préparer le match » depuis une indemnité (menus de « Mes indemnités », « À venir » et de
+ * l'accueil).
  * La session est vérifiée en base (§6.2) ; les identifiants viennent du formulaire, chaque
  * service vérifie donc qu'ils appartiennent bien à l'utilisateur connecté.
  */
@@ -27,6 +28,7 @@ function revalidatePreparationPages(): void {
   revalidatePath(PREPARATIONS_PATH, "layout");
   revalidatePath("/matchs/[id]", "page");
   revalidatePath(UPCOMING_PATH);
+  revalidatePath("/");
 }
 
 export async function savePreparationAction(
@@ -63,6 +65,7 @@ export async function prepareMatchAction(
     // Le match a pu être créé : les listes affichent désormais « Voir le match ».
     revalidatePath("/indemnites", "layout");
     revalidatePath(UPCOMING_PATH);
+    revalidatePath("/");
     redirect(preparationPath(result.gameId));
   }
   return result;

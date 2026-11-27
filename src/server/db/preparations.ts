@@ -270,7 +270,6 @@ type TeamStanding = {
   rank: number | null;
   wins: number | null;
   losses: number | null;
-  alreadyRefereed: boolean;
 };
 
 export type PreparationListItem = MatchClubs & {
@@ -297,8 +296,8 @@ export type PreparationsPage = { items: PreparationListItem[]; hasMore: boolean 
 const LIST_PREPARATIONS_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
   ${MATCH_CLUBS_COLUMNS},
   p.team_count,
-  p.team1_rank, p.team1_wins, p.team1_losses, p.team1_already_refereed,
-  p.team2_rank, p.team2_wins, p.team2_losses, p.team2_already_refereed,
+  p.team1_rank, p.team1_wins, p.team1_losses,
+  p.team2_rank, p.team2_wins, p.team2_losses,
   p.observed,
   EXISTS (SELECT 1 FROM game_share s, colleague_link l WHERE ${VALID_SHARE}) AS shared
 FROM game_preparation p
@@ -322,11 +321,9 @@ const listRowSchema = z.object({
   team1_rank: smallint,
   team1_wins: smallint,
   team1_losses: smallint,
-  team1_already_refereed: z.boolean(),
   team2_rank: smallint,
   team2_wins: smallint,
   team2_losses: smallint,
-  team2_already_refereed: z.boolean(),
   observed: z.boolean(),
   shared: z.boolean(),
 });
@@ -338,7 +335,6 @@ function toStanding(row: ListRow, team: "team1" | "team2"): TeamStanding {
     rank: row[`${team}_rank`],
     wins: row[`${team}_wins`],
     losses: row[`${team}_losses`],
-    alreadyRefereed: row[`${team}_already_refereed`],
   };
 }
 

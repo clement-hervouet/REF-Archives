@@ -482,13 +482,12 @@ describe("handleSetClubFfbbLink", () => {
     expect(query.mock.calls[0]?.[0]).toContain("DELETE FROM club_logo");
   });
 
-  it("retire le lien", async () => {
+  it("refuse de retirer le lien", async () => {
     const { deps, query } = setup();
-    query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
     expect(await handleSetClubFfbbLink(deps, USER_ID, { clubId: CLUB_ID, link: null })).toEqual({
-      status: "unlinked",
+      status: "invalid",
     });
-    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID, null, null, null]);
+    expect(query).not.toHaveBeenCalled();
   });
 
   it("refuse un argument mal formé, et répond introuvable pour le club d'un autre", async () => {
@@ -500,8 +499,11 @@ describe("handleSetClubFfbbLink", () => {
       }),
     ).toEqual({ status: "invalid" });
     expect(query).not.toHaveBeenCalled();
-    expect(await handleSetClubFfbbLink(deps, USER_ID, { clubId: CLUB_ID, link: null })).toEqual({
-      status: "not_found",
-    });
+    expect(
+      await handleSetClubFfbbLink(deps, USER_ID, {
+        clubId: CLUB_ID,
+        link: { id: "9326", logoUuid: LOGO, color: null },
+      }),
+    ).toEqual({ status: "not_found" });
   });
 });

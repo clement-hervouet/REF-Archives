@@ -543,7 +543,6 @@ export function MatchFields({
               name="oneWayDistance"
               inputMode="decimal"
               label={travelSharedChecked ? t.fields.distanceOptional : t.fields.distance}
-              hint={t.fields.distanceHint}
               maxLength={9}
               required={!travelSharedChecked}
               defaultValue={valueOf("oneWayDistance")}

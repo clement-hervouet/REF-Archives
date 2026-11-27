@@ -70,8 +70,3 @@ export function buildFeedCalendar(matches: readonly CalendarMatch[], generatedAt
     refreshHours: FEED_REFRESH_HOURS,
   });
 }
-
-/** Export ponctuel d'un match (fichier à importer une fois). Même UID que dans le flux. */
-export function buildMatchCalendar(match: CalendarMatch, generatedAt: Date): string {
-  return buildCalendar({ name: t.feedName, events: [matchToEvent(match)], generatedAt });
-}

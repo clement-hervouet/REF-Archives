@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Carte d'un club (§15.4.1), sur le modèle des collègues : nom, salle principale (ou
- * mention « à compléter »), autres salles, deux icônes discrètes (modifier, supprimer). La
+ * Carte d'un club (§15.4.1), sur le modèle des collègues : pastille (petit logo FFBB en haut
+ * à droite si le club est lié à la FFBB), nom, salle principale (ou mention « à
+ * compléter »), autres salles, deux icônes discrètes (modifier, supprimer). La
  * modification s'ouvre dans la carte et se referme après l'enregistrement ; la
  * confirmation de suppression passe en dessous.
  */
@@ -20,6 +21,9 @@ import { ClubVenues } from "./club-venues";
 import type { ClubVenueActions } from "./club-venues";
 
 const t = fr.clubs;
+
+/** Ballon du logo FFBB seul (sans le sigle), 96 px. */
+const FFBB_LOGO_PATH = "/images/ffbb.webp";
 
 type Props = {
   club: ClubSummary;
@@ -47,17 +51,31 @@ export function ClubCard({ club, updateAction, deleteAction, venueActions }: Pro
   return (
     <article className="flex flex-col gap-3 rounded-md border border-border p-4">
       <div className="flex flex-wrap items-start gap-x-1 gap-y-3">
-        <ClubBadge
-          club={{
-            id: club.id,
-            name: club.name,
-            color: club.ffbb?.color ?? null,
-            logoUuid: club.ffbb?.logoUuid ?? null,
-          }}
-          className="mt-1 mr-2"
-        />
+        {/* Hors de la pastille, qui rogne ce qui dépasse de son cercle. */}
+        <span className="relative mt-1 mr-2 shrink-0">
+          <ClubBadge
+            club={{
+              id: club.id,
+              name: club.name,
+              color: club.ffbb?.color ?? null,
+              logoUuid: club.ffbb?.logoUuid ?? null,
+            }}
+          />
+          {club.ffbb !== null && (
+            <span
+              aria-hidden="true"
+              title={t.ffbb.link.linked}
+              className="absolute -top-1 -right-1 flex size-5"
+            >
+              {/* Fichier statique déjà à la bonne taille : pas d'optimisation Next.js. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={FFBB_LOGO_PATH} alt="" width={18} height={18} className="size-full" />
+            </span>
+          )}
+        </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
           <h2 className="font-semibold break-words">{club.name}</h2>
+          {club.ffbb !== null && <p className="sr-only">{t.ffbb.link.linked}</p>}
           {club.venues.length > 0 && (
             <p className="text-sm text-muted-foreground">{fr.clubs.venues.main}</p>
           )}

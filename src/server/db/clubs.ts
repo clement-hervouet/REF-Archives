@@ -312,7 +312,7 @@ SELECT id FROM updated`;
  */
 export async function setClubFfbbLink(
   db: Queryable,
-  input: { userId: string; clubId: string; link: FfbbClubLink | null },
+  input: { userId: string; clubId: string; link: FfbbClubLink },
 ): Promise<boolean> {
   const result = await db.query(SET_FFBB_LINK_SQL, [
     input.clubId,

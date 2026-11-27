@@ -26,11 +26,6 @@ export function calendarFeedPath(token: string): string {
   return `/api/ical/${token}.ics`;
 }
 
-/** Export ponctuel d'un match au format `.ics` (bloc 8), réservé à son propriétaire. */
-export function matchExportPath(compensationId: string): string {
-  return `/indemnites/${compensationId}/ics`;
-}
-
 /** Page « Mes collègues » : fiches nom seul (bloc 9). */
 export const COLLEAGUES_PATH = "/collegues";
 

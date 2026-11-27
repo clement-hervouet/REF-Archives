@@ -2,11 +2,13 @@
 
 /**
  * « Annuler le paiement » dans le menu d'une indemnité payée (bloc 10), pour corriger une
- * validation faite par erreur. Le serveur vérifie la propriété (§6.2).
+ * validation faite par erreur. En jaune : elle défait quelque chose, sans rien supprimer.
+ * Le serveur vérifie la propriété (§6.2).
  */
 import { useActionState } from "react";
 import { fr } from "@/i18n/fr";
 import type { ClearPaymentState } from "@/server/compensation/payments";
+import { cn } from "@/lib/utils";
 import { MENU_ITEM_CLASS } from "./menu-styles";
 
 const t = fr.compensations.list;
@@ -33,7 +35,7 @@ export function ClearPaymentItem({ compensationId, dateLabel, action }: Props) {
         type="submit"
         disabled={isPending}
         aria-label={t.clearPaymentLabel.replace("{date}", dateLabel)}
-        className={MENU_ITEM_CLASS}
+        className={cn(MENU_ITEM_CLASS, "text-warning-text")}
       >
         {t.clearPayment}
       </button>

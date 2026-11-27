@@ -711,16 +711,12 @@ export const fr = {
       emptyMonth: "Aucune indemnité en {month}.",
       matchOn: "{date} à {time}",
       teams: "{team1} – {team2}",
-      details: "{division} · {address}",
       total: "Total",
       edit: "Modifier",
       editLabel: "Modifier l'indemnité du {date}",
       unpaidLink: "À rembourser ({count})",
       moreActionsLabel: "Plus d'actions pour le match du {date}",
       payer: "Versée par {payer}",
-      rateDetails: "{scale} : match {game} + kilométrage {mileage} ({distance} aller-retour)",
-      rateDetailsShared:
-        "{scale} : match {game}, déplacement déjà compté sur l'autre match (doublé)",
       paidOn: "Payée le {date}",
       pending: "En attente de paiement",
       clearPayment: "Annuler le paiement",
@@ -755,7 +751,6 @@ export const fr = {
       detailShared: "Match {game}, déplacement déjà compté sur l'autre match (doublé)",
       /** Plateau (§15.4.7) : montant des matchs détaillé, à la place de {game}. */
       plateauGames: "{total} ({count} × {unit})",
-      rateLine: "{scale}, montants en vigueur depuis le {date}",
     },
     payers: {
       title: "Par organisme",
@@ -783,7 +778,6 @@ export const fr = {
     },
     edit: {
       title: "Modifier l'indemnité",
-      intro: "Changer la date du match peut changer la ligne de barème appliquée, donc le montant.",
       submit: "Enregistrer les modifications",
       submitting: "Enregistrement…",
       updated: "Indemnité modifiée : {total} (match {game} + kilométrage {mileage}).",
@@ -842,8 +836,6 @@ export const fr = {
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",
       payerAuto: "Automatique",
-      payerHint:
-        "Automatique : comité du département pour un match départemental, ligue de la région pour un match régional, Fédération au-delà. À changer pour une coupe ou un match délocalisé.",
       payerFederation: "Fédération",
       payerLeagues: "Ligues régionales",
       payerCommittees: "Comités départementaux",
@@ -873,8 +865,6 @@ export const fr = {
         "L'adresse du nouveau club de l'équipe 1 sera utilisée (à compléter dans Clubs si seul son code postal est connu).",
       distance: "Distance aller (km)",
       distanceOptional: "Distance aller (km, facultative)",
-      distanceHint:
-        "Un seul trajet, par exemple 23 ou 23,5 : l'aller-retour est compté automatiquement.",
       travelShared: "Doublé : le déplacement est déjà compté sur un autre match",
       travelSharedHint:
         "Deux matchs le même jour au même endroit : le kilométrage n'est versé qu'une fois. Cochez la case sur le second match : la distance devient facultative.",
@@ -1110,7 +1100,6 @@ export const fr = {
     ordinalFirst: "1er",
     record: "{wins} V – {losses} D",
     standingSeparator: ", ",
-    alreadyRefereedShort: "déjà arbitrée",
     observed: "Observé",
     // Menu des indemnités et de « À venir », fiche du match.
     prepare: "Préparer le match",
@@ -1582,16 +1571,12 @@ export const fr = {
       change: "Changer de club",
       required: "Choisissez un club dans la liste, ou saisissez-le manuellement.",
       link: {
-        open: "Lier à l'annuaire FFBB (logo)",
-        openLabel: "Lier {name} à l'annuaire FFBB pour afficher son logo",
-        linked: "Lié à l'annuaire FFBB",
-        linkedNoLogo: "Lié à l'annuaire FFBB (la FFBB ne donne pas de logo pour ce club)",
-        unlink: "Retirer le lien",
-        unlinkLabel: "Retirer le lien de {name} avec l'annuaire FFBB",
+        open: "Lier à la FFBB",
+        openLabel: "Lier {name} à la FFBB pour afficher son logo",
+        linked: "Lié à la FFBB",
         cancel: "Annuler",
         saving: "Enregistrement…",
-        done: "Club lié à l'annuaire FFBB : son logo s'affiche sur vos indemnités.",
-        removed: "Lien avec l'annuaire FFBB retiré.",
+        done: "Club lié à la FFBB : son logo s'affiche sur vos indemnités.",
         failed: "Le lien n'a pas pu être enregistré. Réessayez.",
       },
     },
@@ -1905,10 +1890,6 @@ export const fr = {
         invalid: "La demande envoyée n'est pas valide.",
         notFound: "Aucun lien d'abonnement à révoquer.",
       },
-    },
-    export: {
-      label: "Ajouter à l'agenda",
-      ariaLabel: "Ajouter le match du {date} à mon agenda (fichier .ics)",
     },
   },
   email: {

@@ -495,8 +495,7 @@ const LIST_RECIPIENT_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")
   ${MATCH_CLUBS_COLUMNS},
   owner.firstname AS owner_firstname, owner.lastname AS owner_lastname,
   p.team_count, p.team1_rank, p.team1_wins, p.team1_losses,
-  p.team2_rank, p.team2_wins, p.team2_losses, coalesce(p.observed, false) AS observed,
-  s.team1_already_refereed, s.team2_already_refereed
+  p.team2_rank, p.team2_wins, p.team2_losses, coalesce(p.observed, false) AS observed
 FROM ${SHARE_FROM}
 JOIN "user" owner ON owner.id = s.owner_user_id
 JOIN division d ON d.id = g.division_id
@@ -526,7 +525,6 @@ const recipientListRowSchema = z.object({
   team2_wins: smallint,
   team2_losses: smallint,
   observed: z.boolean(),
-  ...checksFields,
 });
 
 /** Préparations partagées avec `viewerId`, du match le plus récent au plus ancien. */
@@ -556,13 +554,11 @@ export async function listRecipientPreparations(
         rank: row.team1_rank,
         wins: row.team1_wins,
         losses: row.team1_losses,
-        alreadyRefereed: row.team1_already_refereed,
       },
       team2: {
         rank: row.team2_rank,
         wins: row.team2_wins,
         losses: row.team2_losses,
-        alreadyRefereed: row.team2_already_refereed,
       },
       observed: row.observed,
       shared: true,

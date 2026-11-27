@@ -27,6 +27,6 @@ export async function GET(request: Request, context: CalendarFeedRouteContext): 
   }
   return new Response(ics, {
     status: 200,
-    headers: calendarHeaders({ pathname, fileName: FEED_FILE_NAME, disposition: "inline" }),
+    headers: calendarHeaders({ pathname, fileName: FEED_FILE_NAME }),
   });
 }

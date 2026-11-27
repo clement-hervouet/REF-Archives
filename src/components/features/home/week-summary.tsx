@@ -1,7 +1,6 @@
 /**
  * Matchs de la semaine en cours sur l'accueil, d'aujourd'hui au dimanche (matchs de semaine
- * compris) : version courte de « À venir ». Mêmes cartes que la page « À venir » (colonne de
- * date, « Itinéraire » en bouton), sans le menu « ⋯ » : les autres actions restent sur la page.
+ * compris) : version courte de « À venir », avec les mêmes cartes.
  */
 import Link from "next/link";
 import { UpcomingMatchList } from "@/components/features/reminders/upcoming-match-list";
@@ -9,6 +8,7 @@ import { fr } from "@/i18n/fr";
 import { UPCOMING_PATH } from "@/lib/app-paths";
 import { formatShortDate } from "@/lib/weeks";
 import type { UpcomingMatchRow } from "@/server/db/upcoming-matches";
+import type { PrepareMatchState } from "@/server/games/preparation-form";
 
 const t = fr.home;
 
@@ -18,9 +18,11 @@ type Props = {
   /** Jour de Paris (`AAAA-MM-JJ`), pour « Demain », « Dans 3 jours ». */
   today: string;
   matches: readonly UpcomingMatchRow[];
+  /** « Préparer le match » dans le menu (§15.4.10). */
+  prepareAction: (previous: PrepareMatchState, formData: FormData) => Promise<PrepareMatchState>;
 };
 
-export function WeekSummary({ sunday, today, matches }: Props) {
+export function WeekSummary({ sunday, today, matches, prepareAction }: Props) {
   return (
     <section aria-labelledby="home-week" className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
@@ -35,7 +37,7 @@ export function WeekSummary({ sunday, today, matches }: Props) {
       {matches.length === 0 ? (
         <p className="rounded-md border border-border p-4">{fr.reminders.home.weekNone}</p>
       ) : (
-        <UpcomingMatchList matches={matches} today={today} withActions={false} />
+        <UpcomingMatchList matches={matches} today={today} prepareAction={prepareAction} />
       )}
 
       <Link href={UPCOMING_PATH} className="inline-flex min-h-11 items-center self-start underline">

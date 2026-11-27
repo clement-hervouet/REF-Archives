@@ -1,5 +1,5 @@
 /**
- * Lecture des matchs pour le calendrier (bloc 8) : flux d'abonnement et export d'un match.
+ * Lecture des matchs pour le flux d'abonnement calendrier (bloc 8).
  * Source : les indemnités, qui portent les informations du match (§3.8).
  *
  * Strict nécessaire (§5.4) : horaire, équipes, niveau et adresse. Ni montant, ni barème,
@@ -45,9 +45,6 @@ WHERE c.user_id = $1 AND c.deleted_at IS NULL AND c.starts_at >= $2
 ORDER BY c.starts_at, c.id
 LIMIT $3`;
 
-const FIND_ONE_SQL = `${SELECT_FROM}
-WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL`;
-
 const calendarMatchRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
@@ -79,14 +76,4 @@ export async function listCalendarMatchesSince(
     MAX_COMPENSATIONS_PER_USER,
   ]);
   return result.rows.map(toCalendarMatch);
-}
-
-/** Un match actif de l'utilisateur ; `null` s'il est introuvable, supprimé ou à un autre compte. */
-export async function findCalendarMatch(
-  db: Queryable,
-  input: { compensationId: string; userId: string },
-): Promise<CalendarMatch | null> {
-  const result = await db.query(FIND_ONE_SQL, [input.compensationId, input.userId]);
-  const raw = result.rows[0];
-  return raw === undefined ? null : toCalendarMatch(raw);
 }

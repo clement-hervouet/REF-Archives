@@ -462,7 +462,7 @@ docker compose run --rm tools node scripts/ffbb-link-clubs.mts --appliquer   # e
 
 Lancer d'abord l'essai et relire la liste. Interrompu (Ctrl+C), le script reprend au relancement :
 il ne lit que les clubs encore sans lien. Les clubs « ambigus » ou « introuvables » se lient à la
-main (onglet « Clubs », « Lier à l'annuaire FFBB »). Les logos se téléchargent ensuite au premier
+main (onglet « Clubs », « Lier à la FFBB »). Les logos se téléchargent ensuite au premier
 affichage.
 
 ## 6. Restaurer une sauvegarde

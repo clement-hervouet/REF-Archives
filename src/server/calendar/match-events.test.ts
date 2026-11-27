@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarMatch } from "@/server/db/calendar-matches";
-import {
-  buildFeedCalendar,
-  buildMatchCalendar,
-  feedHistoryStart,
-  matchToEvent,
-  matchUid,
-} from "./match-events";
+import { buildFeedCalendar, feedHistoryStart, matchToEvent, matchUid } from "./match-events";
 
 const GENERATED_AT = new Date("2026-11-05T17:00:00.000Z");
 
@@ -86,14 +80,5 @@ describe("buildFeedCalendar", () => {
   it("n'expose ni montant ni barème", () => {
     const ics = buildFeedCalendar([MATCH], GENERATED_AT);
     expect(ics).not.toMatch(/€|barème/i);
-  });
-});
-
-describe("buildMatchCalendar", () => {
-  it("exporte un seul événement avec le même UID que le flux, sans rafraîchissement", () => {
-    const lines = unfold(buildMatchCalendar(MATCH, GENERATED_AT));
-    expect(lines.filter((line) => line === "BEGIN:VEVENT")).toHaveLength(1);
-    expect(lines).toContain(`UID:compensation-${MATCH.id}@ref-archives`);
-    expect(lines.some((line) => line.startsWith("REFRESH-INTERVAL"))).toBe(false);
   });
 });

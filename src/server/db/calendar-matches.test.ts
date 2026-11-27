@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
 import { makeFakeDb } from "./fake-db";
-import { findCalendarMatch, listCalendarMatchesSince } from "./calendar-matches";
+import { listCalendarMatchesSince } from "./calendar-matches";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const COMPENSATION_ID = "8c2d4f6a-1b3e-4a5c-9d7e-0f1a2b3c4d5e";
@@ -65,22 +65,5 @@ describe("listCalendarMatchesSince", () => {
   it("refuse une ligne mal formée", async () => {
     const { db } = makeFakeDb([{ ...ROW, level: "U99" }]);
     await expect(listCalendarMatchesSince(db, { userId: USER_ID, from: FROM })).rejects.toThrow();
-  });
-});
-
-describe("findCalendarMatch", () => {
-  it("renvoie le match de l'utilisateur", async () => {
-    const { db, query } = makeFakeDb([ROW]);
-    expect(
-      await findCalendarMatch(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
-    ).toEqual(MATCH);
-    expect(query.mock.lastCall?.[1]).toEqual([COMPENSATION_ID, USER_ID]);
-  });
-
-  it("renvoie null pour un match introuvable", async () => {
-    const { db } = makeFakeDb();
-    expect(
-      await findCalendarMatch(db, { compensationId: COMPENSATION_ID, userId: USER_ID }),
-    ).toBeNull();
   });
 });

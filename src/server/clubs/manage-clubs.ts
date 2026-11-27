@@ -150,11 +150,11 @@ export async function handleDeleteClub(
 
 // ─── Lien avec l'annuaire FFBB ──────────────────────────────────────────────
 
-export type ClubFfbbLinkState = { status: "linked" | "unlinked" | "not_found" | "invalid" };
+export type ClubFfbbLinkState = { status: "linked" | "not_found" | "invalid" };
 
 /**
- * Lie un club de l'utilisateur au club choisi dans l'annuaire FFBB (logo, couleur), ou
- * retire ce lien (`link` nul). Arguments venus du navigateur : validés ici.
+ * Lie un club de l'utilisateur au club choisi dans l'annuaire FFBB (logo, couleur). Un lien
+ * ne se retire pas : `link` nul est refusé. Arguments venus du navigateur : validés ici.
  */
 export async function handleSetClubFfbbLink(
   deps: ClubDeps,
@@ -162,7 +162,7 @@ export async function handleSetClubFfbbLink(
   input: { clubId: unknown; link: unknown },
 ): Promise<ClubFfbbLinkState> {
   const clubId = idSchema.safeParse(input.clubId);
-  const link = ffbbLinkSchema.nullable().safeParse(input.link);
+  const link = ffbbLinkSchema.safeParse(input.link);
   if (!clubId.success || !link.success) {
     return { status: "invalid" };
   }
@@ -172,7 +172,7 @@ export async function handleSetClubFfbbLink(
   if (!updated) {
     return { status: "not_found" };
   }
-  return { status: link.data === null ? "unlinked" : "linked" };
+  return { status: "linked" };
 }
 
 // ─── Salles d'un club ───────────────────────────────────────────────────────
