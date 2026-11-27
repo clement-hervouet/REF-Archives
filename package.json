@@ -21,6 +21,7 @@
     "db:reset": "node --env-file=.env.local --experimental-strip-types scripts/db.mts reset",
     "admin:create": "node --env-file=.env.local scripts/admin-create.mts",
     "email:test": "node --env-file=.env.local scripts/email-test.mts",
+    "ffbb:link-clubs": "node --env-file=.env.local scripts/ffbb-link-clubs.mts",
     "knip": "knip"
   },
   "dependencies": {

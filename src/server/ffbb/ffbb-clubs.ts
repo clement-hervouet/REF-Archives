@@ -10,9 +10,11 @@
  * supposer de plus que les champs utilisés.
  */
 import { z } from "zod";
-import { normalizePlace } from "@/lib/places";
-import { ffbbLinkSchema } from "@/lib/schemas/ffbb-link";
-import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
+// Imports relatifs en `.ts` : ce module sert aussi au script `ffbb-link-clubs.mts`, lancé
+// par Node sans les alias de Next.js.
+import { normalizePlace } from "../../lib/places.ts";
+import { ffbbLinkSchema } from "../../lib/schemas/ffbb-link.ts";
+import type { FfbbClubLink } from "../../lib/schemas/ffbb-link.ts";
 
 const FFBB_API_URL = "https://ffbb-api.desimone.fr/api/v1";
 /** La recherche répond parfois en 5 à 7 s : au-delà de 10 s, on abandonne. */
@@ -237,11 +239,20 @@ function isSameVenue(a: FfbbVenue, b: FfbbVenue): boolean {
   return sameName || sameStreet;
 }
 
-// ─── Recherche par ville ────────────────────────────────────────────────────
+// ─── Recherche ──────────────────────────────────────────────────────────────
 
 const searchResponseSchema = z.array(
   z.object({ index_uid: z.string(), hits: z.array(z.unknown()) }),
 );
+
+/**
+ * Logo d'un club : UUID de l'asset et couleur de fond. Absent pour près de la moitié des
+ * clubs ; illisible, il est ignoré sans refuser le club.
+ */
+const logoSchema = z
+  .object({ id: z.uuid(), gradient_color: z.string().nullish() })
+  .nullish()
+  .catch(null);
 
 const searchHitSchema = z.object({
   id: z
@@ -252,6 +263,7 @@ const searchHitSchema = z.object({
   type: z.string().nullish(),
   type_association: z.object({ libelle: z.string().nullish() }).nullish(),
   commune: z.object({ code_postal: z.string().nullish(), libelle: z.string().nullish() }).nullish(),
+  logo: logoSchema,
 });
 
 type SearchHit = z.output<typeof searchHitSchema>;
@@ -269,6 +281,53 @@ function kindOf(hit: SearchHit): FfbbClubKind {
 
 const KIND_ORDER: Record<FfbbClubKind, number> = { club: 0, union: 1, entente: 2, other: 3 };
 
+function toClubHit(hit: SearchHit): FfbbClubHit {
+  return {
+    id: hit.id,
+    name: cleanText(hit.nom, 255) ?? hit.nom,
+    city: cityOf(hit.commune?.libelle),
+    postalCode: postalCodeOf(hit.commune?.code_postal),
+    kind: kindOf(hit),
+  };
+}
+
+/**
+ * Groupements (clubs, unions, ententes) trouvés par la recherche `query`, sans doublon. Les
+ * ligues, comités et la Fédération sont écartés.
+ */
+async function searchGroupements(
+  fetchJson: FfbbFetch,
+  query: string,
+): Promise<FfbbResult<SearchHit[]>> {
+  let raw: unknown;
+  try {
+    raw = await fetchJson(`/search?query=${encodeURIComponent(query)}`);
+  } catch (error) {
+    console.error(`[ffbb] recherche impossible (${errorName(error)})`);
+    return { ok: false };
+  }
+  const response = searchResponseSchema.safeParse(raw);
+  if (!response.success) {
+    console.error("[ffbb] réponse de recherche inattendue");
+    return { ok: false };
+  }
+  const index = response.data.find((entry) => entry.index_uid === "ffbbserver_organismes");
+  const hits: SearchHit[] = [];
+  const seen = new Set<string>();
+  for (const candidate of index?.hits ?? []) {
+    const parsed = searchHitSchema.safeParse(candidate);
+    if (
+      parsed.success &&
+      !seen.has(parsed.data.id) &&
+      normalizePlace(parsed.data.type ?? "") === "groupement"
+    ) {
+      seen.add(parsed.data.id);
+      hits.push(parsed.data);
+    }
+  }
+  return { ok: true, value: hits };
+}
+
 /**
  * Rang d'un club pour la ville cherchée : 0 s'il y est domicilié (« Paris » couvre
  * « Paris 13e arrondissement »), 1 si la ville figure seulement dans son nom (club d'une
@@ -284,7 +343,7 @@ function placeRank(hit: SearchHit, query: string): 0 | 1 | null {
 
 /**
  * Clubs domiciliés dans `city` (ou portant son nom), clubs d'abord, puis unions et
- * ententes, par ordre alphabétique. Les ligues, comités et la Fédération sont écartés.
+ * ententes, par ordre alphabétique.
  */
 export async function searchFfbbClubs(
   fetchJson: FfbbFetch,
@@ -294,42 +353,16 @@ export async function searchFfbbClubs(
   if (query.length < 2) {
     return { ok: true, value: [] };
   }
-  let raw: unknown;
-  try {
-    raw = await fetchJson(`/search?query=${encodeURIComponent(query)}`);
-  } catch (error) {
-    console.error(`[ffbb] recherche impossible (${errorName(error)})`);
-    return { ok: false };
+  const found = await searchGroupements(fetchJson, query);
+  if (!found.ok) {
+    return found;
   }
-  const response = searchResponseSchema.safeParse(raw);
-  if (!response.success) {
-    console.error("[ffbb] réponse de recherche inattendue");
-    return { ok: false };
-  }
-  const index = response.data.find((entry) => entry.index_uid === "ffbbserver_organismes");
   const ranked: { hit: FfbbClubHit; rank: 0 | 1 }[] = [];
-  const seen = new Set<string>();
-  for (const candidate of index?.hits ?? []) {
-    const parsed = searchHitSchema.safeParse(candidate);
-    if (!parsed.success || seen.has(parsed.data.id)) {
-      continue;
-    }
-    const hit = parsed.data;
+  for (const hit of found.value) {
     const rank = placeRank(hit, query);
-    if (normalizePlace(hit.type ?? "") !== "groupement" || rank === null) {
-      continue;
+    if (rank !== null) {
+      ranked.push({ rank, hit: toClubHit(hit) });
     }
-    seen.add(hit.id);
-    ranked.push({
-      rank,
-      hit: {
-        id: hit.id,
-        name: cleanText(hit.nom, 255) ?? hit.nom,
-        city: cityOf(hit.commune?.libelle),
-        postalCode: postalCodeOf(hit.commune?.code_postal),
-        kind: kindOf(hit),
-      },
-    });
   }
   ranked.sort(
     (a, b) =>
@@ -340,20 +373,37 @@ export async function searchFfbbClubs(
   return { ok: true, value: ranked.slice(0, MAX_RESULTS).map((entry) => entry.hit) };
 }
 
+/** Club trouvé par une recherche libre, avec son lien FFBB (logo, couleur). */
+export type FfbbClubCandidate = FfbbClubHit & { ffbb: FfbbClubLink };
+
+/**
+ * Tous les groupements trouvés par la recherche `query` (une ville, un nom de club), avec
+ * leur logo : sert au rattachement des clubs existants à l'annuaire
+ * (`scripts/ffbb-link-clubs.mts`), qui choisit lui-même le bon candidat.
+ */
+export async function searchFfbbClubCandidates(
+  fetchJson: FfbbFetch,
+  query: string,
+): Promise<FfbbResult<FfbbClubCandidate[]>> {
+  const normalized = normalizePlace(query);
+  if (normalized.length < 2) {
+    return { ok: true, value: [] };
+  }
+  const found = await searchGroupements(fetchJson, normalized);
+  if (!found.ok) {
+    return found;
+  }
+  return {
+    ok: true,
+    value: found.value.map((hit) => ({ ...toClubHit(hit), ffbb: ffbbLinkOf(hit.id, hit) })),
+  };
+}
+
 // ─── Fiche d'un club ────────────────────────────────────────────────────────
 
 const communeSchema = z
   .object({ codePostal: z.string().nullish(), libelle: z.string().nullish() })
   .nullish();
-
-/**
- * Logo de la fiche : UUID de l'asset et couleur de fond. Absent pour près de la moitié des
- * clubs ; illisible, il est ignoré sans refuser la fiche.
- */
-const logoSchema = z
-  .object({ id: z.uuid(), gradient_color: z.string().nullish() })
-  .nullish()
-  .catch(null);
 
 const clubResponseSchema = z.object({
   nom: z.string().trim().min(1),
@@ -448,7 +498,7 @@ function mainVenueOf(club: z.output<typeof clubResponseSchema>): FfbbVenue | nul
 }
 
 /** Lien FFBB du club : une couleur mal formée est abandonnée, le logo gardé. */
-function ffbbLinkOf(id: string, club: z.output<typeof clubResponseSchema>): FfbbClubLink {
+function ffbbLinkOf(id: string, club: { logo?: z.output<typeof logoSchema> }): FfbbClubLink {
   const logoUuid = club.logo?.id ?? null;
   const parsed = ffbbLinkSchema.safeParse({
     id,
