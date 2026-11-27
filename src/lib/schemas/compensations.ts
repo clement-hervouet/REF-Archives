@@ -24,6 +24,7 @@ import { ValidationError } from "@/lib/errors";
 import { isTimeOfDay, parisLocalToUtc } from "@/lib/paris-time";
 import { parsePayerKey } from "@/lib/payers";
 import { MAX_GAME_COUNT } from "@/server/compensation/amount";
+import { optionalFfbbLinkSchema } from "./ffbb-link";
 import { gameAmountSchema } from "./scales";
 import { cupRoundSchema } from "@/server/db/divisions";
 
@@ -102,7 +103,7 @@ export const clubVenuesSchema = z.array(clubVenueSchema).max(MAX_CLUB_VENUES - 1
  * retrouvée ou créée côté serveur. Un nouveau club ne demande que son nom et son code
  * postal (§15.4.1) : le code postal suffit à déduire l'organisme qui verse. Choisi dans
  * l'annuaire FFBB, il arrive avec le nom, la rue, le numéro et la ville de sa salle
- * principale, et ses autres salles (facultatifs).
+ * principale, ses autres salles et son lien FFBB (logo, couleur), tous facultatifs.
  */
 export const teamChoiceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("existing"), clubId: z.uuid() }),
@@ -115,6 +116,7 @@ export const teamChoiceSchema = z.discriminatedUnion("kind", [
     city: optionalText(255).optional(),
     venueName: optionalText(255).optional(),
     venues: clubVenuesSchema.optional(),
+    ffbb: optionalFfbbLinkSchema.optional(),
   }),
 ]);
 

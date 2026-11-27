@@ -19,6 +19,7 @@ import type { DeleteCompensationState } from "@/server/compensation/compensation
 import type { PaymentStatus } from "@/server/compensation/monthly-totals";
 import type { ClearPaymentState } from "@/server/compensation/payments";
 import type { PrepareMatchState } from "@/server/games/preparation-form";
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import { PrepareMatchItem } from "@/components/features/games/prepare-match-item";
 import type { CompensationListItem } from "@/server/db/compensations";
 import { ActionsMenu } from "./actions-menu";
@@ -75,9 +76,12 @@ function CompensationCard({
       <MatchDate startsAt={item.startsAt} />
 
       <div className="flex min-w-0 flex-col gap-1">
-        <h3 className="font-semibold break-words">
-          {withTeams(t.teams, item.team1Name, item.team2Name)}
-        </h3>
+        <div className="flex items-center gap-3">
+          <MatchClubBadges team1={item.team1Club} team2={item.team2Club} />
+          <h3 className="min-w-0 font-semibold break-words">
+            {withTeams(t.teams, item.team1Name, item.team2Name)}
+          </h3>
+        </div>
         <p className="text-sm break-words">
           {t.details
             .replace("{division}", matchLevelLabel(item.division))

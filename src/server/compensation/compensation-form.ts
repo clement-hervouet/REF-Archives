@@ -28,7 +28,7 @@ import {
   type CompensationField,
 } from "@/lib/compensation-form-fields";
 import { toParisIsoDate } from "@/lib/dates";
-import { readJsonList, readText } from "@/lib/form-data";
+import { readJsonList, readJsonValue, readText } from "@/lib/form-data";
 import { oneWayKmInput } from "@/lib/distance";
 import { toParisTimeOfDay } from "@/lib/paris-time";
 import { compensationFormSchema } from "@/lib/schemas/compensations";
@@ -102,6 +102,7 @@ function readTeam(formData: FormData, prefix: "team1" | "team2"): Record<string,
       city: readText(formData, `${prefix}City`),
       venueName: readText(formData, `${prefix}Venue`),
       venues: readJsonList(formData, `${prefix}Venues`),
+      ffbb: readJsonValue(formData, `${prefix}Ffbb`),
     };
   }
   return { kind: "existing", clubId: club };

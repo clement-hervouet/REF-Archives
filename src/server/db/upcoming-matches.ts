@@ -11,14 +11,17 @@ import { OFFICIAL_SLOTS } from "@/lib/game-form-fields";
 import type { OfficialSlot } from "@/lib/game-form-fields";
 import {
   MATCH_ADDRESS_COLUMNS,
+  MATCH_CLUBS_COLUMNS,
+  matchClubsFields,
   matchPartiesColumns,
   matchAddressFields,
   matchPartiesFields,
   matchTeamJoins,
   toMatchAddress,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchAddress, MatchDivision } from "./match-info";
+import type { MatchAddress, MatchClubs, MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Personne à une place, réduite à ce qui s'affiche. */
@@ -29,7 +32,7 @@ type UpcomingOfficial = {
   lastname: string | null;
 };
 
-export type UpcomingMatchRow = {
+export type UpcomingMatchRow = MatchClubs & {
   /** Identifiant de l'indemnité (export `.ics`, modification). */
   id: string;
   startsAt: Date;
@@ -50,6 +53,7 @@ export type UpcomingMatchRow = {
 // officiel. Le match lié doit être actif et au même utilisateur.
 const LIST_UPCOMING_SQL = `SELECT c.id, c.starts_at, c.game_id,
   ${matchPartiesColumns("c")},
+  ${MATCH_CLUBS_COLUMNS},
   ${MATCH_ADDRESS_COLUMNS},
   coalesce((
     SELECT json_agg(json_build_object(
@@ -89,6 +93,7 @@ const rowSchema = z.object({
   starts_at: z.date(),
   game_id: z.uuid().nullable(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   ...matchAddressFields,
   officials: z.array(officialRowSchema),
   has_preparation: z.boolean(),
@@ -106,6 +111,7 @@ export async function listUpcomingMatches(
       id: row.id,
       startsAt: row.starts_at,
       ...toMatchParties(row),
+      ...toMatchClubs(row),
       address: toMatchAddress(row),
       gameId: row.game_id,
       officials: row.officials.map((official) => ({

@@ -26,3 +26,20 @@ export function readJsonList(formData: FormData, name: string): unknown {
     return text;
   }
 }
+
+/**
+ * Objet JSON d'un champ caché (lien FFBB d'un club) : `undefined` si le champ est absent
+ * ou vide. Un JSON illisible est rendu tel quel : le schéma Zod décide ensuite.
+ */
+export function readJsonValue(formData: FormData, name: string): unknown {
+  const text = readText(formData, name);
+  if (text === undefined || text.trim() === "") {
+    return undefined;
+  }
+  try {
+    const value: unknown = JSON.parse(text);
+    return value;
+  } catch {
+    return text;
+  }
+}

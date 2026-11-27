@@ -69,6 +69,7 @@ export function ClubFields({
             city: `${prefix}City`,
             venue: `${prefix}Venue`,
             venues: `${prefix}Venues`,
+            ffbb: `${prefix}Ffbb`,
           }}
           labels={{
             name: t.fields.clubName,

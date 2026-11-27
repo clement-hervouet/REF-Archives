@@ -6,6 +6,7 @@
  * pour les matchs du weekend de l'accueil (bloc 13). Ni montant ni barème : c'est une
  * fiche pratique pour se rendre au match.
  */
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { ActionsMenu } from "@/components/features/compensations/actions-menu";
@@ -104,9 +105,12 @@ function UpcomingMatchCard({ match, today, withActions, prepareAction }: CardPro
       <MatchDate startsAt={match.startsAt} note={relativeLabel(today, match.startsAt)} />
 
       <div className="flex min-w-0 flex-col gap-1">
-        <h3 className="font-semibold break-words">
-          {withTeams(t.teams, match.team1Name, match.team2Name)}
-        </h3>
+        <div className="flex items-center gap-3">
+          <MatchClubBadges team1={match.team1Club} team2={match.team2Club} />
+          <h3 className="min-w-0 font-semibold break-words">
+            {withTeams(t.teams, match.team1Name, match.team2Name)}
+          </h3>
+        </div>
         <p className="text-sm text-muted-foreground">{matchLevelLabel(match.division)}</p>
         <p className="text-sm break-words">{address}</p>
         {officials !== null && (

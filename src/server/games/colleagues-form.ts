@@ -12,7 +12,7 @@
  */
 import { z } from "zod";
 import { NEW_CHOICE } from "@/lib/compensation-form-fields";
-import { readJsonList, readText } from "@/lib/form-data";
+import { readJsonList, readJsonValue, readText } from "@/lib/form-data";
 import { teamChoiceSchema } from "@/lib/schemas/compensations";
 import type { NewClubChoice } from "@/lib/schemas/compensations";
 import { newColleagueSchema } from "@/lib/schemas/officials";
@@ -89,6 +89,7 @@ function readClubChoice(formData: FormData): ClubRead {
       city: readText(formData, "clubCity"),
       venueName: readText(formData, "clubVenue"),
       venues: readJsonList(formData, "clubVenues"),
+      ffbb: readJsonValue(formData, "clubFfbb"),
     });
     if (!parsed.success) {
       return { ok: false, state: { status: "club_invalid", fields: newClubErrors(parsed.error) } };

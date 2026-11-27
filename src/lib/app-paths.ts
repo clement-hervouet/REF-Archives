@@ -93,3 +93,17 @@ export const ACCOUNTS_PATH = "/admin/comptes";
 export function accountPath(accountId: string): string {
   return `${ACCOUNTS_PATH}/${accountId}`;
 }
+
+/**
+ * Version du traitement des logos (`logo-background.ts`) : à changer quand il change, pour
+ * que les navigateurs ne gardent pas l'ancienne image (mise en cache pour un an).
+ */
+const CLUB_LOGO_REVISION = "2";
+
+/**
+ * Logo d'un club (pastille). L'UUID du logo est dans l'URL : un nouveau logo change
+ * d'adresse, l'ancien peut rester dans le cache du navigateur.
+ */
+export function clubLogoPath(clubId: string, logoUuid: string): string {
+  return `/api/clubs/${encodeURIComponent(clubId)}/logo?v=${encodeURIComponent(logoUuid)}&r=${CLUB_LOGO_REVISION}`;
+}

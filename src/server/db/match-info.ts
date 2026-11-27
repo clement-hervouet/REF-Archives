@@ -146,3 +146,69 @@ export function toMatchAddress(row: {
     city: row.city,
   };
 }
+
+// ─── Clubs des équipes (pastilles) ──────────────────────────────────────────
+
+/** Club d'une équipe, pour sa pastille (logo FFBB, sinon initiales sur sa couleur). */
+export type MatchClub = {
+  id: string;
+  name: string;
+  /** Couleur du club `#rrggbb` (FFBB), `null` si inconnue. */
+  color: string | null;
+  /** Logo FFBB du club, `null` s'il n'en a pas. */
+  logoUuid: string | null;
+};
+
+export type MatchClubs = {
+  team1Club: MatchClub;
+  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+  team2Club: MatchClub | null;
+};
+
+/**
+ * Colonnes des clubs des deux équipes (alias `club1`, `club2` de `matchTeamJoins`), à
+ * ajouter aux requêtes dont l'en-tête montre les pastilles, avec `matchPartiesColumns`.
+ */
+export const MATCH_CLUBS_COLUMNS = `club1.id AS team1_club_id, club1.color AS team1_color,
+  club1.ffbb_logo_uuid AS team1_logo_uuid,
+  club2.id AS team2_club_id, club2.color AS team2_color, club2.ffbb_logo_uuid AS team2_logo_uuid`;
+
+/** Champs Zod des clubs des équipes, à fusionner avec `matchPartiesFields`. */
+export const matchClubsFields = {
+  team1_club_id: z.uuid(),
+  team1_color: z.string().nullable(),
+  team1_logo_uuid: z.uuid().nullable(),
+  team2_club_id: z.uuid().nullable(),
+  team2_color: z.string().nullable(),
+  team2_logo_uuid: z.uuid().nullable(),
+};
+
+/** Clubs des équipes d'une ligne (colonnes de `MATCH_CLUBS_COLUMNS`), en forme applicative. */
+export function toMatchClubs(row: {
+  team1_name: string;
+  team2_name: string | null;
+  team1_club_id: string;
+  team1_color: string | null;
+  team1_logo_uuid: string | null;
+  team2_club_id: string | null;
+  team2_color: string | null;
+  team2_logo_uuid: string | null;
+}): MatchClubs {
+  return {
+    team1Club: {
+      id: row.team1_club_id,
+      name: row.team1_name,
+      color: row.team1_color,
+      logoUuid: row.team1_logo_uuid,
+    },
+    team2Club:
+      row.team2_club_id === null || row.team2_name === null
+        ? null
+        : {
+            id: row.team2_club_id,
+            name: row.team2_name,
+            color: row.team2_color,
+            logoUuid: row.team2_logo_uuid,
+          },
+  };
+}

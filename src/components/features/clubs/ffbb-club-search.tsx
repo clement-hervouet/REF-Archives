@@ -25,6 +25,8 @@ type Props = {
   onManual: (notice: string | null) => void;
   /** Erreur du formulaire englobant (aucun club choisi), affichée sous le champ. */
   error?: string | null;
+  /** Libellé du bouton de sortie (par défaut : saisie manuelle du club). */
+  manualLabel?: string;
 };
 
 type Status =
@@ -44,7 +46,13 @@ function placeOf(hit: FfbbClubHit): string | null {
   return parts.length === 0 ? null : parts.join(" ");
 }
 
-export function FfbbClubSearch({ idBase, onPick, onManual, error = null }: Props) {
+export function FfbbClubSearch({
+  idBase,
+  onPick,
+  onManual,
+  error = null,
+  manualLabel = t.manual,
+}: Props) {
   const [city, setCity] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // Seule la dernière requête compte : une réponse plus ancienne est ignorée.
@@ -212,7 +220,7 @@ export function FfbbClubSearch({ idBase, onPick, onManual, error = null }: Props
         }}
         className="self-start text-sm font-medium text-primary underline underline-offset-2"
       >
-        {t.manual}
+        {manualLabel}
       </button>
     </div>
   );

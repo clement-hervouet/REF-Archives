@@ -11,6 +11,8 @@
  */
 import { z } from "zod";
 import { normalizePlace } from "@/lib/places";
+import { ffbbLinkSchema } from "@/lib/schemas/ffbb-link";
+import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
 
 const FFBB_API_URL = "https://ffbb-api.desimone.fr/api/v1";
 /** La recherche répond parfois en 5 à 7 s : au-delà de 10 s, on abandonne. */
@@ -84,6 +86,8 @@ export type FfbbClubDetails = {
   city: string | null;
   /** Autres salles où le club reçoit cette saison, de la plus utilisée à la moins utilisée. */
   venues: FfbbVenue[];
+  /** Identifiant FFBB, logo et couleur du club, enregistrés avec lui. */
+  ffbb: FfbbClubLink;
 };
 
 // ─── Mise en forme ──────────────────────────────────────────────────────────
@@ -342,8 +346,18 @@ const communeSchema = z
   .object({ codePostal: z.string().nullish(), libelle: z.string().nullish() })
   .nullish();
 
+/**
+ * Logo de la fiche : UUID de l'asset et couleur de fond. Absent pour près de la moitié des
+ * clubs ; illisible, il est ignoré sans refuser la fiche.
+ */
+const logoSchema = z
+  .object({ id: z.uuid(), gradient_color: z.string().nullish() })
+  .nullish()
+  .catch(null);
+
 const clubResponseSchema = z.object({
   nom: z.string().trim().min(1),
+  logo: logoSchema,
   adresse: z.string().nullish(),
   commune: communeSchema,
   salle: z
@@ -433,6 +447,17 @@ function mainVenueOf(club: z.output<typeof clubResponseSchema>): FfbbVenue | nul
   };
 }
 
+/** Lien FFBB du club : une couleur mal formée est abandonnée, le logo gardé. */
+function ffbbLinkOf(id: string, club: z.output<typeof clubResponseSchema>): FfbbClubLink {
+  const logoUuid = club.logo?.id ?? null;
+  const parsed = ffbbLinkSchema.safeParse({
+    id,
+    logoUuid,
+    color: club.logo?.gradient_color ?? null,
+  });
+  return parsed.success ? parsed.data : { id, logoUuid, color: null };
+}
+
 /**
  * Le club `id` et ses salles. Salle principale : celle de sa fiche FFBB, sinon celle où il
  * reçoit le plus, sinon son siège. Fiche et matchs sont lus en même temps ; seule la
@@ -462,6 +487,7 @@ export async function getFfbbClub(
   }
   const club = parsed.data;
   const name = cleanText(club.nom, 255) ?? club.nom;
+  const ffbb = ffbbLinkOf(id, club);
   const main = mainVenueOf(club) ?? homeVenues[0] ?? null;
   if (main === null) {
     return {
@@ -473,6 +499,7 @@ export async function getFfbbClub(
         postalCode: postalCodeOf(club.commune?.codePostal),
         city: cityOf(club.commune?.libelle),
         venues: [],
+        ffbb,
       },
     };
   }
@@ -484,6 +511,7 @@ export async function getFfbbClub(
       venue,
       ...address,
       venues: homeVenues.filter((other) => !isSameVenue(other, main)).slice(0, MAX_OTHER_VENUES),
+      ffbb,
     },
   };
 }

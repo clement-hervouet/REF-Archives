@@ -6,6 +6,7 @@ import {
   handleCreateClub,
   handleDeleteClub,
   handleRemoveClubVenue,
+  handleSetClubFfbbLink,
   handleSetMainClubVenue,
   handleUpdateClub,
   readClubFormData,
@@ -16,6 +17,7 @@ const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
 const CLUB_ID = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 const ADDRESS_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
 const VENUE_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b02";
+const LOGO = "02175814-01ac-441c-a86a-2f4a9b80b1e0";
 
 const BEAUREGARD = {
   name: "Gymnase de Beauregard",
@@ -82,6 +84,9 @@ describe("handleCreateClub", () => {
       null,
       null,
       1000,
+      null,
+      null,
+      null,
     ]);
     expect(query).toHaveBeenCalledTimes(1);
   });
@@ -116,6 +121,28 @@ describe("handleCreateClub", () => {
     ]);
     expect(query.mock.calls[2]?.[0]).toContain("INSERT INTO club_venue");
     expect(query.mock.calls[2]?.[1]).toEqual([CLUB_ID, VENUE_ID, USER_ID, 19]);
+  });
+
+  it("enregistre le lien FFBB du club choisi, et ignore un lien illisible", async () => {
+    const linked = setup();
+    linked.query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
+    await handleCreateClub(
+      linked.deps,
+      USER_ID,
+      formData({ ...FULL, ffbb: JSON.stringify({ id: "9326", logoUuid: LOGO, color: "#EB6D88" }) }),
+    );
+    expect(linked.query.mock.calls[0]?.[1]?.slice(9)).toEqual(["9326", LOGO, "#eb6d88"]);
+
+    const broken = setup();
+    broken.query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
+    expect(
+      await handleCreateClub(
+        broken.deps,
+        USER_ID,
+        formData({ ...FULL, ffbb: JSON.stringify({ id: "x", logoUuid: "../", color: null }) }),
+      ),
+    ).toEqual({ status: "created" });
+    expect(broken.query.mock.calls[0]?.[1]?.slice(9)).toEqual([null, null, null]);
   });
 
   it("accepte les salles cochées telles que la liste les envoie (champs inconnus à null)", async () => {
@@ -437,5 +464,44 @@ describe("handleSetMainClubVenue", () => {
       ),
     ).toEqual({ status: "not_found" });
     expect(query).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("handleSetClubFfbbLink", () => {
+  it("lie un club de l'utilisateur à l'annuaire FFBB", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
+    expect(
+      await handleSetClubFfbbLink(deps, USER_ID, {
+        clubId: CLUB_ID,
+        link: { id: "9326", logoUuid: LOGO, color: "#263a5d" },
+      }),
+    ).toEqual({ status: "linked" });
+    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID, "9326", LOGO, "#263a5d"]);
+    // L'ancien logo enregistré part s'il ne correspond plus.
+    expect(query.mock.calls[0]?.[0]).toContain("DELETE FROM club_logo");
+  });
+
+  it("retire le lien", async () => {
+    const { deps, query } = setup();
+    query.mockResolvedValueOnce({ rows: [{ id: CLUB_ID }] });
+    expect(await handleSetClubFfbbLink(deps, USER_ID, { clubId: CLUB_ID, link: null })).toEqual({
+      status: "unlinked",
+    });
+    expect(query.mock.calls[0]?.[1]).toEqual([CLUB_ID, USER_ID, null, null, null]);
+  });
+
+  it("refuse un argument mal formé, et répond introuvable pour le club d'un autre", async () => {
+    const { deps, query } = setup();
+    expect(
+      await handleSetClubFfbbLink(deps, USER_ID, {
+        clubId: CLUB_ID,
+        link: { id: "9326", logoUuid: "https://exemple.fr/logo.svg", color: null },
+      }),
+    ).toEqual({ status: "invalid" });
+    expect(query).not.toHaveBeenCalled();
+    expect(await handleSetClubFfbbLink(deps, USER_ID, { clubId: CLUB_ID, link: null })).toEqual({
+      status: "not_found",
+    });
   });
 });

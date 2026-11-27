@@ -19,13 +19,16 @@ import {
 import type { CupRound } from "./divisions";
 import {
   MATCH_ADDRESS_COLUMNS,
+  MATCH_CLUBS_COLUMNS,
+  matchClubsFields,
   matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
   toMatchAddress,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchAddress, MatchDivision } from "./match-info";
+import type { MatchAddress, MatchClubs, MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Limite anti-abus (application potentiellement publique) ; borne aussi le flux iCal. */
@@ -199,17 +202,18 @@ export type CompensationAmountRow = {
   payer: Payer | null;
 };
 
-export type CompensationListItem = CompensationAmountRow & {
-  id: string;
-  division: MatchDivision;
-  team1Name: string;
-  /** `null` pour un plateau (club organisateur seul, §15.4.7). */
-  team2Name: string | null;
-  address: MatchAddress;
-  scaleName: string;
-  /** Match complet lié (bloc 9), s'il existe. */
-  gameId: string | null;
-};
+export type CompensationListItem = CompensationAmountRow &
+  MatchClubs & {
+    id: string;
+    division: MatchDivision;
+    team1Name: string;
+    /** `null` pour un plateau (club organisateur seul, §15.4.7). */
+    team2Name: string | null;
+    address: MatchAddress;
+    scaleName: string;
+    /** Match complet lié (bloc 9), s'il existe. */
+    gameId: string | null;
+  };
 
 /** Valeurs d'une indemnité pour préremplir le formulaire de modification. */
 export type CompensationForEdit = {
@@ -255,6 +259,7 @@ const LIST_IN_RANGE_SQL = `SELECT c.id, c.starts_at, c.distance_m, c.travel_shar
   COALESCE(c.game_count, 1) AS game_count, c.game_id, c.paid_on::text AS paid_on,
   c.payer AS payer_override,
   ${matchPartiesColumns("c")},
+  ${MATCH_CLUBS_COLUMNS},
   ${MATCH_ADDRESS_COLUMNS}, a.country,
   s.name AS scale_name, COALESCE(c.plateau_game_cents, r.game_amount_cents) AS game_amount_cents,
   r.cents_per_km::text AS cents_per_km
@@ -301,6 +306,7 @@ const listItemRowSchema = amountRowSchema.extend({
   city: z.string().nullable(),
   scale_name: z.string(),
   game_id: z.uuid().nullable(),
+  ...matchClubsFields,
 });
 
 const editRowSchema = z.object({
@@ -362,6 +368,7 @@ export async function listCompensationsInRange(
       address: toMatchAddress(row),
       scaleName: row.scale_name,
       gameId: row.game_id,
+      ...toMatchClubs(row),
     };
   });
 }

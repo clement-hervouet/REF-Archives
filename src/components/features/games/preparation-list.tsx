@@ -3,6 +3,7 @@
  * classement abrégé de chaque équipe (avec « déjà arbitrée ») et « Observé ». Les textes
  * restent sur la page de la préparation.
  */
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import Link from "next/link";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { matchLevelLabel } from "@/components/features/scales/division-label";
@@ -48,15 +49,18 @@ function PreparationCard({ item }: { item: PreparationListItem }) {
       <MatchDate startsAt={item.startsAt} />
 
       <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="font-semibold break-words">
-          <Link
-            href={href}
-            aria-label={`${teams}, ${t.openLabel.replace("{date}", date)}`}
-            className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
-          >
-            {teams}
-          </Link>
-        </h2>
+        <div className="flex items-center gap-3">
+          <MatchClubBadges team1={item.team1Club} team2={item.team2Club} />
+          <h2 className="min-w-0 font-semibold break-words">
+            <Link
+              href={href}
+              aria-label={`${teams}, ${t.openLabel.replace("{date}", date)}`}
+              className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
+            >
+              {teams}
+            </Link>
+          </h2>
+        </div>
         <p className="text-sm text-muted-foreground">{matchLevelLabel(item.division)}</p>
         {item.sharedBy !== null && (
           <p className="text-sm text-muted-foreground">

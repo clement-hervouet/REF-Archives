@@ -45,6 +45,7 @@ const ADDRESSES_SQL = list(`SELECT json_agg(json_build_object(
 
 const CLUBS_SQL = list(`SELECT json_agg(json_build_object(
     'id', c.id, 'name', c.name, 'licence', c.licence, 'addressId', c.address_id,
+    'ffbbId', c.ffbb_id, 'ffbbLogoUuid', c.ffbb_logo_uuid, 'color', c.color,
     'otherVenueAddressIds', ${list(`SELECT json_agg(v.address_id ORDER BY v.created_at, v.address_id)
       FROM club_venue v WHERE v.club_id = c.id AND v.user_id = c.user_id`)},
     'correspondentId', c.correspondent_id, 'createdAt', c.created_at, 'updatedAt', c.updated_at)

@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { MAX_CLUB_VENUES } from "@/lib/schemas/compensations";
 import type { ClubVenue, NewClubChoice } from "@/lib/schemas/compensations";
+import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
 import { MAX_COMPENSATIONS_PER_USER } from "./compensations";
 import { cupRoundSchema } from "./divisions";
 import type { CupRound } from "./divisions";
@@ -181,8 +182,8 @@ const INSERT_CLUB_SQL = `WITH allowed AS (
   SELECT (SELECT count(*) FROM club WHERE user_id = $1::uuid) < $4::integer AS ok
 ),
 inserted AS (
-  INSERT INTO club (user_id, address_id, name)
-  SELECT $1::uuid, $2::uuid, $3::text FROM allowed WHERE ok
+  INSERT INTO club (user_id, address_id, name, ffbb_id, ffbb_logo_uuid, color)
+  SELECT $1::uuid, $2::uuid, $3::text, $5::text, $6::uuid, $7::text FROM allowed WHERE ok
   RETURNING id
 )
 SELECT (SELECT id FROM inserted) AS id`;
@@ -196,19 +197,25 @@ FOR UPDATE`;
 
 const lockedClubRowSchema = z.object({ id: z.uuid(), address_id: z.uuid() });
 
+/** Colonnes `ffbb_id`, `ffbb_logo_uuid` et `color` d'un club, dans cet ordre. */
+export function ffbbLinkParams(link: FfbbClubLink | null | undefined): (string | null)[] {
+  return [link?.id ?? null, link?.logoUuid ?? null, link?.color ?? null];
+}
+
 /**
- * Crée un club (sans numéro d'affiliation, facultatif). `null` si l'utilisateur a
- * atteint la limite de clubs.
+ * Crée un club (sans numéro d'affiliation, facultatif), avec son lien FFBB s'il a été
+ * choisi dans l'annuaire. `null` si l'utilisateur a atteint la limite de clubs.
  */
 export async function insertClub(
   db: Queryable,
-  input: { userId: string; name: string; addressId: string },
+  input: { userId: string; name: string; addressId: string; ffbb?: FfbbClubLink | null },
 ): Promise<string | null> {
   const result = await db.query(INSERT_CLUB_SQL, [
     input.userId,
     input.addressId,
     input.name,
     MAX_CLUBS_PER_USER,
+    ...ffbbLinkParams(input.ffbb),
   ]);
   return nullableIdRowSchema.parse(result.rows[0]).id;
 }
@@ -224,7 +231,12 @@ export async function insertNewClub(
 ): Promise<LockedClub | null> {
   const { userId, club } = input;
   const addressId = await findOrInsertAddress(db, { userId, address: newClubAddress(club) });
-  const clubId = await insertClub(db, { userId, name: club.name, addressId });
+  const clubId = await insertClub(db, {
+    userId,
+    name: club.name,
+    addressId,
+    ffbb: club.ffbb ?? null,
+  });
   if (clubId === null) {
     return null;
   }

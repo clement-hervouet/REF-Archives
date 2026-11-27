@@ -2,6 +2,7 @@ import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import { ConfirmActionButton } from "@/components/features/games/confirm-action-button";
 import { NoteForm } from "@/components/features/games/note-form";
 import { OfficialsForm } from "@/components/features/games/officials-form";
@@ -78,9 +79,12 @@ export default async function GamePage(props: GamePageProps) {
       <section className="grid gap-x-5 gap-y-3 rounded-md border border-border p-4 md:grid-cols-[5.5rem_minmax(0,1fr)_auto]">
         <MatchDate startsAt={game.startsAt} />
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold break-words">
-            {withTeams(t.detail.title, game.team1Name, game.team2Name)}
-          </h1>
+          <div className="flex items-center gap-3">
+            <MatchClubBadges team1={game.team1Club} team2={game.team2Club} />
+            <h1 className="min-w-0 text-2xl font-semibold break-words">
+              {withTeams(t.detail.title, game.team1Name, game.team2Name)}
+            </h1>
+          </div>
           <p className="break-words">
             {t.detail.details
               .replace("{division}", matchLevelLabel(game.division))

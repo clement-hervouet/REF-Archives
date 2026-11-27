@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import { addressLabel } from "@/components/features/compensations/address-label";
 import { MatchDate } from "@/components/features/compensations/match-date";
 import { ConfirmActionButton } from "@/components/features/games/confirm-action-button";
@@ -85,9 +86,12 @@ export default async function PreparationPage(props: PreparationPageProps) {
         <MatchDate startsAt={game.startsAt} />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-sm text-muted-foreground">{t.form.title}</p>
-          <PageTitle className="break-words">
-            {withTeams(t.teams, game.team1Name, game.team2Name)}
-          </PageTitle>
+          <div className="flex items-center gap-3">
+            <MatchClubBadges team1={game.team1Club} team2={game.team2Club} />
+            <PageTitle className="min-w-0 break-words">
+              {withTeams(t.teams, game.team1Name, game.team2Name)}
+            </PageTitle>
+          </div>
           <p className="break-words">
             {fr.games.detail.details
               .replace("{division}", matchLevelLabel(game.division))

@@ -12,14 +12,17 @@ import { z } from "zod";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
 import {
   MATCH_ADDRESS_COLUMNS,
+  MATCH_CLUBS_COLUMNS,
   matchAddressFields,
+  matchClubsFields,
   matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
   toMatchAddress,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchAddress, MatchDivision } from "./match-info";
+import type { MatchAddress, MatchClubs, MatchDivision } from "./match-info";
 import { PREPARATION_COLUMNS, toPreparation } from "./preparations";
 import type { Preparation, PreparationListItem, PreparationsPage } from "./preparations";
 import type { PreparationForm } from "@/lib/schemas/preparations";
@@ -199,6 +202,7 @@ export async function leaveShare(
 // ─── Destinataire : en-tête du match ────────────────────────────────────────
 
 const FIND_RECIPIENT_GAME_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
+  ${MATCH_CLUBS_COLUMNS},
   ${MATCH_ADDRESS_COLUMNS},
   s.owner_user_id, s.team1_already_refereed, s.team2_already_refereed,
   owner.firstname AS owner_firstname, owner.lastname AS owner_lastname,
@@ -214,6 +218,7 @@ const recipientGameRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   ...matchAddressFields,
   owner_user_id: z.uuid(),
   ...checksFields,
@@ -222,8 +227,11 @@ const recipientGameRowSchema = z.object({
   has_observer: z.boolean(),
 });
 
-/** Match partagé tel que le voit le destinataire : en lecture seule. */
-export type RecipientGame = {
+/**
+ * Match partagé tel que le voit le destinataire : en lecture seule. Les clubs sont ceux du
+ * propriétaire ; leurs logos restent lisibles par le destinataire tant que le partage vaut.
+ */
+export type RecipientGame = MatchClubs & {
   id: string;
   startsAt: Date;
   division: MatchDivision;
@@ -252,6 +260,7 @@ export async function findRecipientGame(
     id: row.id,
     startsAt: row.starts_at,
     ...toMatchParties(row),
+    ...toMatchClubs(row),
     address: toMatchAddress(row),
     owner: {
       userId: row.owner_user_id,
@@ -483,6 +492,7 @@ const SHARED_PAGE_SIZE = 30;
 // Matchs partagés avec le destinataire, préparation écrite ou non (il peut la commencer).
 // Filtres de niveau seulement : les clubs du propriétaire ne sont pas ceux du destinataire.
 const LIST_RECIPIENT_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
+  ${MATCH_CLUBS_COLUMNS},
   owner.firstname AS owner_firstname, owner.lastname AS owner_lastname,
   p.team_count, p.team1_rank, p.team1_wins, p.team1_losses,
   p.team2_rank, p.team2_wins, p.team2_losses, coalesce(p.observed, false) AS observed,
@@ -505,6 +515,7 @@ const recipientListRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   owner_firstname: z.string().nullable(),
   owner_lastname: z.string().nullable(),
   team_count: smallint,
@@ -539,6 +550,7 @@ export async function listRecipientPreparations(
       gameId: row.id,
       startsAt: row.starts_at,
       ...toMatchParties(row),
+      ...toMatchClubs(row),
       teamCount: row.team_count,
       team1: {
         rank: row.team1_rank,

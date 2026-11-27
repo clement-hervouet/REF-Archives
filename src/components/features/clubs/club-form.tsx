@@ -22,11 +22,12 @@ import { useScaleForm } from "@/components/features/scales/use-scale-form";
 import { fr } from "@/i18n/fr";
 import type { ClubField } from "@/lib/schemas/clubs";
 import type { ClubVenue } from "@/lib/schemas/compensations";
+import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
 import type { ClubFormState } from "@/server/clubs/manage-clubs";
 import type { FfbbClubDetails } from "@/server/ffbb/ffbb-clubs";
 import { clubFieldError, clubStatusMessage } from "./club-messages";
 import { FfbbClubSearch } from "./ffbb-club-search";
-import { keptVenues } from "./new-club-fields";
+import { keptFfbbLink, keptVenues } from "./new-club-fields";
 import { VenueChecklist } from "./venue-checklist";
 
 const t = fr.clubs;
@@ -68,6 +69,8 @@ type AddStep = {
   venues: readonly ClubVenue[];
   /** Ville du club choisi : ses salles sont cochées au départ (`null` : toutes). */
   homeCity: string | null;
+  /** Lien FFBB du club choisi (logo, couleur), envoyé avec la fiche. */
+  ffbb: FfbbClubLink | null;
   notice: string | null;
   /** Remonte la fiche à chaque pré-remplissage (champs non contrôlés). */
   version: number;
@@ -107,6 +110,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
     prefill: null,
     venues: [],
     homeCity: null,
+    ffbb: null,
     notice: null,
     version: 0,
   });
@@ -121,6 +125,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
           venues: state.status === "created" ? [] : keptVenues(valueOf("venues")),
           // Ajout refusé : seules les salles cochées reviennent, toutes cochées.
           homeCity: null,
+          ffbb: state.status === "created" ? null : keptFfbbLink(valueOf("ffbb")),
           notice: null,
           version: addStep.version + 1,
         };
@@ -129,6 +134,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
     prefill: AddStep["prefill"],
     venues: AddStep["venues"],
     homeCity: string | null,
+    ffbb: FfbbClubLink | null,
     notice: string | null,
   ) => {
     setAddStep({
@@ -137,6 +143,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
       prefill,
       venues,
       homeCity,
+      ffbb,
       notice,
       version: current.version + 1,
     });
@@ -170,11 +177,12 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
                 prefillOf(club),
                 club.venues,
                 club.city,
+                club.ffbb,
                 club.postalCode === null ? t.ffbb.missingPostalCode : t.ffbb.prefilled,
               );
             }}
             onManual={(notice) => {
-              showForm(null, [], null, notice);
+              showForm(null, [], null, null, notice);
             }}
           />
         </div>
@@ -195,6 +203,7 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
                 prefill: null,
                 venues: [],
                 homeCity: null,
+                ffbb: null,
                 notice: null,
               });
             }}
@@ -212,6 +221,9 @@ export function ClubForm({ action, initialValues, labels, onSuccess, onCancel }:
           className="@container flex max-w-3xl flex-col gap-3"
         >
           {editing && <input type="hidden" name="clubId" value={valueOf("clubId")} />}
+          {!editing && current.ffbb !== null && (
+            <input type="hidden" name="ffbb" value={JSON.stringify(current.ffbb)} />
+          )}
           <div className="grid gap-3 @md:grid-cols-[minmax(0,1fr)_8rem]">
             {field("name")}
             {field("postalCode")}
