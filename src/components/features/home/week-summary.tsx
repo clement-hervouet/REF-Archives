@@ -1,7 +1,6 @@
 /**
  * Matchs de la semaine en cours sur l'accueil, d'aujourd'hui au dimanche (matchs de semaine
- * compris) : version courte de « À venir ». Mêmes cartes, avec la date en légende sur la
- * bordure, sans adresse, et le menu « ⋯ » en bulle dans le coin (« Itinéraire » compris).
+ * compris) : version courte de « À venir », avec les mêmes cartes.
  */
 import Link from "next/link";
 import { UpcomingMatchList } from "@/components/features/reminders/upcoming-match-list";
@@ -38,12 +37,7 @@ export function WeekSummary({ sunday, today, matches, prepareAction }: Props) {
       {matches.length === 0 ? (
         <p className="rounded-md border border-border p-4">{fr.reminders.home.weekNone}</p>
       ) : (
-        <UpcomingMatchList
-          matches={matches}
-          today={today}
-          variant="home"
-          prepareAction={prepareAction}
-        />
+        <UpcomingMatchList matches={matches} today={today} prepareAction={prepareAction} />
       )}
 
       <Link href={UPCOMING_PATH} className="inline-flex min-h-11 items-center self-start underline">
