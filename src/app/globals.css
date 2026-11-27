@@ -43,6 +43,8 @@
   --success: #03a752;
   --warning: #f4ad0b;
   --warning-foreground: #08335b;
+  /* Texte jaune lisible (« Annuler le paiement ») : ocre sur fond clair, 5,9:1. */
+  --warning-text: #8a5a00;
   --border: #d5dde6;
   --input: #8796a8;
   --ring: #08335b;
@@ -108,6 +110,8 @@
   --success: #03a752;
   --warning: #f4ad0b;
   --warning-foreground: #08335b;
+  /* Le jaune lui-même, lisible sur le fond sombre. */
+  --warning-text: #f4ad0b;
   --border: #1d3956;
   --input: #5d7a99;
   --ring: #9db0c4;
@@ -163,6 +167,7 @@
     --success: #03a752;
     --warning: #f4ad0b;
     --warning-foreground: #08335b;
+    --warning-text: #f4ad0b;
     --border: #1d3956;
     --input: #5d7a99;
     --ring: #9db0c4;
@@ -244,6 +249,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-text: var(--warning-text);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
