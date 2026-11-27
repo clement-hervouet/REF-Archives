@@ -6,7 +6,7 @@ import { withTeams } from "@/lib/match-teams";
 import { fr } from "@/i18n/fr";
 import { formatRoundTripKm } from "@/lib/distance";
 import { gamesAmountText } from "./compensation-messages";
-import { formatCents, formatIsoDate, formatWeekdayDateTime } from "@/lib/format";
+import { formatCents, formatWeekdayDateTime } from "@/lib/format";
 import { payerLabel } from "@/lib/payers";
 import { cn } from "@/lib/utils";
 import type { CompensationPreview } from "@/server/compensation/preview";
@@ -80,11 +80,7 @@ export function CompensationRecap({ input, preview, className }: Props) {
                 .replace("{distance}", formatRoundTripKm(amount.distanceM))}
             </p>
             {input.scaleName !== null && (
-              <p className="text-sm text-muted-foreground">
-                {t.rateLine
-                  .replace("{scale}", input.scaleName)
-                  .replace("{date}", formatIsoDate(amount.effectiveFrom))}
-              </p>
+              <p className="text-sm text-muted-foreground">{input.scaleName}</p>
             )}
           </>
         ) : amount.status === "no_rate" ? (

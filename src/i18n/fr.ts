@@ -751,7 +751,6 @@ export const fr = {
       detailShared: "Match {game}, déplacement déjà compté sur l'autre match (doublé)",
       /** Plateau (§15.4.7) : montant des matchs détaillé, à la place de {game}. */
       plateauGames: "{total} ({count} × {unit})",
-      rateLine: "{scale}, montants en vigueur depuis le {date}",
     },
     payers: {
       title: "Par organisme",
@@ -779,7 +778,6 @@ export const fr = {
     },
     edit: {
       title: "Modifier l'indemnité",
-      intro: "Changer la date du match peut changer la ligne de barème appliquée, donc le montant.",
       submit: "Enregistrer les modifications",
       submitting: "Enregistrement…",
       updated: "Indemnité modifiée : {total} (match {game} + kilométrage {mileage}).",
@@ -838,8 +836,6 @@ export const fr = {
       scaleHint: "Présélectionné selon le niveau. Vous pouvez en choisir un autre.",
       payer: "Organisme qui verse l'indemnité",
       payerAuto: "Automatique",
-      payerHint:
-        "Automatique : comité du département pour un match départemental, ligue de la région pour un match régional, Fédération au-delà. À changer pour une coupe ou un match délocalisé.",
       payerFederation: "Fédération",
       payerLeagues: "Ligues régionales",
       payerCommittees: "Comités départementaux",
@@ -869,8 +865,6 @@ export const fr = {
         "L'adresse du nouveau club de l'équipe 1 sera utilisée (à compléter dans Clubs si seul son code postal est connu).",
       distance: "Distance aller (km)",
       distanceOptional: "Distance aller (km, facultative)",
-      distanceHint:
-        "Un seul trajet, par exemple 23 ou 23,5 : l'aller-retour est compté automatiquement.",
       travelShared: "Doublé : le déplacement est déjà compté sur un autre match",
       travelSharedHint:
         "Deux matchs le même jour au même endroit : le kilométrage n'est versé qu'une fois. Cochez la case sur le second match : la distance devient facultative.",
