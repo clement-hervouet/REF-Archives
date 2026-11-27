@@ -17,6 +17,8 @@ import { fr } from "@/i18n/fr";
 import { isSameCity } from "@/lib/places";
 import { clubVenuesSchema } from "@/lib/schemas/compensations";
 import type { ClubVenue } from "@/lib/schemas/compensations";
+import { ffbbLinkSchema } from "@/lib/schemas/ffbb-link";
+import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
 import type { FfbbClubDetails } from "@/server/ffbb/ffbb-clubs";
 import { FfbbClubSearch } from "./ffbb-club-search";
 import { OtherVenues } from "./other-venues";
@@ -25,7 +27,7 @@ const t = fr.clubs.ffbb;
 
 /**
  * Noms des champs HTML envoyés au serveur : `venue`, nom de la salle principale ;
- * `venues`, autres salles du club (liste JSON).
+ * `venues`, autres salles du club (liste JSON) ; `ffbb`, son lien FFBB (logo, couleur, JSON).
  */
 type NewClubInputNames = {
   name: string;
@@ -35,6 +37,7 @@ type NewClubInputNames = {
   city: string;
   venue: string;
   venues: string;
+  ffbb: string;
 };
 
 type PickedClub = {
@@ -45,6 +48,7 @@ type PickedClub = {
   postalCode: string;
   city: string | null;
   venues: readonly ClubVenue[];
+  ffbb: FfbbClubLink | null;
 };
 
 type Mode =
@@ -85,6 +89,19 @@ export function keptVenues(value: string): ClubVenue[] {
   }
 }
 
+/** Lien FFBB conservé après un envoi refusé ; illisible, il est ignoré. */
+export function keptFfbbLink(value: string): FfbbClubLink | null {
+  if (value === "") {
+    return null;
+  }
+  try {
+    const parsed = ffbbLinkSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Mode au montage, d'après les valeurs conservées après un envoi refusé. */
 function initialMode(
   names: NewClubInputNames,
@@ -109,6 +126,7 @@ function initialMode(
         number: orNull(valueOf(names.number)),
         venue: orNull(valueOf(names.venue)),
         venues: keptVenues(valueOf(names.venues)),
+        ffbb: keptFfbbLink(valueOf(names.ffbb)),
       },
     };
   }
@@ -184,6 +202,9 @@ export function NewClubFields({ idBase, names, labels, valueOf, errors, onResolv
         <input type="hidden" name={names.city} value={club.city ?? ""} />
         <input type="hidden" name={names.venue} value={club.venue ?? ""} />
         <input type="hidden" name={names.venues} value={JSON.stringify(club.venues)} />
+        {club.ffbb !== null && (
+          <input type="hidden" name={names.ffbb} value={JSON.stringify(club.ffbb)} />
+        )}
         {backToSearch(t.change)}
       </div>
     );

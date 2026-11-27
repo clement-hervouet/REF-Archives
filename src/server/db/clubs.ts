@@ -14,7 +14,8 @@
 import { z } from "zod";
 import { MAX_CLUB_VENUES } from "@/lib/schemas/compensations";
 import type { ClubFormValue } from "@/lib/schemas/clubs";
-import { MAX_CLUBS_PER_USER, insertClubVenues } from "./compensation-writes";
+import type { FfbbClubLink } from "@/lib/schemas/ffbb-link";
+import { MAX_CLUBS_PER_USER, ffbbLinkParams, insertClubVenues } from "./compensation-writes";
 import type { Queryable } from "./users";
 
 export type AddressSummary = {
@@ -38,6 +39,8 @@ export type ClubSummary = {
   address: AddressSummary;
   /** Autres salles du club, par nom puis par ville. */
   venues: readonly AddressSummary[];
+  /** Lien avec l'annuaire FFBB (logo, couleur), `null` pour un club saisi à la main. */
+  ffbb: FfbbClubLink | null;
 };
 
 const addressRowSchema = z.object({
@@ -53,6 +56,9 @@ const addressRowSchema = z.object({
 const clubRowSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  ffbb_id: z.string().nullable(),
+  ffbb_logo_uuid: z.uuid().nullable(),
+  color: z.string().nullable(),
   address_id: z.uuid(),
   venue_name: z.string().nullable(),
   street: z.string().nullable(),
@@ -64,7 +70,7 @@ const clubRowSchema = z.object({
 
 const clubVenueRowSchema = addressRowSchema.extend({ club_id: z.uuid() });
 
-const LIST_CLUBS_SQL = `SELECT c.id, c.name, a.id AS address_id, a.name AS venue_name, a.street, a.number,
+const LIST_CLUBS_SQL = `SELECT c.id, c.name, c.ffbb_id, c.ffbb_logo_uuid, c.color, a.id AS address_id, a.name AS venue_name, a.street, a.number,
   a.postal_code, a.city, a.country
 FROM club c
 JOIN address a ON a.id = c.address_id AND a.user_id = c.user_id
@@ -116,6 +122,10 @@ export async function listClubs(db: Queryable, userId: string): Promise<ClubSumm
       name: row.name,
       address: toAddress({ ...row, id: row.address_id, name: row.venue_name }),
       venues: venuesByClub.get(row.id) ?? [],
+      ffbb:
+        row.ffbb_id === null
+          ? null
+          : { id: row.ffbb_id, logoUuid: row.ffbb_logo_uuid, color: row.color },
     };
   });
 }
@@ -154,8 +164,8 @@ new_address AS (
   RETURNING id
 ),
 new_club AS (
-  INSERT INTO club (user_id, address_id, name)
-  SELECT $1::uuid, new_address.id, $2::text FROM new_address
+  INSERT INTO club (user_id, address_id, name, ffbb_id, ffbb_logo_uuid, color)
+  SELECT $1::uuid, new_address.id, $2::text, $10::text, $11::uuid, $12::text FROM new_address
   RETURNING id
 )
 SELECT (SELECT id FROM new_club) AS id`;
@@ -235,6 +245,7 @@ export async function insertClubWithAddress(
     input.userId,
     ...clubParams(input.club),
     MAX_CLUBS_PER_USER,
+    ...ffbbLinkParams(input.club.ffbb),
   ]);
   const clubId = nullableIdRowSchema.parse(result.rows[0]).id;
   if (clubId !== null && input.club.venues.length > 0) {
@@ -277,6 +288,38 @@ export async function deleteClub(
     return "deleted";
   }
   return (await isOwnedClub(db, input)) ? "in_use" : "not_found";
+}
+
+// ─── Lien avec l'annuaire FFBB (onglet « Clubs ») ───────────────────────────
+
+// Le logo enregistré part s'il ne correspond plus : il sera retéléchargé à l'affichage.
+const SET_FFBB_LINK_SQL = `WITH updated AS (
+  UPDATE club SET ffbb_id = $3, ffbb_logo_uuid = $4, color = $5
+  WHERE id = $1 AND user_id = $2
+  RETURNING id, user_id, ffbb_logo_uuid
+),
+dropped AS (
+  DELETE FROM club_logo l
+  USING updated u
+  WHERE l.club_id = u.id AND l.user_id = u.user_id
+    AND l.logo_uuid IS DISTINCT FROM u.ffbb_logo_uuid
+)
+SELECT id FROM updated`;
+
+/**
+ * Lie un club de l'utilisateur à l'annuaire FFBB (identifiant, logo, couleur), ou retire
+ * ce lien (`null`). Faux si le club est introuvable.
+ */
+export async function setClubFfbbLink(
+  db: Queryable,
+  input: { userId: string; clubId: string; link: FfbbClubLink | null },
+): Promise<boolean> {
+  const result = await db.query(SET_FFBB_LINK_SQL, [
+    input.clubId,
+    input.userId,
+    ...ffbbLinkParams(input.link),
+  ]);
+  return result.rows.length > 0;
 }
 
 // ─── Salles d'un club (onglet « Clubs ») ────────────────────────────────────

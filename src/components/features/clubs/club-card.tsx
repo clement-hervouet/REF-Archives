@@ -13,6 +13,7 @@ import { isCompleteAddress, venueLabel } from "@/components/features/compensatio
 import { fr } from "@/i18n/fr";
 import type { ClubFormState, DeleteClubState } from "@/server/clubs/manage-clubs";
 import type { ClubSummary } from "@/server/db/clubs";
+import { ClubFfbbLink } from "./club-ffbb-link";
 import { ClubForm } from "./club-form";
 import { ClubVenues } from "./club-venues";
 import type { ClubVenueActions } from "./club-venues";
@@ -88,6 +89,7 @@ export function ClubCard({ club, updateAction, deleteAction, venueActions }: Pro
           {t.edit.updated}
         </p>
       )}
+      <ClubFfbbLink club={club} />
       <ClubVenues club={club} actions={venueActions} />
       {editing && (
         <div id={formId} className="border-t border-border pt-3">

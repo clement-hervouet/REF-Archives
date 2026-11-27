@@ -94,6 +94,12 @@ describe("readCompensationFormData", () => {
         team1City: "Béthune",
         team1Venue: "Salle Bertinchamps",
         team1Venues: JSON.stringify([{ name: "Gymnase Jean Moulin", postalCode: "62400" }]),
+        // Et son lien FFBB : logo et couleur (pastille).
+        team1Ffbb: JSON.stringify({
+          id: "9326",
+          logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0",
+          color: "#263A5D",
+        }),
         venueException: "on",
         venueAddress: "new",
         venueName: "Salle Pierre de Coubertin",
@@ -112,6 +118,8 @@ describe("readCompensationFormData", () => {
       city: "Béthune",
       venueName: "Salle Bertinchamps",
       venues: [{ name: "Gymnase Jean Moulin", postalCode: "62400" }],
+      // Lu tel quel : le schéma valide et met la couleur en minuscules ensuite.
+      ffbb: { id: "9326", logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0", color: "#263A5D" },
     });
     expect(data.venue).toEqual({
       kind: "new",

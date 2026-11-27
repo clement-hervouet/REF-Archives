@@ -39,6 +39,7 @@ const DATA: CompensationFormData = {
         country: null,
       },
       venues: [],
+      ffbb: null,
     },
     {
       id: CLUB_B,
@@ -53,6 +54,7 @@ const DATA: CompensationFormData = {
         country: null,
       },
       venues: [],
+      ffbb: null,
     },
   ],
   addresses: [

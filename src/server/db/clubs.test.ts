@@ -17,6 +17,9 @@ describe("listClubs", () => {
           {
             id: CLUB_ID,
             name: "BC Béthune",
+            ffbb_id: "9326",
+            ffbb_logo_uuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0",
+            color: "#263a5d",
             address_id: ADDRESS_ID,
             venue_name: "Salle Bertinchamps",
             street: "Avenue du Sport",
@@ -28,6 +31,9 @@ describe("listClubs", () => {
           {
             id: OTHER_CLUB_ID,
             name: "ES Arras",
+            ffbb_id: null,
+            ffbb_logo_uuid: null,
+            color: null,
             address_id: ADDRESS_ID,
             venue_name: null,
             street: null,
@@ -76,8 +82,10 @@ describe("listClubs", () => {
           country: null,
         },
       ],
+      ffbb: { id: "9326", logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0", color: "#263a5d" },
     });
     expect(clubs[1]?.venues).toEqual([]);
+    expect(clubs[1]?.ffbb).toBeNull();
     expect(query.mock.calls[0]?.[1]).toEqual([USER_ID]);
     expect(query.mock.calls[1]?.[0]).toContain("FROM club_venue");
     expect(query.mock.calls[1]?.[1]).toEqual([USER_ID]);

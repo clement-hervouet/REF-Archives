@@ -6,19 +6,21 @@
  *
  * Champs HTML de la fiche : `name`, `venueName`, `street`, `number`, `postalCode`, `city`,
  * `country`, et à l'ajout `venues` (liste JSON des autres salles importées de l'annuaire
- * FFBB) ; `clubId` (caché) pour modifier ou supprimer.
+ * FFBB) et `ffbb` (lien FFBB du club, JSON) ; `clubId` (caché) pour modifier ou supprimer.
  */
 import { z } from "zod";
-import { readJsonList, readText } from "@/lib/form-data";
+import { readJsonList, readJsonValue, readText } from "@/lib/form-data";
 import { CLUB_FIELDS, clubFormSchema } from "@/lib/schemas/clubs";
 import type { ClubField } from "@/lib/schemas/clubs";
 import { clubVenueSchema, clubVenuesSchema } from "@/lib/schemas/compensations";
+import { ffbbLinkSchema } from "@/lib/schemas/ffbb-link";
 import type { ClubVenue } from "@/lib/schemas/compensations";
 import {
   deleteClub,
   detachClubVenue,
   insertClubWithAddress,
   lockClubVenues,
+  setClubFfbbLink,
   setMainClubVenue,
   updateClubWithAddress,
 } from "../db/clubs";
@@ -91,6 +93,7 @@ export function readClubFormData(formData: FormData): Record<string, unknown> {
     city: readText(formData, "city") ?? "",
     country: readText(formData, "country") ?? "",
     venues: readJsonList(formData, "venues"),
+    ffbb: readJsonValue(formData, "ffbb"),
   };
 }
 
@@ -143,6 +146,33 @@ export async function handleDeleteClub(
   }
   const result = await deps.transaction((db) => deleteClub(db, { userId, clubId: clubId.data }));
   return { status: result };
+}
+
+// ─── Lien avec l'annuaire FFBB ──────────────────────────────────────────────
+
+export type ClubFfbbLinkState = { status: "linked" | "unlinked" | "not_found" | "invalid" };
+
+/**
+ * Lie un club de l'utilisateur au club choisi dans l'annuaire FFBB (logo, couleur), ou
+ * retire ce lien (`link` nul). Arguments venus du navigateur : validés ici.
+ */
+export async function handleSetClubFfbbLink(
+  deps: ClubDeps,
+  userId: string,
+  input: { clubId: unknown; link: unknown },
+): Promise<ClubFfbbLinkState> {
+  const clubId = idSchema.safeParse(input.clubId);
+  const link = ffbbLinkSchema.nullable().safeParse(input.link);
+  if (!clubId.success || !link.success) {
+    return { status: "invalid" };
+  }
+  const updated = await deps.transaction((db) =>
+    setClubFfbbLink(db, { userId, clubId: clubId.data, link: link.data }),
+  );
+  if (!updated) {
+    return { status: "not_found" };
+  }
+  return { status: link.data === null ? "unlinked" : "linked" };
 }
 
 // ─── Salles d'un club ───────────────────────────────────────────────────────

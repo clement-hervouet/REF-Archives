@@ -28,6 +28,7 @@ const RATE_ID = "c4e6a8b0-2d4f-4a6c-9e1b-3d5f7a9c1e63";
 const ADDRESS_ID = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b01";
 const CLUB_A = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
 const CLUB_B = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02";
+const LOGO_UUID = "02175814-01ac-441c-a86a-2f4a9b80b1e0";
 const TEAM_ID = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01";
 const COMPENSATION_ID = "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01";
 
@@ -144,7 +145,21 @@ describe("insertClub", () => {
       ADDRESS_ID,
       "BC Béthune",
       MAX_CLUBS_PER_USER,
+      null,
+      null,
+      null,
     ]);
+  });
+
+  it("enregistre le lien FFBB d'un club choisi dans l'annuaire", async () => {
+    const { db, query } = makeFakeDb([{ id: CLUB_A }]);
+    await insertClub(db, {
+      userId: USER_ID,
+      name: "BC Béthune",
+      addressId: ADDRESS_ID,
+      ffbb: { id: "9326", logoUuid: LOGO_UUID, color: "#263a5d" },
+    });
+    expect(query.mock.calls[0]?.[1]?.slice(4)).toEqual(["9326", LOGO_UUID, "#263a5d"]);
   });
 
   it("renvoie null quand la limite est atteinte", async () => {

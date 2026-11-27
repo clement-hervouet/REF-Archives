@@ -3,10 +3,12 @@
  * obligatoires, comme à la création depuis une indemnité ; nom de la salle principale, rue,
  * numéro, ville et pays facultatifs, à compléter quand on les connaît. Une saisie vide
  * devient `null`. Le nom est enregistré en majuscules. À l'ajout, les autres salles
- * importées de l'annuaire FFBB arrivent en liste (`venues`).
+ * importées de l'annuaire FFBB arrivent en liste (`venues`), avec son lien FFBB (`ffbb` :
+ * logo et couleur ; ignoré en modification).
  */
 import { z } from "zod";
 import { clubNameSchema, clubVenuesSchema, optionalText, postalCodeSchema } from "./compensations";
+import { optionalFfbbLinkSchema } from "./ffbb-link";
 
 export const clubFormSchema = z.object({
   name: clubNameSchema,
@@ -17,6 +19,7 @@ export const clubFormSchema = z.object({
   city: optionalText(255),
   country: optionalText(100),
   venues: clubVenuesSchema,
+  ffbb: optionalFfbbLinkSchema.optional(),
 });
 
 export type ClubFormValue = z.output<typeof clubFormSchema>;

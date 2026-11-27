@@ -265,6 +265,7 @@ describe("getFfbbClub", () => {
         postalCode: "35200",
         city: "Rennes",
         venues: [],
+        ffbb: { id: "9668", logoUuid: null, color: null },
       },
     });
     expect(paths).toEqual(["/club/9668", matchesPath("9668")]);
@@ -368,7 +369,45 @@ describe("getFfbbClub", () => {
         postalCode: "35000",
         city: "Rennes",
         venues: [],
+        ffbb: { id: "9657", logoUuid: null, color: null },
       },
+    });
+  });
+
+  it("rend le logo et la couleur du club, couleur en minuscules", async () => {
+    const { fetchJson } = routedFetch({
+      "/club/9326": {
+        nom: "CLUB X",
+        commune: { codePostal: "63600", libelle: "AMBERT" },
+        logo: { id: "02175814-01ac-441c-a86a-2f4a9b80b1e0", gradient_color: "#EB6D88" },
+      },
+      [matchesPath("9326")]: matchesPage([]),
+    });
+    const result = await getFfbbClub(fetchJson, "9326");
+    expect(result.ok && result.value.ffbb).toEqual({
+      id: "9326",
+      logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0",
+      color: "#eb6d88",
+    });
+  });
+
+  it("ignore un logo illisible et une couleur mal formée sans refuser la fiche", async () => {
+    const { fetchJson } = routedFetch({
+      "/club/1": { nom: "CLUB X", logo: { id: "pas-un-uuid" } },
+      "/club/2": {
+        nom: "CLUB Y",
+        logo: { id: "02175814-01ac-441c-a86a-2f4a9b80b1e0", gradient_color: "rouge" },
+      },
+      [matchesPath("1")]: matchesPage([]),
+      [matchesPath("2")]: matchesPage([]),
+    });
+    const first = await getFfbbClub(fetchJson, "1");
+    expect(first.ok && first.value.ffbb).toEqual({ id: "1", logoUuid: null, color: null });
+    const second = await getFfbbClub(fetchJson, "2");
+    expect(second.ok && second.value.ffbb).toEqual({
+      id: "2",
+      logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0",
+      color: null,
     });
   });
 
