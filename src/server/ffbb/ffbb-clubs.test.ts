@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getFfbbClub, parseLocation, searchFfbbClubs, splitStreet, titleCase } from "./ffbb-clubs";
+import {
+  getFfbbClub,
+  parseLocation,
+  searchFfbbClubCandidates,
+  searchFfbbClubs,
+  splitStreet,
+  titleCase,
+} from "./ffbb-clubs";
 import type { FfbbFetch } from "./ffbb-clubs";
 
 afterEach(() => {
@@ -437,6 +444,45 @@ describe("getFfbbClub", () => {
     expect(await getFfbbClub(failingFetch, "1")).toEqual({ ok: false });
     expect(await getFfbbClub(fakeFetch({ detail: "Not found" }).fetchJson, "1")).toEqual({
       ok: false,
+    });
+  });
+});
+
+describe("searchFfbbClubCandidates", () => {
+  it("rend tous les groupements trouvés, avec leur logo, sans filtre de ville", async () => {
+    const { fetchJson, paths } = fakeFetch([
+      {
+        index_uid: "ffbbserver_organismes",
+        hits: [
+          {
+            id: 9326,
+            nom: "CLUB X",
+            type: "Groupement",
+            commune: { code_postal: "63600", libelle: "AMBERT" },
+            logo: { id: "02175814-01ac-441c-a86a-2f4a9b80b1e0", gradient_color: "#263A5D" },
+          },
+          { id: "1", nom: "COMITE DU PUY-DE-DOME", type: "Comité" },
+        ],
+      },
+    ]);
+    const result = await searchFfbbClubCandidates(fetchJson, "Club X");
+    expect(paths).toEqual(["/search?query=club%20x"]);
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        {
+          id: "9326",
+          name: "CLUB X",
+          city: "Ambert",
+          postalCode: "63600",
+          kind: "other",
+          ffbb: {
+            id: "9326",
+            logoUuid: "02175814-01ac-441c-a86a-2f4a9b80b1e0",
+            color: "#263a5d",
+          },
+        },
+      ],
     });
   });
 });

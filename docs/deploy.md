@@ -446,6 +446,25 @@ avant la migration (`docker compose stop app`).
 migration posait problème, restaurer la sauvegarde faite juste avant (§6) plutôt que de lancer une
 migration descendante en production.
 
+### Rattrapage ponctuel : lier les anciens clubs à l'annuaire FFBB
+
+Les clubs créés avant les logos n'ont pas de lien FFBB, donc pas de pastille. Le script les
+recherche dans l'annuaire (ville de la salle, puis nom du club) et ne lie un club que si un seul
+club de l'annuaire correspond (même département, même nom ou mêmes mots). Il est lent exprès :
+une requête vers l'API toutes les 2 s au plus (`--pause=<secondes>` pour ralentir encore).
+
+```bash
+cd /opt/ref-archives
+docker compose --profile tools build tools                                  # image à jour
+docker compose run --rm tools node scripts/ffbb-link-clubs.mts               # essai : n'écrit rien
+docker compose run --rm tools node scripts/ffbb-link-clubs.mts --appliquer   # enregistre les liens
+```
+
+Lancer d'abord l'essai et relire la liste. Interrompu (Ctrl+C), le script reprend au relancement :
+il ne lit que les clubs encore sans lien. Les clubs « ambigus » ou « introuvables » se lient à la
+main (onglet « Clubs », « Lier à l'annuaire FFBB »). Les logos se téléchargent ensuite au premier
+affichage.
+
 ## 6. Restaurer une sauvegarde
 
 À faire seulement après un incident. Tester d'abord le fichier avec `docker/restore-test.sh`.
