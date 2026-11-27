@@ -12,19 +12,22 @@ import { cupRoundSchema } from "./divisions";
 import type { CupRound } from "./divisions";
 import {
   MATCH_ADDRESS_COLUMNS,
+  MATCH_CLUBS_COLUMNS,
+  matchClubsFields,
   matchPartiesColumns,
   matchAddressFields,
   matchPartiesFields,
   matchTeamJoins,
   toMatchAddress,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchAddress, MatchDivision } from "./match-info";
+import type { MatchAddress, MatchClubs, MatchDivision } from "./match-info";
 import { personSummaryRowSchema, toPersonSummary } from "./persons";
 import type { PersonSummary } from "./persons";
 import type { Queryable } from "./users";
 
-export type GameDetail = {
+export type GameDetail = MatchClubs & {
   id: string;
   startsAt: Date;
   division: MatchDivision;
@@ -161,6 +164,7 @@ function personJson(alias: string): string {
 }
 
 const FIND_GAME_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
+  ${MATCH_CLUBS_COLUMNS},
   ${MATCH_ADDRESS_COLUMNS},
   c.id AS compensation_id,
   ${personJson("r1")} AS referee1,
@@ -184,6 +188,7 @@ const gameRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   ...matchAddressFields,
   compensation_id: z.uuid().nullable(),
   referee1: officialSchema,
@@ -211,6 +216,7 @@ export async function findGame(
     id: row.id,
     startsAt: row.starts_at,
     ...toMatchParties(row),
+    ...toMatchClubs(row),
     address: toMatchAddress(row),
     compensationId: row.compensation_id,
     officials: {

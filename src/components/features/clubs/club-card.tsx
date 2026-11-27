@@ -13,6 +13,7 @@ import { isCompleteAddress, venueLabel } from "@/components/features/compensatio
 import { fr } from "@/i18n/fr";
 import type { ClubFormState, DeleteClubState } from "@/server/clubs/manage-clubs";
 import type { ClubSummary } from "@/server/db/clubs";
+import { ClubBadge } from "./club-badge";
 import { ClubFfbbLink } from "./club-ffbb-link";
 import { ClubForm } from "./club-form";
 import { ClubVenues } from "./club-venues";
@@ -46,6 +47,15 @@ export function ClubCard({ club, updateAction, deleteAction, venueActions }: Pro
   return (
     <article className="flex flex-col gap-3 rounded-md border border-border p-4">
       <div className="flex flex-wrap items-start gap-x-1 gap-y-3">
+        <ClubBadge
+          club={{
+            id: club.id,
+            name: club.name,
+            color: club.ffbb?.color ?? null,
+            logoUuid: club.ffbb?.logoUuid ?? null,
+          }}
+          className="mt-1 mr-2"
+        />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
           <h2 className="font-semibold break-words">{club.name}</h2>
           {club.venues.length > 0 && (

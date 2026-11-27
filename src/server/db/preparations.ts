@@ -9,12 +9,15 @@ import { z } from "zod";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
 import type { PreparationForm, TeamPreparation } from "@/lib/schemas/preparations";
 import {
+  MATCH_CLUBS_COLUMNS,
+  matchClubsFields,
   matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchDivision } from "./match-info";
+import type { MatchClubs, MatchDivision } from "./match-info";
 import { VALID_SHARE } from "./share-access";
 import type { Queryable } from "./users";
 
@@ -270,7 +273,7 @@ type TeamStanding = {
   alreadyRefereed: boolean;
 };
 
-export type PreparationListItem = {
+export type PreparationListItem = MatchClubs & {
   gameId: string;
   startsAt: Date;
   division: MatchDivision;
@@ -292,6 +295,7 @@ export type PreparationsPage = { items: PreparationListItem[]; hasMore: boolean 
 // Mêmes filtres que « Notes de match » (énumérations comparées en texte, paramètres liés).
 // LIMIT + 1 : la ligne en trop indique seulement qu'une page suivante existe.
 const LIST_PREPARATIONS_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
+  ${MATCH_CLUBS_COLUMNS},
   p.team_count,
   p.team1_rank, p.team1_wins, p.team1_losses, p.team1_already_refereed,
   p.team2_rank, p.team2_wins, p.team2_losses, p.team2_already_refereed,
@@ -313,6 +317,7 @@ const listRowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   team_count: smallint,
   team1_rank: smallint,
   team1_wins: smallint,
@@ -359,6 +364,7 @@ export async function listPreparations(
       gameId: row.id,
       startsAt: row.starts_at,
       ...toMatchParties(row),
+      ...toMatchClubs(row),
       teamCount: row.team_count,
       team1: toStanding(row, "team1"),
       team2: toStanding(row, "team2"),

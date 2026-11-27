@@ -3,6 +3,7 @@
  * place occupée, extrait du texte, nombre de clips, et les échelles renseignées en couleur
  * (avec le chiffre). Les liens des clips restent sur la fiche du match.
  */
+import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import { withTeams } from "@/lib/match-teams";
 import Link from "next/link";
 import { MatchDate } from "@/components/features/compensations/match-date";
@@ -36,15 +37,18 @@ function GameNoteCard({ item }: { item: GameNoteListItem }) {
       <MatchDate startsAt={item.startsAt} />
 
       <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="font-semibold break-words">
-          <Link
-            href={gamePath(item.gameId)}
-            aria-label={`${withTeams(t.teams, item.team1Name, item.team2Name)}, ${t.openLabel.replace("{date}", date)}`}
-            className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
-          >
-            {withTeams(t.teams, item.team1Name, item.team2Name)}
-          </Link>
-        </h2>
+        <div className="flex items-center gap-3">
+          <MatchClubBadges team1={item.team1Club} team2={item.team2Club} />
+          <h2 className="min-w-0 font-semibold break-words">
+            <Link
+              href={gamePath(item.gameId)}
+              aria-label={`${withTeams(t.teams, item.team1Name, item.team2Name)}, ${t.openLabel.replace("{date}", date)}`}
+              className="underline decoration-border underline-offset-4 after:absolute after:inset-0 after:rounded-md hover:decoration-foreground"
+            >
+              {withTeams(t.teams, item.team1Name, item.team2Name)}
+            </Link>
+          </h2>
+        </div>
         <p className="text-sm text-muted-foreground">
           {matchLevelLabel(item.division)}
           {item.selfSlot !== null && (

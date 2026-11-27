@@ -8,12 +8,15 @@ import { z } from "zod";
 import type { NoteLevelField, OfficialSlot } from "@/lib/game-form-fields";
 import type { GameNotesFilters } from "@/lib/schemas/game-notes-filters";
 import {
+  MATCH_CLUBS_COLUMNS,
+  matchClubsFields,
   matchPartiesColumns,
   matchPartiesFields,
   matchTeamJoins,
+  toMatchClubs,
   toMatchParties,
 } from "./match-info";
-import type { MatchDivision } from "./match-info";
+import type { MatchClubs, MatchDivision } from "./match-info";
 import type { Queryable } from "./users";
 
 /** Matchs par page. */
@@ -22,7 +25,7 @@ export const GAME_NOTES_PAGE_SIZE = 30;
 /** Longueur de l'extrait du texte renvoyé par la liste (la note complète est sur la fiche). */
 export const NOTE_EXCERPT_LENGTH = 280;
 
-export type GameNoteListItem = {
+export type GameNoteListItem = MatchClubs & {
   gameId: string;
   startsAt: Date;
   division: MatchDivision;
@@ -48,6 +51,7 @@ export type GameNotesPage = { items: GameNoteListItem[]; hasMore: boolean };
 // Enumérations comparées en texte : le paramètre reste un simple texte lié.
 // LIMIT + 1 : la ligne en trop indique seulement qu'une page suivante existe.
 const LIST_GAMES_WITH_NOTES_SQL = `SELECT g.id, g.starts_at, ${matchPartiesColumns("g")},
+  ${MATCH_CLUBS_COLUMNS},
   CASE
     WHEN g.referee1_id = s.id THEN 'referee1'
     WHEN g.referee2_id = s.id THEN 'referee2'
@@ -78,6 +82,7 @@ const rowSchema = z.object({
   id: z.uuid(),
   starts_at: z.date(),
   ...matchPartiesFields,
+  ...matchClubsFields,
   self_slot: z.enum(["referee1", "referee2", "referee3", "observer"]).nullable(),
   confidence: z.number().int().nullable(),
   stress: z.number().int().nullable(),
@@ -116,6 +121,7 @@ export async function listGamesWithNotes(
       gameId: row.id,
       startsAt: row.starts_at,
       ...toMatchParties(row),
+      ...toMatchClubs(row),
       selfSlot: row.self_slot,
       confidence: row.confidence,
       stress: row.stress,
