@@ -39,8 +39,8 @@ export async function getFfbbClubAction(id: unknown): Promise<FfbbResult<FfbbClu
 }
 
 /**
- * Lie un club existant au club choisi dans l'annuaire (identifiant, logo, couleur), ou
- * retire ce lien (`link` nul). Le logo est téléchargé au premier affichage.
+ * Lie un club existant au club choisi dans l'annuaire (identifiant, logo, couleur). Le lien
+ * ne se retire pas. Le logo est téléchargé au premier affichage.
  */
 export async function setClubFfbbLinkAction(
   clubId: unknown,
@@ -48,7 +48,7 @@ export async function setClubFfbbLinkAction(
 ): Promise<ClubFfbbLinkState> {
   const user = await requireUser();
   const state = await handleSetClubFfbbLink(createClubDeps(), user.id, { clubId, link });
-  if (state.status === "linked" || state.status === "unlinked") {
+  if (state.status === "linked") {
     // Le logo apparaît partout où le club apparaît (indemnités pour l'instant).
     revalidatePath("/clubs");
     revalidatePath("/", "layout");
