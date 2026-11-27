@@ -1106,7 +1106,6 @@ export const fr = {
     ordinalFirst: "1er",
     record: "{wins} V – {losses} D",
     standingSeparator: ", ",
-    alreadyRefereedShort: "déjà arbitrée",
     observed: "Observé",
     // Menu des indemnités et de « À venir », fiche du match.
     prepare: "Préparer le match",

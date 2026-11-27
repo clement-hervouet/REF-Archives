@@ -1,7 +1,7 @@
 /**
  * Matchs préparés (§15.4.10) : colonne de date, équipes (lien vers la préparation), niveau,
- * classement abrégé de chaque équipe (avec « déjà arbitrée ») et « Observé ». Les textes
- * restent sur la page de la préparation.
+ * classement abrégé de chaque équipe et « Observé ». Le reste (« déjà arbitrée », textes)
+ * est sur la page de la préparation.
  */
 import { MatchClubBadges } from "@/components/features/clubs/club-badge";
 import Link from "next/link";
@@ -18,19 +18,14 @@ import { fullNameOf } from "./shared-preparation-labels";
 
 const t = fr.preparations;
 
-/** Ligne d'une équipe : « BC BÉTHUNE : 3e sur 12, 7 V – 2 D, déjà arbitrée », ou `null`. */
+/** Ligne d'une équipe : « BC BÉTHUNE : 3e sur 12, 7 V – 2 D », ou `null`. */
 function teamLine(
   name: string,
   standing: PreparationListItem["team1"],
   teamCount: number | null,
 ): string | null {
-  const parts = [
-    standingText(standing, teamCount),
-    standing.alreadyRefereed ? t.alreadyRefereedShort : null,
-  ]
-    .filter((part) => part !== null)
-    .join(t.standingSeparator);
-  return parts === "" ? null : t.standing.replace("{team}", name).replace("{standing}", parts);
+  const text = standingText(standing, teamCount);
+  return text === null ? null : t.standing.replace("{team}", name).replace("{standing}", text);
 }
 
 function PreparationCard({ item }: { item: PreparationListItem }) {
