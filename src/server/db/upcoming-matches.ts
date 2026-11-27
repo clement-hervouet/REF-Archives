@@ -33,7 +33,7 @@ type UpcomingOfficial = {
 };
 
 export type UpcomingMatchRow = MatchClubs & {
-  /** Identifiant de l'indemnité (export `.ics`, modification). */
+  /** Identifiant de l'indemnité (modification, préparation). */
   id: string;
   startsAt: Date;
   division: MatchDivision;

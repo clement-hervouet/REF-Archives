@@ -1902,10 +1902,6 @@ export const fr = {
         notFound: "Aucun lien d'abonnement à révoquer.",
       },
     },
-    export: {
-      label: "Ajouter à l'agenda",
-      ariaLabel: "Ajouter le match du {date} à mon agenda (fichier .ics)",
-    },
   },
   email: {
     footer:

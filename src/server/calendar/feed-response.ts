@@ -8,7 +8,6 @@
  *   pose donc elle-même ses en-têtes de sécurité. `no-store` : le contenu est personnel et
  *   l'URL contient un secret, aucun cache intermédiaire ne doit le garder.
  */
-import { toParisIsoDate } from "@/lib/dates";
 import { parseCalendarFeedFile } from "@/lib/schemas/calendar";
 import { getSecurityHeaders } from "@/lib/security-headers";
 import { hashToken } from "@/server/auth/tokens";
@@ -35,24 +34,18 @@ export function notFoundHeaders(pathname: string): Record<string, string> {
   };
 }
 
-/** En-têtes d'un fichier `.ics` : `inline` pour le flux, `attachment` pour un export. */
+/** En-têtes du flux `.ics`. */
 export function calendarHeaders(input: {
   pathname: string;
   fileName: string;
-  disposition: "inline" | "attachment";
 }): Record<string, string> {
   return {
     ...notFoundHeaders(input.pathname),
     "Content-Type": "text/calendar; charset=utf-8",
-    "Content-Disposition": `${input.disposition}; filename="${input.fileName}"`,
+    "Content-Disposition": `inline; filename="${input.fileName}"`,
     "Cache-Control": "private, no-store",
     "X-Robots-Tag": "noindex, nofollow",
   };
-}
-
-/** Nom du fichier d'export d'un match, d'après sa date à Paris : `match-2026-11-06.ics`. */
-export function matchExportFileName(match: Pick<CalendarMatch, "startsAt">): string {
-  return `match-${toParisIsoDate(match.startsAt)}.ics`;
 }
 
 /**

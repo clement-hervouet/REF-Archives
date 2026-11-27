@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { generateToken, hashToken } from "@/server/auth/tokens";
 import type { CalendarMatch } from "@/server/db/calendar-matches";
-import {
-  calendarHeaders,
-  matchExportFileName,
-  notFoundHeaders,
-  serveCalendarFeed,
-} from "./feed-response";
+import { calendarHeaders, notFoundHeaders, serveCalendarFeed } from "./feed-response";
 import type { CalendarFeedDeps } from "./feed-response";
 
 const USER_ID = "3f0c1d52-9b0a-4c55-8a3e-2f6f3a1c9e11";
@@ -84,7 +79,6 @@ describe("calendarHeaders", () => {
     const headers = calendarHeaders({
       pathname: "/api/ical/x.ics",
       fileName: "ref-archives.ics",
-      disposition: "inline",
     });
     expect(headers["Content-Type"]).toBe("text/calendar; charset=utf-8");
     expect(headers["Content-Disposition"]).toBe('inline; filename="ref-archives.ics"');
@@ -93,15 +87,6 @@ describe("calendarHeaders", () => {
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["Content-Security-Policy"]).toBe("default-src 'none'; frame-ancestors 'none'");
   });
-
-  it("propose le téléchargement pour un export", () => {
-    const headers = calendarHeaders({
-      pathname: "/indemnites/x/ics",
-      fileName: "match-2026-11-06.ics",
-      disposition: "attachment",
-    });
-    expect(headers["Content-Disposition"]).toBe('attachment; filename="match-2026-11-06.ics"');
-  });
 });
 
 describe("notFoundHeaders", () => {
@@ -109,14 +94,5 @@ describe("notFoundHeaders", () => {
     const headers = notFoundHeaders("/api/ical/x.ics");
     expect(headers["Cache-Control"]).toBe("no-store");
     expect(headers["X-Frame-Options"]).toBe("DENY");
-  });
-});
-
-describe("matchExportFileName", () => {
-  it("utilise la date du match à Paris", () => {
-    // 23:30 UTC le 31/12 = 00:30 le 01/01 à Paris.
-    expect(matchExportFileName({ startsAt: new Date("2026-12-31T23:30:00.000Z") })).toBe(
-      "match-2027-01-01.ics",
-    );
   });
 });
